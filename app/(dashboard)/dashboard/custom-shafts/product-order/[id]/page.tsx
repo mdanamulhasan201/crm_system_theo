@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
@@ -11,7 +11,9 @@ import toast from 'react-hot-toast';
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageUploadInfo from '@/components/CustomShafts/ProductImageUploadInfo';
 import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
-import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
+import ProductConfiguration, {
+  type ProductConfigurationHandle,
+} from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import ShaftPDFPopup, { ShaftOrderDataForPDF, type ShaftConfiguration } from '@/components/CustomShafts/ShaftPDFPopup';
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
@@ -136,6 +138,8 @@ export default function CustomShoeOrderPage() {
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
   // Versenden data (shipping address)
   const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
+  const [highlightDeliveryChoice, setHighlightDeliveryChoice] = useState(false);
+  const [highlight3dUploads, setHighlight3dUploads] = useState(false);
 
   // Modal states
   const [showPDFModal, setShowPDFModal] = useState(false);
@@ -145,6 +149,7 @@ export default function CustomShoeOrderPage() {
   const [isLoadingBodenKonfigurieren, setIsLoadingBodenKonfigurieren] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [pendingAction, setPendingAction] = useState<'boden' | 'ohne-boden' | null>(null);
+  const productConfigRef = useRef<ProductConfigurationHandle>(null);
 
   // Pricing constants
   const SCHNURSENKEL_PRICE = 4.49;
@@ -153,6 +158,16 @@ export default function CustomShoeOrderPage() {
   const ZIPPER_BOTH_PRICE = 19.99;   // Both sides
   const CAD_MODELING_2X_PRICE = 6.99;
   const COURIER_PRICE_DEFAULT = 13.0;
+
+  useEffect(() => {
+    const deliveryOk =
+      !!(businessAddress?.companyName || businessAddress?.address) || !!versendenData;
+    if (deliveryOk) setHighlightDeliveryChoice(false);
+  }, [businessAddress, versendenData]);
+
+  useEffect(() => {
+    if (linkerLeistenFile && rechterLeistenFile) setHighlight3dUploads(false);
+  }, [linkerLeistenFile, rechterLeistenFile]);
 
   // Determine delivery method for PDF display
   const getDeliveryMethod = (): string => {
@@ -403,9 +418,12 @@ export default function CustomShoeOrderPage() {
   };
 
   return (
-    <div className="relative px-2 md:px-6 py-8 w-full ">
-      {/* Sticky Price Summary - bottom-right, price only (no button) */}
-      {/* <StickyPriceSummary price={orderPrice} /> */}
+    <div className="relative w-full px-2 py-8 pb-24 md:px-6">
+      <StickyPriceSummary
+        price={orderPrice}
+        onWeiterClick={() => productConfigRef.current?.submitOrder()}
+        isSubmitting={isCreatingOrder}
+      />
 
       {/* File Upload Section */}
       <FileUploadSection
@@ -440,6 +458,8 @@ export default function CustomShoeOrderPage() {
         versendenData={versendenData}
         onVersendenChange={setVersendenData}
         orderId={null}
+        highlightDeliveryChoice={highlightDeliveryChoice}
+        highlight3dUploads={highlight3dUploads}
       />
 
       <div className="flex flex-col border-2 border-gray-200 rounded-lg p-4 sm:p-6 lg:p-8 shadow-md">
@@ -474,6 +494,7 @@ export default function CustomShoeOrderPage() {
 
         {/* Product Configuration */}
         <ProductConfiguration
+          ref={productConfigRef}
           hideCadAndCategory
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
@@ -555,12 +576,13 @@ export default function CustomShoeOrderPage() {
           leatherColors={leatherColors}
           setLeatherColors={setLeatherColors}
           shoeImage={uploadedImage || null}
+          onDeliveryChoiceRequired={() => setHighlightDeliveryChoice(true)}
           onOrderComplete={() => {
-            // When 3D upload is shown, both Leisten files are required
             if (!isAbholung) {
               if (!linkerLeistenFile || !rechterLeistenFile) {
+                setHighlight3dUploads(true);
                 toast.error('Bitte laden Sie beide 3D-Dateien hoch (Linker Leisten und Rechter Leisten).');
-                return;
+                return false;
               }
             }
             setShowConfirmationModal(true);

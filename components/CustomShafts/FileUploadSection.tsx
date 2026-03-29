@@ -8,6 +8,7 @@ import OtherCustomerModal from './OtherCustomerModal';
 import BusinessAddressModal from './BusinessAddressModal';
 import FilePreviewWithShimmer from './FilePreviewWithShimmer';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 
 interface Customer {
   id: string;
@@ -53,6 +54,10 @@ interface FileUploadSectionProps {
   versendenData?: VersendenData | null;
   onVersendenChange?: (data: VersendenData | null) => void;
   orderId?: string | null;
+  /** Nach fehlgeschlagener „Weiter“-Validierung: Abholen/Versenden hervorheben */
+  highlightDeliveryChoice?: boolean;
+  /** Nach fehlgeschlagener Validierung: 3D-Upload-Spalten hervorheben */
+  highlight3dUploads?: boolean;
 }
 
 export default function FileUploadSection({
@@ -75,6 +80,8 @@ export default function FileUploadSection({
   versendenData,
   onVersendenChange,
   orderId,
+  highlightDeliveryChoice = false,
+  highlight3dUploads = false,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
@@ -254,167 +261,165 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Linker Leisten Section - Hide when hideFileUploads is true */}
+          {/* 3D Leisten — gemeinsamer Bereich für Validierungshinweis */}
           {!hideFileUploads && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">
-                Linker Leisten <span className="text-red-500">*</span>
-              </label>
-              <Button 
-                variant="outline" 
-                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
-                onClick={() => linkerLeistenInputRef.current?.click()}
-                title={linkerLeistenFileName || undefined}
-              >
-                <UploadCloud className="w-5 h-5 shrink-0" />
-                <span className="truncate min-w-0">
-                  {linkerLeistenFileName ? truncateFileName(linkerLeistenFileName) : "Upload 3D-File Linker Leisten"}
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
-                ref={linkerLeistenInputRef}
-                onChange={handleLinkerLeistenFileChange}
-                className="hidden"
-              />
+            <div
+              id="field-3d-leisten-uploads"
+              className={cn(
+                'col-span-1 sm:col-span-2 lg:col-span-2 2xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6',
+                highlight3dUploads && 'rounded-lg ring-2 ring-red-500 ring-offset-2 p-2 -m-0.5'
+              )}
+            >
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Linker Leisten <span className="text-red-500">*</span>
+                </label>
+                <Button
+                  variant="outline"
+                  className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
+                  onClick={() => linkerLeistenInputRef.current?.click()}
+                  title={linkerLeistenFileName || undefined}
+                >
+                  <UploadCloud className="w-5 h-5 shrink-0" />
+                  <span className="truncate min-w-0">
+                    {linkerLeistenFileName
+                      ? truncateFileName(linkerLeistenFileName)
+                      : 'Upload 3D-File Linker Leisten'}
+                  </span>
+                </Button>
+                <input
+                  type="file"
+                  accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
+                  ref={linkerLeistenInputRef}
+                  onChange={handleLinkerLeistenFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Rechter Leisten <span className="text-red-500">*</span>
+                </label>
+                <Button
+                  variant="outline"
+                  className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
+                  onClick={() => rechterLeistenInputRef.current?.click()}
+                  title={rechterLeistenFileName || undefined}
+                >
+                  <UploadCloud className="w-5 h-5 shrink-0" />
+                  <span className="truncate min-w-0">
+                    {rechterLeistenFileName
+                      ? truncateFileName(rechterLeistenFileName)
+                      : 'Upload 3D-File Rechter Leisten'}
+                  </span>
+                </Button>
+                <input
+                  type="file"
+                  accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
+                  ref={rechterLeistenInputRef}
+                  onChange={handleRechterLeistenFileChange}
+                  className="hidden"
+                />
+              </div>
             </div>
           )}
 
-          {/* Rechter Leisten Section - Hide when hideFileUploads is true */}
-          {!hideFileUploads && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">
-                Rechter Leisten <span className="text-red-500">*</span>
-              </label>
-              <Button 
-                variant="outline" 
-                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
-                onClick={() => rechterLeistenInputRef.current?.click()}
-                title={rechterLeistenFileName || undefined}
-              >
-                <UploadCloud className="w-5 h-5 shrink-0" />
-                <span className="truncate min-w-0">
-                  {rechterLeistenFileName ? truncateFileName(rechterLeistenFileName) : "Upload 3D-File Rechter Leisten"}
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
-                ref={rechterLeistenInputRef}
-                onChange={handleRechterLeistenFileChange}
-                className="hidden"
-              />
-            </div>
-          )}
-
-          {/* Abholen Button - Only show when hideFileUploads is true (PHYSISCH flow) */}
+          {/* Abholen / Versenden — gemeinsamer Bereich für Pflicht-Validierung */}
           {hideFileUploads && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Abholen</label>
-              <Button
-                variant="outline"
-                type="button"
-                disabled={isVersendenActive}
-                className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
-                  isVersendenActive 
-                    ? 'bg-gray-100 cursor-not-allowed text-gray-400' 
-                    : 'cursor-pointer hover:bg-gray-50 bg-white'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (isVersendenActive) return;
-                  
-                  if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
-                    // If address is set, clear it when clicked (set to null)
-                    if (onBusinessAddressSave) {
-                      onBusinessAddressSave({
-                        companyName: '',
-                        address: '',
-                        phone: '',
-                        email: '',
-                        price: 0,
-                      } as any);
-                    }
-                  } else {
-                    // NEW COURIER SYSTEM: No customer validation required
-                    // Customer selection is independent of courier pickup
-                    // Old validation (DISABLED):
-                    // if (!selectedCustomer && !otherCustomerNumber.trim()) {
-                    //   toast.error('Bitte wählen Sie zuerst einen Kunden aus (entweder aus der Liste oder als externen Kunden).');
-                    //   return;
-                    // }
-                    
-                    // Clear versenden state and show BusinessAddressModal to enter address
-                    if (onVersendenChange) {
-                      onVersendenChange(null);
-                    }
-                    setShowBusinessAddressModal(true);
-                  }
-                }}
-              >
-                {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
-                  <>
-                    <X className="w-4 h-4 text-gray-700" />
-                    {/* <span className="text-sm">Abholen</span> */}
-                  </>
-                ) : (
-                  'Leisten abholen lassen'
-                )}
-              </Button>
-            </div>
-          )}
+            <div
+              id="field-delivery-choice"
+              className={cn(
+                'col-span-1 sm:col-span-2 lg:col-span-2 2xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6',
+                highlightDeliveryChoice && 'rounded-lg ring-2 ring-red-500 ring-offset-2 p-2 -m-0.5'
+              )}
+            >
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Abholen</label>
+                <Button
+                  variant="outline"
+                  type="button"
+                  disabled={isVersendenActive}
+                  className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
+                    isVersendenActive
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'cursor-pointer hover:bg-gray-50 bg-white'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isVersendenActive) return;
 
-          {/* Versenden Button - Only show when hideFileUploads is true (PHYSISCH flow) */}
-          {hideFileUploads && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Versenden</label>
-              <Button
-                variant="outline"
-                type="button"
-                disabled={isAbholenActive}
-                className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
-                  isAbholenActive 
-                    ? 'bg-gray-100 cursor-not-allowed text-gray-400' 
-                    : 'cursor-pointer hover:bg-gray-50 bg-white'
-                }`}
-                onClick={() => {
-                  if (isAbholenActive) return;
-                  
-                  // If activating Versenden, set default address and clear Abholen state
-                  if (!isVersendenActive) {
-                    // Set default versenden data
-                    if (onVersendenChange) {
-                      onVersendenChange(defaultShippingAddress);
+                    if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
+                      if (onBusinessAddressSave) {
+                        onBusinessAddressSave({
+                          companyName: '',
+                          address: '',
+                          phone: '',
+                          email: '',
+                          price: 0,
+                        } as any);
+                      }
+                    } else {
+                      if (onVersendenChange) {
+                        onVersendenChange(null);
+                      }
+                      setShowBusinessAddressModal(true);
                     }
-                    // Clear Abholen state
-                    if (onBusinessAddressSave) {
-                      onBusinessAddressSave({
-                        companyName: '',
-                        address: '',
-                        phone: '',
-                        email: '',
-                        price: 0,
-                      } as any);
+                  }}
+                >
+                  {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
+                    <>
+                      <X className="w-4 h-4 text-gray-700" />
+                    </>
+                  ) : (
+                    'Leisten abholen lassen'
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Versenden</label>
+                <Button
+                  variant="outline"
+                  type="button"
+                  disabled={isAbholenActive}
+                  className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
+                    isAbholenActive
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'cursor-pointer hover:bg-gray-50 bg-white'
+                  }`}
+                  onClick={() => {
+                    if (isAbholenActive) return;
+
+                    if (!isVersendenActive) {
+                      if (onVersendenChange) {
+                        onVersendenChange(defaultShippingAddress);
+                      }
+                      if (onBusinessAddressSave) {
+                        onBusinessAddressSave({
+                          companyName: '',
+                          address: '',
+                          phone: '',
+                          email: '',
+                          price: 0,
+                        } as any);
+                      }
+                    } else {
+                      if (onVersendenChange) {
+                        onVersendenChange(null);
+                      }
                     }
-                  } else {
-                    // Deactivating - clear versenden data
-                    if (onVersendenChange) {
-                      onVersendenChange(null);
-                    }
-                  }
-                }}
-              >
-                {isVersendenActive ? (
-                  <>
-                    <X className="w-4 h-4 text-gray-700" />
-                    {/* <span className="text-sm">Versenden</span> */}
-                  </>
-                ) : (
-                  ' Leisten selber versenden'
-                )}
-              </Button>
+                  }}
+                >
+                  {isVersendenActive ? (
+                    <>
+                      <X className="w-4 h-4 text-gray-700" />
+                    </>
+                  ) : (
+                    ' Leisten selber versenden'
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </div>

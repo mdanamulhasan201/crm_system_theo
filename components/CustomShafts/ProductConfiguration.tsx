@@ -1,5 +1,14 @@
 'use client';
-import React, { useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
 import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModal';
 import ProductCadCategoryFields from './ProductCadCategoryFields';
-import SchafthoheCard from './SchafthoheCard';
+import SchafthoheCard, { type SchafthoheFieldKey } from './SchafthoheCard';
 import VerschlussCard from './VerschlussCard';
 import PolsterungCard from './PolsterungCard';
 import VerstarkungenCard from './VerstarkungenCard';
@@ -23,6 +32,32 @@ import toast from 'react-hot-toast';
 
 const SELECT_FIELD_CLASS =
   'h-9 w-full border-gray-300 bg-white text-sm shadow-sm';
+
+const SHAFT_FIELD_SCROLL_ORDER: SchafthoheFieldKey[] = [
+  'schafthoheLinks',
+  'schafthoheRechts',
+  'knoechelumfangLinks',
+  'umfangBei14Links',
+  'umfangBei16Links',
+  'umfangBei18Links',
+  'knoechelumfangRechts',
+  'umfangBei14Rechts',
+  'umfangBei16Rechts',
+  'umfangBei18Rechts',
+];
+
+const FIELD_SCROLL_IDS: Record<SchafthoheFieldKey, string> = {
+  schafthoheLinks: 'field-schafthohe-links',
+  schafthoheRechts: 'field-schafthohe-rechts',
+  knoechelumfangLinks: 'field-knoechelumfang-links',
+  umfangBei14Links: 'field-umfang-14-links',
+  umfangBei16Links: 'field-umfang-16-links',
+  umfangBei18Links: 'field-umfang-18-links',
+  knoechelumfangRechts: 'field-knoechelumfang-rechts',
+  umfangBei14Rechts: 'field-umfang-14-rechts',
+  umfangBei16Rechts: 'field-umfang-16-rechts',
+  umfangBei18Rechts: 'field-umfang-18-rechts',
+};
 
 function ConfigCard({
   title,
@@ -182,7 +217,10 @@ interface ProductConfigurationProps {
   leatherColors: string[];
   setLeatherColors: (colors: string[]) => void;
   shoeImage: string | null; // The shoe image to use in the modal
-  onOrderComplete: () => void;
+  /** Rückgabe `false` bricht ab (z. B. fehlende 3D-Uploads); Parent kann Bereiche rot markieren. */
+  onOrderComplete: () => void | boolean;
+  /** Wenn Abholen/Versenden Pflicht ist aber nichts gewählt — z. B. Kundenauswahl-Bereich hervorheben */
+  onDeliveryChoiceRequired?: () => void;
   category?: string; // Category from the shaft data
   allowCategoryEdit?: boolean; // If true, show dropdown; if false, show read-only field
   zipperImage?: string | null;
@@ -201,7 +239,12 @@ interface ProductConfigurationProps {
   hideCadAndCategory?: boolean;
 }
 
-export default function ProductConfiguration({
+export type ProductConfigurationHandle = {
+  /** Gleiche Logik wie bisher „Abschließen“: Validierung + `onOrderComplete`. */
+  submitOrder: () => void;
+};
+
+const ProductConfiguration = forwardRef<ProductConfigurationHandle, ProductConfigurationProps>(function ProductConfiguration({
   cadModeling = '1x',
   setCadModeling,
   customCategory,
@@ -280,6 +323,7 @@ export default function ProductConfiguration({
   setLeatherColors,
   shoeImage,
   onOrderComplete,
+  onDeliveryChoiceRequired,
   category,
   allowCategoryEdit,
   zipperImage,
@@ -292,7 +336,9 @@ export default function ProductConfiguration({
   additionalNotes = '',
   setAdditionalNotes,
   hideCadAndCategory = false,
-}: ProductConfigurationProps) {
+}: ProductConfigurationProps,
+ref: React.Ref<ProductConfigurationHandle>
+) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
   // Local fallbacks if parent does not control these fields
@@ -301,6 +347,9 @@ export default function ProductConfiguration({
   const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
   const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
+  const [shaftFieldErrors, setShaftFieldErrors] = useState<Partial<Record<SchafthoheFieldKey, boolean>>>(
+    {}
+  );
   const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
   const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(zipperImage || null);
   const [localZipperPosition, setLocalZipperPosition] = useState<ZipperPosition | null>(null);
@@ -352,6 +401,43 @@ export default function ProductConfiguration({
       requireCircumference: h > 13,
     };
   };
+
+  const buildShaftFieldErrors = useCallback((): Partial<Record<SchafthoheFieldKey, boolean>> => {
+    const err: Partial<Record<SchafthoheFieldKey, boolean>> = {};
+    const leftH = parseFloat(schafthoheLinks);
+    const rightH = parseFloat(schafthoheRechts);
+    if (!schafthoheLinks?.trim() || Number.isNaN(leftH)) err.schafthoheLinks = true;
+    if (!schafthoheRechts?.trim() || Number.isNaN(rightH)) err.schafthoheRechts = true;
+    if (Number.isNaN(leftH) || Number.isNaN(rightH)) return err;
+
+    const leftFields = getCircumferenceFieldsForHeight(leftH);
+    const rightFields = getCircumferenceFieldsForHeight(rightH);
+
+    if (leftFields.requireCircumference) {
+      if (leftFields.showUmfang15 && !umfangBei14Links?.trim()) err.umfangBei14Links = true;
+      if (leftFields.showUmfang16 && !umfangBei16Links?.trim()) err.umfangBei16Links = true;
+      if (leftFields.showUmfang18 && !umfangBei18Links?.trim()) err.umfangBei18Links = true;
+      if (leftFields.showKnoechelumfang && !knoechelumfangLinks?.trim()) err.knoechelumfangLinks = true;
+    }
+    if (rightFields.requireCircumference) {
+      if (rightFields.showUmfang15 && !umfangBei14Rechts?.trim()) err.umfangBei14Rechts = true;
+      if (rightFields.showUmfang16 && !umfangBei16Rechts?.trim()) err.umfangBei16Rechts = true;
+      if (rightFields.showUmfang18 && !umfangBei18Rechts?.trim()) err.umfangBei18Rechts = true;
+      if (rightFields.showKnoechelumfang && !knoechelumfangRechts?.trim()) err.knoechelumfangRechts = true;
+    }
+    return err;
+  }, [
+    schafthoheLinks,
+    schafthoheRechts,
+    umfangBei14Links,
+    umfangBei16Links,
+    umfangBei18Links,
+    knoechelumfangLinks,
+    umfangBei14Rechts,
+    umfangBei16Rechts,
+    umfangBei18Rechts,
+    knoechelumfangRechts,
+  ]);
 
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
   const updateSchnursenkel = (value: boolean | undefined) => {
@@ -424,6 +510,65 @@ export default function ProductConfiguration({
     }
     setShowLeatherColorModal(false);
   };
+
+  const submitOrder = useCallback(() => {
+    const shaftErr = buildShaftFieldErrors();
+    setShaftFieldErrors(shaftErr);
+
+    if (Object.keys(shaftErr).length > 0) {
+      toast.error('Bitte füllen Sie alle rot markierten Pflichtfelder aus.');
+      requestAnimationFrame(() => {
+        for (const key of SHAFT_FIELD_SCROLL_ORDER) {
+          if (shaftErr[key]) {
+            document.getElementById(FIELD_SCROLL_IDS[key])?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
+            break;
+          }
+        }
+      });
+      return;
+    }
+
+    if (requireAbholenOrVersenden && !isAbholenSelected && !isVersendenSelected) {
+      onDeliveryChoiceRequired?.();
+      toast.error('Bitte wählen Sie entweder "Abholen" oder "Versenden" aus.');
+      requestAnimationFrame(() => {
+        document.getElementById('field-delivery-choice')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
+      return;
+    }
+
+    const proceed = onOrderComplete();
+    if (proceed === false) {
+      requestAnimationFrame(() => {
+        document.getElementById('field-3d-leisten-uploads')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
+    }
+  }, [
+    buildShaftFieldErrors,
+    requireAbholenOrVersenden,
+    isAbholenSelected,
+    isVersendenSelected,
+    onOrderComplete,
+    onDeliveryChoiceRequired,
+  ]);
+
+  useEffect(() => {
+    setShaftFieldErrors((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      return buildShaftFieldErrors();
+    });
+  }, [buildShaftFieldErrors]);
+
+  useImperativeHandle(ref, () => ({ submitOrder }), [submitOrder]);
 
   return (
     <TooltipProvider>
@@ -645,6 +790,7 @@ export default function ProductConfiguration({
           setUmfangBei16Rechts={setUmfangBei16Rechts}
           umfangBei18Rechts={umfangBei18Rechts}
           setUmfangBei18Rechts={setUmfangBei18Rechts}
+          fieldErrors={shaftFieldErrors}
         />
 
         <VerschlussCard
@@ -720,73 +866,6 @@ export default function ProductConfiguration({
             onChange={(e) => setAdditionalNotes?.(e.target.value)}
           />
         </div>
-
-        <div className="flex justify-center pt-2">
-          <Button
-            onClick={() => {
-              // Validate shaft height fields
-              if (!schafthoheLinks || !schafthoheRechts) {
-                toast.error('Bitte geben Sie die Schafthöhe für beide Füße ein.');
-                return;
-              }
-
-              // Validate circumference fields by shaft height
-              const leftHeight = parseFloat(schafthoheLinks);
-              const rightHeight = parseFloat(schafthoheRechts);
-              const leftFields = getCircumferenceFieldsForHeight(leftHeight);
-              const rightFields = getCircumferenceFieldsForHeight(rightHeight);
-
-              if (leftFields.requireCircumference) {
-                if (leftFields.showUmfang15 && !umfangBei14Links?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 15 cm Höhe (Links) ein.');
-                  return;
-                }
-                if (leftFields.showUmfang16 && !umfangBei16Links?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 16 cm Höhe (Links) ein.');
-                  return;
-                }
-                if (leftFields.showUmfang18 && !umfangBei18Links?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 18 cm Höhe (Links) ein.');
-                  return;
-                }
-                if (leftFields.showKnoechelumfang && !knoechelumfangLinks?.trim()) {
-                  toast.error('Bitte geben Sie den Knöchelumfang (Links) ein.');
-                  return;
-                }
-              }
-
-              if (rightFields.requireCircumference) {
-                if (rightFields.showUmfang15 && !umfangBei14Rechts?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 15 cm Höhe (Rechts) ein.');
-                  return;
-                }
-                if (rightFields.showUmfang16 && !umfangBei16Rechts?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 16 cm Höhe (Rechts) ein.');
-                  return;
-                }
-                if (rightFields.showUmfang18 && !umfangBei18Rechts?.trim()) {
-                  toast.error('Bitte geben Sie den Umfang bei 18 cm Höhe (Rechts) ein.');
-                  return;
-                }
-                if (rightFields.showKnoechelumfang && !knoechelumfangRechts?.trim()) {
-                  toast.error('Bitte geben Sie den Knöchelumfang (Rechts) ein.');
-                  return;
-                }
-              }
-
-              // Validate Abholen or Versenden selection (when required)
-              if (requireAbholenOrVersenden && !isAbholenSelected && !isVersendenSelected) {
-                toast.error('Bitte wählen Sie entweder "Abholen" oder "Versenden" aus.');
-                return;
-              }
-
-              onOrderComplete();
-            }}
-            className="w-full cursor-pointer md:w-1/3 px-8 py-5 rounded-full bg-[#679C7A] text-white shadow-sm hover:bg-[#5a8a6a] text-base font-semibold"
-          >
-            Abschließen
-          </Button>
-        </div>
         </ConfigCard>
 
         {/* Leather Color Section Modal */}
@@ -825,4 +904,6 @@ export default function ProductConfiguration({
       </div>
     </TooltipProvider>
   );
-}
+});
+
+export default ProductConfiguration;

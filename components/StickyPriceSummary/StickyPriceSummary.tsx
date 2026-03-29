@@ -43,7 +43,7 @@ export default function StickyPriceSummary({
       className="fixed bottom-6 right-6 z-40"
       aria-live="polite"
     >
-      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4 shadow-md min-w-[200px]">
+      <div className="min-w-[220px] rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-md">
         {!hidePrice && (
           <div className="text-sm font-semibold text-gray-700 mb-3">
             Preisübersicht
@@ -91,7 +91,7 @@ export default function StickyPriceSummary({
             {showWeiterButton && onWeiterClick && (
               <button
                 type="button"
-                className={`w-full px-4 py-2 bg-[#61A178] cursor-pointer text-white rounded-md hover:bg-[#61A178]/80 font-semibold text-sm flex items-center justify-center gap-2 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#679C7A] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#5a8a6a] ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
                 onClick={onWeiterClick}
                 disabled={isSubmitting}
               >

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
@@ -15,7 +15,9 @@ import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSumma
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageInfo from '@/components/CustomShafts/ProductImageInfo';
 import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
-import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
+import ProductConfiguration, {
+  type ProductConfigurationHandle,
+} from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import ShaftPDFPopup, { ShaftOrderDataForPDF, type ShaftConfiguration } from '@/components/CustomShafts/ShaftPDFPopup';
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
@@ -144,6 +146,8 @@ export default function CollectionShaftDetailsPage() {
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
   // Versenden data (shipping address)
   const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
+  const [highlightDeliveryChoice, setHighlightDeliveryChoice] = useState(false);
+  const [highlight3dUploads, setHighlight3dUploads] = useState(false);
 
   // Modal states
   const [showPDFModal, setShowPDFModal] = useState(false);
@@ -153,6 +157,7 @@ export default function CollectionShaftDetailsPage() {
   const [isLoadingBodenKonfigurieren, setIsLoadingBodenKonfigurieren] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [pendingAction, setPendingAction] = useState<'boden' | 'ohne-boden' | null>(null);
+  const productConfigRef = useRef<ProductConfigurationHandle>(null);
 
   // Pricing constants
   const SCHNURSENKEL_PRICE = 4.49;
@@ -161,6 +166,16 @@ export default function CollectionShaftDetailsPage() {
   const ZIPPER_BOTH_PRICE = 19.99;   // Both sides
   const CAD_MODELING_2X_PRICE = 6.99;
   const COURIER_PRICE_DEFAULT = 13.0;
+
+  useEffect(() => {
+    const deliveryOk =
+      !!(businessAddress?.companyName || businessAddress?.address) || !!versendenData;
+    if (deliveryOk) setHighlightDeliveryChoice(false);
+  }, [businessAddress, versendenData]);
+
+  useEffect(() => {
+    if (linkerLeistenFile && rechterLeistenFile) setHighlight3dUploads(false);
+  }, [linkerLeistenFile, rechterLeistenFile]);
 
   // Pre-fill customer from order
   useEffect(() => {
@@ -570,8 +585,11 @@ export default function CollectionShaftDetailsPage() {
 
   return (
     <div className="relative px-2 md:px-6 py-8 w-full pb-24">
-      {/* Sticky Price Summary - bottom-right, price only (no button) */}
-      {/* <StickyPriceSummary price={orderPrice} /> */}
+      <StickyPriceSummary
+        price={orderPrice}
+        onWeiterClick={() => productConfigRef.current?.submitOrder()}
+        isSubmitting={isCreatingOrder}
+      />
 
       {/* File Upload Section */}
       <FileUploadSection
@@ -606,6 +624,8 @@ export default function CollectionShaftDetailsPage() {
         versendenData={versendenData}
         onVersendenChange={setVersendenData}
         orderId={orderId}
+        highlightDeliveryChoice={highlightDeliveryChoice}
+        highlight3dUploads={highlight3dUploads}
       />
 
       <div className="flex flex-col ">
@@ -636,6 +656,7 @@ export default function CollectionShaftDetailsPage() {
 
         {/* Product Configuration */}
         <ProductConfiguration
+          ref={productConfigRef}
           hideCadAndCategory
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
@@ -717,12 +738,13 @@ export default function CollectionShaftDetailsPage() {
           leatherColors={leatherColors}
           setLeatherColors={setLeatherColors}
           shoeImage={shaft?.image || null}
+          onDeliveryChoiceRequired={() => setHighlightDeliveryChoice(true)}
           onOrderComplete={() => {
-            // When 3D upload is shown, both Leisten files are required
             if (!isAbholung) {
               if (!linkerLeistenFile || !rechterLeistenFile) {
+                setHighlight3dUploads(true);
                 toast.error('Bitte laden Sie beide 3D-Dateien hoch (Linker Leisten und Rechter Leisten).');
-                return;
+                return false;
               }
             }
             setShowConfirmationModal(true);

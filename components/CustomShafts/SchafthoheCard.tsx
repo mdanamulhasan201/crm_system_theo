@@ -20,17 +20,20 @@ function getCircumferenceFieldsForHeight(heightCm: number) {
 /** Gleiche Höhe / Stil wie SelectTrigger & Inputs in Material-Karte (h-9, border-gray-300) */
 const inputWithCmClass =
   'h-9 min-h-9 w-full rounded-md border border-gray-300 bg-white px-2.5 pr-9 text-sm shadow-sm';
+const inputErrorClass = 'border-red-500 ring-2 ring-red-200 focus-visible:ring-red-400';
 
 function CmInput({
   value,
   onChange,
   placeholder,
   id,
+  invalid,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   id?: string;
+  invalid?: boolean;
 }) {
   return (
     <div className="relative">
@@ -39,7 +42,8 @@ function CmInput({
         type="text"
         inputMode="decimal"
         placeholder={placeholder}
-        className={inputWithCmClass}
+        aria-invalid={invalid || undefined}
+        className={`${inputWithCmClass} ${invalid ? inputErrorClass : ''}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -49,6 +53,18 @@ function CmInput({
     </div>
   );
 }
+
+export type SchafthoheFieldKey =
+  | 'schafthoheLinks'
+  | 'schafthoheRechts'
+  | 'knoechelumfangLinks'
+  | 'umfangBei14Links'
+  | 'umfangBei16Links'
+  | 'umfangBei18Links'
+  | 'knoechelumfangRechts'
+  | 'umfangBei14Rechts'
+  | 'umfangBei16Rechts'
+  | 'umfangBei18Rechts';
 
 export type SchafthoheCardProps = {
   schafthoheLinks: string;
@@ -71,6 +87,8 @@ export type SchafthoheCardProps = {
   setUmfangBei16Rechts: (v: string) => void;
   umfangBei18Rechts: string;
   setUmfangBei18Rechts: (v: string) => void;
+  /** Pflichtfeld-Highlights nach fehlgeschlagener Validierung */
+  fieldErrors?: Partial<Record<SchafthoheFieldKey, boolean>>;
 };
 
 export default function SchafthoheCard({
@@ -94,6 +112,7 @@ export default function SchafthoheCard({
   setUmfangBei16Rechts,
   umfangBei18Rechts,
   setUmfangBei18Rechts,
+  fieldErrors = {},
 }: SchafthoheCardProps) {
   const leftH = parseFloat(schafthoheLinks);
   const rightH = parseFloat(schafthoheRechts);
@@ -109,19 +128,21 @@ export default function SchafthoheCard({
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="text-xs font-semibold text-gray-900 sm:text-sm">Schaft Links</span>
           <CmInput
-            id="schafthohe-links"
+            id="field-schafthohe-links"
             placeholder="z. B. 14"
             value={schafthoheLinks}
             onChange={setSchafthoheLinks}
+            invalid={!!fieldErrors.schafthoheLinks}
           />
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="text-xs font-semibold text-gray-900 sm:text-sm">Schaft Rechts</span>
           <CmInput
-            id="schafthohe-rechts"
+            id="field-schafthohe-rechts"
             placeholder="z. B. 14"
             value={schafthoheRechts}
             onChange={setSchafthoheRechts}
+            invalid={!!fieldErrors.schafthoheRechts}
           />
         </div>
       </div>
@@ -143,9 +164,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">Knöchelumfang</Label>
                     <CmInput
+                      id="field-knoechelumfang-links"
                       placeholder="z. B. 24"
                       value={knoechelumfangLinks}
                       onChange={setKnoechelumfangLinks}
+                      invalid={!!fieldErrors.knoechelumfangLinks}
                     />
                   </div>
                 )}
@@ -153,9 +176,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">15 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-14-links"
                       placeholder="z. B. 26"
                       value={umfangBei14Links}
                       onChange={setUmfangBei14Links}
+                      invalid={!!fieldErrors.umfangBei14Links}
                     />
                   </div>
                 )}
@@ -163,9 +188,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">16 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-16-links"
                       placeholder="z. B. 27"
                       value={umfangBei16Links}
                       onChange={setUmfangBei16Links}
+                      invalid={!!fieldErrors.umfangBei16Links}
                     />
                   </div>
                 )}
@@ -173,9 +200,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">18 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-18-links"
                       placeholder="z. B. 28"
                       value={umfangBei18Links}
                       onChange={setUmfangBei18Links}
+                      invalid={!!fieldErrors.umfangBei18Links}
                     />
                   </div>
                 )}
@@ -197,9 +226,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">Knöchelumfang</Label>
                     <CmInput
+                      id="field-knoechelumfang-rechts"
                       placeholder="z. B. 24"
                       value={knoechelumfangRechts}
                       onChange={setKnoechelumfangRechts}
+                      invalid={!!fieldErrors.knoechelumfangRechts}
                     />
                   </div>
                 )}
@@ -207,9 +238,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">15 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-14-rechts"
                       placeholder="z. B. 26"
                       value={umfangBei14Rechts}
                       onChange={setUmfangBei14Rechts}
+                      invalid={!!fieldErrors.umfangBei14Rechts}
                     />
                   </div>
                 )}
@@ -217,9 +250,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">16 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-16-rechts"
                       placeholder="z. B. 27"
                       value={umfangBei16Rechts}
                       onChange={setUmfangBei16Rechts}
+                      invalid={!!fieldErrors.umfangBei16Rechts}
                     />
                   </div>
                 )}
@@ -227,9 +262,11 @@ export default function SchafthoheCard({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-gray-900 sm:text-sm">18 cm Höhe (ab Boden)</Label>
                     <CmInput
+                      id="field-umfang-18-rechts"
                       placeholder="z. B. 28"
                       value={umfangBei18Rechts}
                       onChange={setUmfangBei18Rechts}
+                      invalid={!!fieldErrors.umfangBei18Rechts}
                     />
                   </div>
                 )}
