@@ -209,7 +209,25 @@ export default function DatenschutzDialog({
           import("jspdf"),
         ]);
 
-        const fullHtml = getDocumentHtml(signatureDataUrl, acceptedPrivacy, wantsNewsletter);
+        // Pre-fetch logo via backend proxy to avoid S3 CORS issues in html2canvas
+        let logoDataUrl: string | undefined;
+        if (user?.image) {
+          try {
+            const proxyUrl = `${process.env.NEXT_PUBLIC_API_ENDPOINT}/proxy-image?url=${encodeURIComponent(user.image)}`;
+            const res = await fetch(proxyUrl);
+            const blob = await res.blob();
+            logoDataUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch {
+            logoDataUrl = user.image;
+          }
+        }
+
+        const fullHtml = getDocumentHtml(signatureDataUrl, acceptedPrivacy, wantsNewsletter, logoDataUrl);
         const parser = new DOMParser();
         const parsedDoc = parser.parseFromString(fullHtml, "text/html");
         parsedDoc.querySelectorAll("script").forEach((s) => s.remove());
@@ -222,6 +240,7 @@ export default function DatenschutzDialog({
         container.appendChild(styleEl);
         const bodyDiv = document.createElement("div");
         bodyDiv.innerHTML = parsedDoc.body.innerHTML;
+        bodyDiv.style.padding = "40px"; // apply body padding since <style> body{} rule won't match a div
         container.appendChild(bodyDiv);
         document.body.appendChild(container);
 
@@ -297,9 +316,9 @@ export default function DatenschutzDialog({
     }
   };
 
-  const getDocumentHtml = (signatureDataUrl?: string, privacyChecked?: boolean, newsletterChecked?: boolean) => {
-    const logoHtml = user?.image
-      ? `<img src="${user.image}" alt="Company Logo" style="max-width: 150px; max-height: 80px; object-fit: contain;" />`
+  const getDocumentHtml = (signatureDataUrl?: string, privacyChecked?: boolean, newsletterChecked?: boolean, logoDataUrl?: string) => {
+    const logoHtml = (logoDataUrl ?? user?.image)
+      ? `<img src="${logoDataUrl ?? user?.image}" alt="Company Logo" style="max-width: 150px; max-height: 80px; object-fit: contain;" />`
       : '';
 
     return `
