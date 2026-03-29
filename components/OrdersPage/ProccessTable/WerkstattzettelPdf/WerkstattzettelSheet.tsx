@@ -48,6 +48,15 @@ export interface WerkstattzettelSheetData {
     quantity?: number | null;
     austria_price?: number | null;
   } | null;
+  /** When true, a second PDF (2-page foot scan) can be generated from `otherPdfData` */
+  otherPdfPrint?: boolean | null;
+  /** Footer foot length on foot-scan PDF only when true */
+  autoSendToProd?: boolean | null;
+  otherPdfData?: {
+    footImage23?: string | null;
+    footImage24?: string | null;
+    footLength?: number | string | null;
+  } | null;
 }
 
 const formatDate = (value?: string | null) => {

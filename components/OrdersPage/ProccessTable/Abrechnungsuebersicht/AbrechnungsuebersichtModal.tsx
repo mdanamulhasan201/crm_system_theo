@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { getKvaData, getPriseDetails, getWerkstattzettelSheetPdfData } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import { generateFootScanPairPdfBlob } from '@/lib/footScanPairPdf';
 import KvaSheet, { KvaData } from '../KvaPdf/KvaSheet';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from '../WerkstattzettelPdf/WerkstattzettelSheet';
 import HistoryModal from './HistoryModal';
@@ -220,6 +221,28 @@ export default function AbrechnungsuebersichtModal({
             const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
             const safeName = (sheetData.customerName || 'Kunde').toString().trim().replace(/\s+/g, '_');
             downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+
+            if (
+                sheetData.otherPdfPrint === true &&
+                sheetData.otherPdfData &&
+                (sheetData.otherPdfData.footImage23 || sheetData.otherPdfData.footImage24)
+            ) {
+                try {
+                    const footBlob = await generateFootScanPairPdfBlob({
+                        logoUrl: sheetData.logo,
+                        customerName: String(sheetData.customerName || 'Kunde'),
+                        kdnr: sheetData.auftragsnr,
+                        leftImageUrl: sheetData.otherPdfData.footImage23,
+                        rightImageUrl: sheetData.otherPdfData.footImage24,
+                        footLength: sheetData.otherPdfData.footLength,
+                        autoSendToProd: sheetData.autoSendToProd === true,
+                    });
+                    downloadBlob(footBlob, `Fussanalyse_${safeName}.pdf`);
+                } catch (footErr) {
+                    console.error('Fußanalyse PDF error:', footErr);
+                    toast.error('Fußanalyse-PDF (2 Seiten) konnte nicht erstellt werden.');
+                }
+            }
         } catch (e) {
             console.error('Werkstattzettel PDF error:', e);
             toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
