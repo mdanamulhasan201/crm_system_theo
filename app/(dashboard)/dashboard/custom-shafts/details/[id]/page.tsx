@@ -28,6 +28,7 @@ import {
   buildPolsterungTextPayload,
   type PolsterungMmFields,
 } from '@/components/CustomShafts/polsterungPayload';
+import { buildUmfangmasseWithTitles } from '@/utils/customShoeOrderHelpers';
 
 interface Customer {
   id: string;
@@ -111,7 +112,7 @@ export default function CollectionShaftDetailsPage() {
   const [umfangBei18Rechts, setUmfangBei18Rechts] = useState('');
   const [knoechelumfangRechts, setKnoechelumfangRechts] = useState('');
   const [polsterung, setPolsterung] = useState<string[]>(['Standard']);
-  const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
+  const [verstarkungen, setVerstarkungen] = useState<string[]>(['Standard']);
   const [polsterungText, setPolsterungText] = useState('');
   const [polsterungMm, setPolsterungMm] = useState<PolsterungMmFields>(EMPTY_POLSTERUNG_MM);
   const [verstarkungenText, setVerstarkungenText] = useState('');
@@ -259,6 +260,29 @@ export default function CollectionShaftDetailsPage() {
   };
   const umfangmasseLinksDisplay = formatUmfangmasseSide(umfangBei14Links, umfangBei16Links, umfangBei18Links, knoechelumfangLinks);
   const umfangmasseRechtsDisplay = formatUmfangmasseSide(umfangBei14Rechts, umfangBei16Rechts, umfangBei18Rechts, knoechelumfangRechts);
+  const umfangmasseLinksDetailed = buildUmfangmasseWithTitles(
+    knoechelumfangLinks,
+    umfangBei14Links,
+    umfangBei16Links,
+    umfangBei18Links
+  );
+  const umfangmasseRechtsDetailed = buildUmfangmasseWithTitles(
+    knoechelumfangRechts,
+    umfangBei14Rechts,
+    umfangBei16Rechts,
+    umfangBei18Rechts
+  );
+  const courierPickupSummary =
+    businessAddress && (businessAddress.companyName || businessAddress.address)
+      ? [
+          businessAddress.companyName,
+          businessAddress.address,
+          businessAddress.phone ? `Tel: ${businessAddress.phone}` : '',
+          businessAddress.email ? `E-Mail: ${businessAddress.email}` : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null;
 
   // Calculate total price
   const calculateTotalPrice = () => {
@@ -400,6 +424,9 @@ export default function CollectionShaftDetailsPage() {
       // Additional notes
       additionalNotes: additionalNotes.trim() || null,
 
+      // Lieferweg für Payload / meta
+      deliveryMethod,
+
       // Pricing
       totalPrice: orderPrice,
     };
@@ -468,7 +495,12 @@ export default function CollectionShaftDetailsPage() {
       formData.append('courier_companyName', data.businessAddress.companyName);
       formData.append('courier_phone', data.businessAddress.phone);
       formData.append('courier_email', data.businessAddress.email);
-      formData.append('courier_price', '13');
+      formData.append(
+        'courier_price',
+        String(
+          Number.isFinite(data.businessAddress.price) ? data.businessAddress.price : COURIER_PRICE_DEFAULT
+        )
+      );
       
       // Only courier_address as JSON object
       const courierAddressObj = {
@@ -820,6 +852,16 @@ export default function CollectionShaftDetailsPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
+              umfangmasseLinksDetailed:
+                umfangmasseLinksDetailed.length > 0 ? umfangmasseLinksDetailed : undefined,
+              umfangmasseRechtsDetailed:
+                umfangmasseRechtsDetailed.length > 0 ? umfangmasseRechtsDetailed : undefined,
+              leatherColorAssignments:
+                numberOfLeatherColors === '2' || numberOfLeatherColors === '3'
+                  ? leatherColorAssignments
+                  : undefined,
+              versendenAddress: versendenData ?? undefined,
+              courierPickupSummary,
             polsterung,
             verstarkungen,
             polsterungText: polsterungTextForPdf,
@@ -899,6 +941,16 @@ export default function CollectionShaftDetailsPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
+              umfangmasseLinksDetailed:
+                umfangmasseLinksDetailed.length > 0 ? umfangmasseLinksDetailed : undefined,
+              umfangmasseRechtsDetailed:
+                umfangmasseRechtsDetailed.length > 0 ? umfangmasseRechtsDetailed : undefined,
+              leatherColorAssignments:
+                numberOfLeatherColors === '2' || numberOfLeatherColors === '3'
+                  ? leatherColorAssignments
+                  : undefined,
+              versendenAddress: versendenData ?? undefined,
+              courierPickupSummary,
             polsterung,
             verstarkungen,
             polsterungText: polsterungTextForPdf,

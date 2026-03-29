@@ -447,6 +447,38 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {shaftConfiguration.versendenAddress &&
+                    (shaftConfiguration.versendenAddress.company ||
+                      shaftConfiguration.versendenAddress.street ||
+                      shaftConfiguration.versendenAddress.city) && (
+                      <div className="flex py-3 border-b border-gray-300 items-start">
+                        <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                          Versandadresse (Leisten)
+                        </div>
+                        <div className="flex-1 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {[
+                            shaftConfiguration.versendenAddress.company,
+                            shaftConfiguration.versendenAddress.street,
+                            shaftConfiguration.versendenAddress.city,
+                            shaftConfiguration.versendenAddress.country,
+                          ]
+                            .filter(Boolean)
+                            .join('\n')}
+                        </div>
+                      </div>
+                    )}
+
+                  {shaftConfiguration.courierPickupSummary?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Kurier / Abholung
+                      </div>
+                      <div className="flex-1 text-xs text-slate-700 leading-relaxed">
+                        {shaftConfiguration.courierPickupSummary}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* CAD-Modellierung - only selected option */}
                   {shaftConfiguration.cadModeling && (
@@ -508,6 +540,17 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                             ))}
                           </div>
                         )}
+                        {shaftConfiguration.leatherColorAssignments &&
+                          shaftConfiguration.leatherColorAssignments.length > 0 && (
+                            <div className="ml-0 mt-3 text-xs text-slate-600 border-t border-slate-200 pt-2">
+                              <div className="font-semibold text-slate-700 mb-1">Zuordnung auf dem Schuh</div>
+                              {shaftConfiguration.leatherColorAssignments.map((a, idx) => (
+                                <div key={idx} className="mb-1">
+                                  • Leder {a.leatherNumber}: {a.color} (ca. {Math.round(a.x)}% / {Math.round(a.y)}% vom Bild)
+                                </div>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -555,30 +598,56 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </>
                   )}
                   
-                  {/* Umfangmaße */}
-                  {(shaftConfiguration.umfangmasseLinks || shaftConfiguration.umfangmasseRechts) && (
-                    <>
-                      {shaftConfiguration.umfangmasseLinks && (
-                        <div className="flex py-3 border-b border-gray-300 items-start">
-                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Umfangmaße Links
+                  {/* Umfangmaße / Beinmaße */}
+                  {shaftConfiguration.umfangmasseLinksDetailed &&
+                  shaftConfiguration.umfangmasseLinksDetailed.length > 0 ? (
+                    <div className="flex py-3 border-b border-gray-300 items-start flex-col gap-1">
+                      <div className="w-full text-sm font-semibold text-slate-800">Beinmaße Links (Einzelwerte)</div>
+                      {shaftConfiguration.umfangmasseLinksDetailed.map((row, i) => (
+                        <div key={i} className="flex w-full py-1.5 border-b border-gray-100 last:border-0 items-start">
+                          <div className="w-[200px] flex-shrink-0 text-xs font-medium text-slate-600 pr-4">
+                            {row.title}
                           </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={shaftConfiguration.umfangmasseLinks} />
-                          </div>
+                          <div className="flex-1 text-sm text-slate-800">{row.value} cm</div>
                         </div>
-                      )}
-                      {shaftConfiguration.umfangmasseRechts && (
-                        <div className="flex py-3 border-b border-gray-300 items-start">
-                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Umfangmaße Rechts
-                          </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={shaftConfiguration.umfangmasseRechts} />
-                          </div>
+                      ))}
+                    </div>
+                  ) : (
+                    shaftConfiguration.umfangmasseLinks && (
+                      <div className="flex py-3 border-b border-gray-300 items-start">
+                        <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                          Umfangmaße Links
                         </div>
-                      )}
-                    </>
+                        <div className="flex-1 leading-loose">
+                          <ModalCheckbox isSelected={true} label={shaftConfiguration.umfangmasseLinks} />
+                        </div>
+                      </div>
+                    )
+                  )}
+                  {shaftConfiguration.umfangmasseRechtsDetailed &&
+                  shaftConfiguration.umfangmasseRechtsDetailed.length > 0 ? (
+                    <div className="flex py-3 border-b border-gray-300 items-start flex-col gap-1">
+                      <div className="w-full text-sm font-semibold text-slate-800">Beinmaße Rechts (Einzelwerte)</div>
+                      {shaftConfiguration.umfangmasseRechtsDetailed.map((row, i) => (
+                        <div key={i} className="flex w-full py-1.5 border-b border-gray-100 last:border-0 items-start">
+                          <div className="w-[200px] flex-shrink-0 text-xs font-medium text-slate-600 pr-4">
+                            {row.title}
+                          </div>
+                          <div className="flex-1 text-sm text-slate-800">{row.value} cm</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    shaftConfiguration.umfangmasseRechts && (
+                      <div className="flex py-3 border-b border-gray-300 items-start">
+                        <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                          Umfangmaße Rechts
+                        </div>
+                        <div className="flex-1 leading-loose">
+                          <ModalCheckbox isSelected={true} label={shaftConfiguration.umfangmasseRechts} />
+                        </div>
+                      </div>
+                    )
                   )}
                   
                   {/* Polsterung - Only show selected options */}
@@ -849,6 +918,38 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   </div>
                 )}
+
+                {shaftConfiguration.versendenAddress &&
+                  (shaftConfiguration.versendenAddress.company ||
+                    shaftConfiguration.versendenAddress.street ||
+                    shaftConfiguration.versendenAddress.city) && (
+                    <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                        Versandadresse (Leisten)
+                      </div>
+                      <div style={{ flex: 1, fontSize: '12px', color: '#475569', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                        {[
+                          shaftConfiguration.versendenAddress.company,
+                          shaftConfiguration.versendenAddress.street,
+                          shaftConfiguration.versendenAddress.city,
+                          shaftConfiguration.versendenAddress.country,
+                        ]
+                          .filter(Boolean)
+                          .join('\n')}
+                      </div>
+                    </div>
+                  )}
+
+                {shaftConfiguration.courierPickupSummary?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Kurier / Abholung
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>
+                      {shaftConfiguration.courierPickupSummary}
+                    </div>
+                  </div>
+                )}
                 
                 {/* CAD-Modellierung - only selected option */}
                 {shaftConfiguration.cadModeling && (
@@ -910,6 +1011,17 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           ))}
                         </div>
                       )}
+                      {shaftConfiguration.leatherColorAssignments &&
+                        shaftConfiguration.leatherColorAssignments.length > 0 && (
+                          <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#475569' }}>
+                            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '4px' }}>Zuordnung auf dem Schuh</div>
+                            {shaftConfiguration.leatherColorAssignments.map((a, idx) => (
+                              <div key={idx} style={{ marginBottom: '2px' }}>
+                                • Leder {a.leatherNumber}: {a.color} (ca. {Math.round(a.x)}% / {Math.round(a.y)}%)
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
@@ -953,26 +1065,76 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* Umfangmaße */}
-                {shaftConfiguration.umfangmasseLinks && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Umfangmaße Links
+                {/* Umfangmaße / Beinmaße */}
+                {shaftConfiguration.umfangmasseLinksDetailed &&
+                shaftConfiguration.umfangmasseLinksDetailed.length > 0 ? (
+                  <div style={{ padding: '6px 0', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
+                      Beinmaße Links (Einzelwerte)
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseLinks} />
-                    </div>
+                    {shaftConfiguration.umfangmasseLinksDetailed.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          padding: '4px 0',
+                          borderBottom: i < shaftConfiguration.umfangmasseLinksDetailed!.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div style={{ width: '200px', flexShrink: 0, fontSize: '11px', fontWeight: 600, color: '#64748b', paddingRight: '16px' }}>
+                          {row.title}
+                        </div>
+                        <div style={{ flex: 1, fontSize: '12px', color: '#334155' }}>{row.value} cm</div>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  shaftConfiguration.umfangmasseLinks && (
+                    <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                        Umfangmaße Links
+                      </div>
+                      <div style={{ flex: 1, lineHeight: 1.4 }}>
+                        <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseLinks} />
+                      </div>
+                    </div>
+                  )
                 )}
-                {shaftConfiguration.umfangmasseRechts && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Umfangmaße Rechts
+                {shaftConfiguration.umfangmasseRechtsDetailed &&
+                shaftConfiguration.umfangmasseRechtsDetailed.length > 0 ? (
+                  <div style={{ padding: '6px 0', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
+                      Beinmaße Rechts (Einzelwerte)
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseRechts} />
-                    </div>
+                    {shaftConfiguration.umfangmasseRechtsDetailed.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          padding: '4px 0',
+                          borderBottom: i < shaftConfiguration.umfangmasseRechtsDetailed!.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div style={{ width: '200px', flexShrink: 0, fontSize: '11px', fontWeight: 600, color: '#64748b', paddingRight: '16px' }}>
+                          {row.title}
+                        </div>
+                        <div style={{ flex: 1, fontSize: '12px', color: '#334155' }}>{row.value} cm</div>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  shaftConfiguration.umfangmasseRechts && (
+                    <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                        Umfangmaße Rechts
+                      </div>
+                      <div style={{ flex: 1, lineHeight: 1.4 }}>
+                        <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseRechts} />
+                      </div>
+                    </div>
+                  )
                 )}
                 
                 {/* Polsterung - Only show selected options */}

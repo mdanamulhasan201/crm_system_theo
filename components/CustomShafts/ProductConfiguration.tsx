@@ -683,8 +683,8 @@ ref: React.Ref<ProductConfigurationHandle>
           </div>
 
           {numberOfLeatherColors === '1' && (
-            <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
-              <div className="flex flex-col gap-2 md:max-w-xl">
+            <div className="flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-start sm:gap-5">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <FieldLabel>Ledertyp</FieldLabel>
                 <Select value={lederType} onValueChange={setLederType}>
                   <SelectTrigger className={SELECT_FIELD_CLASS}>
@@ -730,7 +730,7 @@ ref: React.Ref<ProductConfigurationHandle>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col gap-2 md:max-w-xl">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <FieldLabel>Lederfarbe</FieldLabel>
                 <Input
                   type="text"

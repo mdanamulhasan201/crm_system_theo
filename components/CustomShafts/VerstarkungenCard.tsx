@@ -48,6 +48,13 @@ export default function VerstarkungenCard({
     setVerstarkungen((prev) => (prev.length > 0 ? [] : prev));
   }, [isErweitert, setVerstarkungen]);
 
+  /** UI zeigt „Standard“, solange das Array leer ist — Payload/PDF brauchen explizit `['Standard']`. */
+  useEffect(() => {
+    if (verstarkungen.length === 0 && !isErweitert) {
+      setVerstarkungen(['Standard']);
+    }
+  }, [verstarkungen.length, isErweitert, setVerstarkungen]);
+
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

@@ -79,6 +79,8 @@ interface CustomShaftData {
   versendenData?: VersendenData | null;
   totalPrice: number;
   additionalNotes?: string | null;
+  /** Anzeige-Lieferweg (3D-Upload / Abholen / Versenden) — auch in Massschafterstellung_json1.meta */
+  deliveryMethod?: string | null;
 }
 
 /**
@@ -195,7 +197,18 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
     cadModeling: data.cadModeling || null,
     cadModeling_2x_price: data.cadModeling_2x_price || null,
     additionalNotes: data.additionalNotes || null,
+    meta: {
+      liefermethode: data.deliveryMethod?.trim() || null,
+      produkt_bezeichnung: data.productDescription?.trim() || null,
+      mabschaft_kollektion_id: data.mabschaftKollektionId?.trim() || null,
+      kunde_anzeigename: data.customerName?.trim() || null,
+      kategorie_anzeige: data.customCategory?.trim() || null,
+    },
   };
+
+  if (data.versendenData) {
+    json.versenden = data.versendenData;
+  }
 
   // Add business address if present
   if (data.isAbholung && data.businessAddress) {
@@ -308,7 +321,12 @@ export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormD
     formData.append('courier_companyName', data.businessAddress.companyName);
     formData.append('courier_phone', data.businessAddress.phone);
     formData.append('courier_email', data.businessAddress.email);
-    formData.append('courier_price', '13');
+    formData.append(
+      'courier_price',
+      String(
+        Number.isFinite(data.businessAddress.price) ? data.businessAddress.price : 13
+      )
+    );
     
     // Only courier_address as JSON object
     const courierAddressObj = {
