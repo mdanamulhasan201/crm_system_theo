@@ -3,6 +3,8 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Ruler } from 'lucide-react';
+import SectionCardHeader from './SectionCardHeader';
 
 function getCircumferenceFieldsForHeight(heightCm: number) {
   const h = heightCm;
@@ -101,10 +103,7 @@ export default function SchafthoheCard({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <header className="mb-5">
-        <h3 className="text-lg font-semibold tracking-tight text-gray-900">Schafthöhe</h3>
-        <p className="mt-1 text-sm text-gray-500">Höhe und Beinmaße konfigurieren</p>
-      </header>
+      <SectionCardHeader icon={Ruler} title="Schafthöhe" subtitle="Höhe und Beinmaße konfigurieren" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
         <div className="flex min-w-0 flex-col gap-1.5">

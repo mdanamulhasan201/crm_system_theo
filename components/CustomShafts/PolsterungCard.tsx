@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import SectionCardHeader from './SectionCardHeader';
 import { STANDARD_POLSTERUNG_MM, type PolsterungMmFields } from './polsterungPayload';
 
 const ACTIVE_GREEN = 'bg-[#679C7A] text-white shadow-sm';
@@ -96,18 +97,12 @@ export default function PolsterungCard({
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#679C7A]/15 text-[#679C7A]"
-            aria-hidden
-          >
-            <Shield className="h-5 w-5" strokeWidth={2} />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold tracking-tight text-gray-900">Polsterung</h3>
-            <p className="mt-1 text-sm text-gray-500">Standard oder individuelle Polsterdicken</p>
-          </div>
-        </div>
+        <SectionCardHeader
+          className="mb-0 min-w-0 lg:max-w-[min(100%,28rem)]"
+          icon={Shield}
+          title="Polsterung"
+          subtitle="Standard oder individuelle Polsterdicken"
+        />
 
         <div className="flex w-full max-w-md shrink-0 gap-1 rounded-lg border border-gray-200 bg-gray-100 p-0.5 lg:w-auto lg:min-w-[280px]">
           <button

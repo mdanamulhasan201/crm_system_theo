@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Link2 } from 'lucide-react';
+import SectionCardHeader from './SectionCardHeader';
 import { cn } from '@/lib/utils';
 
 /** Selected segment (Nein or Ja) — muted green (reference UI) */
@@ -129,10 +130,7 @@ export default function VerschlussCard({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <header className="mb-5">
-        <h3 className="text-lg font-semibold tracking-tight text-gray-900">Verschluss</h3>
-        <p className="mt-1 text-sm text-gray-500">Verschlussart und Details</p>
-      </header>
+      <SectionCardHeader icon={Link2} title="Verschluss" subtitle="Verschlussart und Details" />
 
       <div className="flex flex-col gap-5">
         <div className="flex min-w-0 flex-col gap-1.5">

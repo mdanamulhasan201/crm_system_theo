@@ -14,7 +14,10 @@ import VerschlussCard from './VerschlussCard';
 import PolsterungCard from './PolsterungCard';
 import VerstarkungenCard from './VerstarkungenCard';
 import ZusaetzeOptionenCard from './ZusaetzeOptionenCard';
+import SectionCardHeader from './SectionCardHeader';
 import type { PolsterungMmFields } from './polsterungPayload';
+import type { LucideIcon } from 'lucide-react';
+import { ClipboardList, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -24,18 +27,24 @@ const SELECT_FIELD_CLASS =
 function ConfigCard({
   title,
   subtitle,
+  icon,
   children,
 }: {
   title: string;
   subtitle?: string;
+  icon?: LucideIcon;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <header className="mb-5">
-        <h3 className="text-lg font-semibold tracking-tight text-gray-900">{title}</h3>
-        {subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
-      </header>
+      {icon ? (
+        <SectionCardHeader icon={icon} title={title} subtitle={subtitle} />
+      ) : (
+        <header className="mb-5">
+          <h3 className="text-lg font-semibold tracking-tight text-gray-900">{title}</h3>
+          {subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
+        </header>
+      )}
       <div className="flex flex-col gap-5">{children}</div>
     </section>
   );
@@ -434,7 +443,7 @@ export default function ProductConfiguration({
           </div>
         )}
 
-        <ConfigCard title="Material & Ausführung" subtitle="Leder, Futter und Naht">
+        <ConfigCard icon={Palette} title="Material & Ausführung" subtitle="Leder, Futter und Naht">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4">
             <div className="flex min-w-0 flex-col">
               <FieldLabel>Anzahl der Ledertypen</FieldLabel>
@@ -701,7 +710,7 @@ export default function ProductConfiguration({
           onEditZipperPosition={() => setShowZipperPlacementModal(true)}
         />
 
-        <ConfigCard title="Notizen" subtitle="Optional — erscheinen in Rechnung/PDF">
+        <ConfigCard icon={ClipboardList} title="Notizen" subtitle="Optional — erscheinen in Rechnung/PDF">
         <div className="flex flex-col gap-2">
           <FieldLabel>Sonstige Notizen</FieldLabel>
           <Textarea
@@ -773,7 +782,7 @@ export default function ProductConfiguration({
 
               onOrderComplete();
             }}
-            className="w-full cursor-pointer md:w-1/3 px-8 py-5 rounded-full bg-black text-white hover:bg-gray-800 text-base font-semibold"
+            className="w-full cursor-pointer md:w-1/3 px-8 py-5 rounded-full bg-[#679C7A] text-white shadow-sm hover:bg-[#5a8a6a] text-base font-semibold"
           >
             Abschließen
           </Button>

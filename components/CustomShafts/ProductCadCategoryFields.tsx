@@ -4,6 +4,8 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Cpu } from 'lucide-react';
+import SectionCardHeader from './SectionCardHeader';
 
 const CATEGORY_OPTIONS = [
   { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
@@ -54,7 +56,13 @@ export default function ProductCadCategoryFields({
 
   if (layout === 'card') {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+      <div className="flex flex-col gap-5">
+        <SectionCardHeader
+          icon={Cpu}
+          title="CAD & Kategorie"
+          subtitle="Modellierung und Produkttyp"
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
         <div className="flex flex-col gap-1.5">
           <div className="flex min-h-8 items-center gap-2">
             <Label className="text-xs font-semibold text-gray-900 sm:text-sm">CAD-Modellierung</Label>
@@ -112,6 +120,7 @@ export default function ProductCadCategoryFields({
               className={`${FIELD_CONTROL_CLASS} cursor-not-allowed bg-gray-50`}
             />
           )}
+        </div>
         </div>
       </div>
     );

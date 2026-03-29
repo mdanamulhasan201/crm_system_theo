@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PackageCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import SectionCardHeader from './SectionCardHeader';
 import type { ZipperPosition } from './ZipperPlacementModal';
 
 const ACTIVE_GREEN = 'bg-[#679C7A] text-white shadow-sm';
@@ -67,20 +68,11 @@ export default function ZusaetzeOptionenCard({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#679C7A]/15 text-[#679C7A]"
-            aria-hidden
-          >
-            <PackageCheck className="h-5 w-5" strokeWidth={2} />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold tracking-tight text-gray-900">Zusätze &amp; Optionen</h3>
-            <p className="mt-1 text-sm text-gray-500">Optionale Zusatzleistungen</p>
-          </div>
-        </div>
-      </div>
+      <SectionCardHeader
+        icon={PackageCheck}
+        title="Zusätze & Optionen"
+        subtitle="Optionale Zusatzleistungen"
+      />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
         <div className="flex min-w-0 flex-1 flex-col gap-2 lg:max-w-md">
