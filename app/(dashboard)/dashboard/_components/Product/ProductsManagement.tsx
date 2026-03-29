@@ -59,6 +59,12 @@ interface Product {
     auto_order?: boolean
     able_auto_order?: string
     overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
+    store_brand_settings?: {
+        brand?: string
+        type?: string
+        isActive?: boolean
+        isPdf?: boolean
+    } | null
     inventoryHistory: Array<{
         id: string
         date: string
@@ -175,6 +181,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             auto_order: Boolean(apiProduct.auto_order),
             able_auto_order: apiProduct.able_auto_order,
             overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
+            store_brand_settings: apiProduct.store_brand_settings ?? null,
             inventoryHistory: [] // API doesn't provide history yet
         };
     };

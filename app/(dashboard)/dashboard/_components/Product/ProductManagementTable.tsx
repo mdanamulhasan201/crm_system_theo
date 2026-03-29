@@ -60,6 +60,12 @@ interface Product {
     auto_order?: boolean
     able_auto_order?: string
     overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
+    store_brand_settings?: {
+        brand?: string
+        type?: string
+        isActive?: boolean
+        isPdf?: boolean
+    } | null
     inventoryHistory: Array<{
         id: string
         date: string
@@ -461,7 +467,11 @@ export default function ProductManagementTable({
                                     )}
                                     <TableCell className="min-w-[120px]">
                                         <div className="flex items-center gap-2 whitespace-nowrap">
-                                            {shouldShowBestellscheinDownload(product.create_status, product.Status) && (
+                                            {shouldShowBestellscheinDownload(
+                                                product.create_status,
+                                                product.Status,
+                                                product.store_brand_settings
+                                            ) && (
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"

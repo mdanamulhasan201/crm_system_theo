@@ -32,6 +32,12 @@ interface MillingBlock {
     auto_order?: boolean
     able_auto_order?: string
     overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
+    store_brand_settings?: {
+        brand?: string
+        type?: string
+        isActive?: boolean
+        isPdf?: boolean
+    } | null
 }
 
 function getQuantity(val: number | { quantity?: number } | undefined): number {
@@ -165,6 +171,7 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             auto_order: Boolean(apiProduct.auto_order),
             able_auto_order: apiProduct.able_auto_order,
             overviewSizeQuantities: normalizedOverviewGroessenMengen,
+            store_brand_settings: apiProduct.store_brand_settings ?? null,
         }
     }
 

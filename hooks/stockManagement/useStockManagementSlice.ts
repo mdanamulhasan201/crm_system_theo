@@ -67,6 +67,12 @@ interface ApiProduct {
     auto_order?: boolean;
     able_auto_order?: string;
     overview_groessenMengen?: { [key: string]: SizeData | number };
+    store_brand_settings?: {
+        brand?: string;
+        type?: string;
+        isActive?: boolean;
+        isPdf?: boolean;
+    } | null;
 }
 
 
@@ -247,6 +253,7 @@ export const useStockManagementSlice = () => {
                     auto_order: Boolean(item.auto_order),
                     able_auto_order: item.able_auto_order,
                     overview_groessenMengen: item.overview_groessenMengen || {},
+                    store_brand_settings: item.store_brand_settings ?? null,
                 }));
                 
                 setProducts(products);

@@ -35,12 +35,26 @@ const TABLE_H_PAD_MM = 2
 /** Column width ratios (narrow size col, wider recommended-order col) – less empty space in header */
 const TABLE_COL_FR = [0.2, 0.3, 0.5] as const
 
-/** Show Bestellschein download in AKTIONEN when both match (manual warehouse + low stock). */
+/** Brand settings from API (subset used for PDF visibility). */
+export type StoreBrandSettingsPdf = { isPdf?: boolean } | null | undefined
+
+/**
+ * Show Bestellschein download in AKTIONEN when:
+ * - manual warehouse (`by_self`) + low stock, or
+ * - admin/model-sourced product + `store_brand_settings.isPdf` + low stock (same PDF as above).
+ */
 export function shouldShowBestellscheinDownload(
     create_status: string | undefined,
-    status: string | undefined
+    status: string | undefined,
+    store_brand_settings?: StoreBrandSettingsPdf
 ): boolean {
-    return create_status === 'by_self' && status === 'Niedriger Bestand'
+    if (status !== 'Niedriger Bestand') return false
+    if (create_status === 'by_self') return true
+    return (
+        create_status !== undefined &&
+        create_status !== 'by_self' &&
+        store_brand_settings?.isPdf === true
+    )
 }
 
 export interface ReorderRow {

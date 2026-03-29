@@ -50,6 +50,12 @@ interface MillingBlock {
     auto_order?: boolean
     able_auto_order?: string
     overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
+    store_brand_settings?: {
+        brand?: string
+        type?: string
+        isActive?: boolean
+        isPdf?: boolean
+    } | null
 }
 
 // Helper function to truncate text to 15 characters with ".."
@@ -141,6 +147,7 @@ export default function MillingBlocksTable({
             auto_order: Boolean(data.auto_order),
             able_auto_order: data.able_auto_order,
             overviewSizeQuantities: normalizedOverviewGroessenMengen,
+            store_brand_settings: data.store_brand_settings ?? null,
         }
     }
 
@@ -398,7 +405,11 @@ export default function MillingBlocksTable({
                                     </TableCell>
                                     <TableCell className="p-3">
                                         <div className="flex items-center gap-2">
-                                            {shouldShowBestellscheinDownload(product.create_status, product.Status) && (
+                                            {shouldShowBestellscheinDownload(
+                                                product.create_status,
+                                                product.Status,
+                                                product.store_brand_settings
+                                            ) && (
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
