@@ -222,6 +222,18 @@ export default function CollectionShaftDetailsPage() {
     setClosureType(shaft.verschlussart);
   }, [shaft?.id]);
 
+  // Reißverschluss: API `is_zipper` — true → default „Ja +9,99 €“, false → default „Nein“ (beide Optionen bleiben wählbar)
+  useEffect(() => {
+    if (!shaft) return;
+    if (shaft.is_zipper === true) {
+      setZipperExtra(true);
+    } else if (shaft.is_zipper === false) {
+      setZipperExtra(false);
+      setZipperPosition(null);
+      setZipperImage(null);
+    }
+  }, [shaft?.id]);
+
   // Reset business address when not in abholung mode
   useEffect(() => {
     if (!isAbholung) {
@@ -690,7 +702,6 @@ export default function CollectionShaftDetailsPage() {
         <ProductConfiguration
           ref={productConfigRef}
           hideCadAndCategory
-          disableZipperExtraOption={shaft?.is_zipper === false}
           disableZiernahtVorhanden={shaft?.ziernaht === false}
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
@@ -711,7 +722,10 @@ export default function CollectionShaftDetailsPage() {
           zipperExtra={zipperExtra}
           setZipperExtra={(v) => {
             setZipperExtra(v);
-            if (v === false) setZipperPosition(null);
+            if (v === false) {
+              setZipperPosition(null);
+              setZipperImage(null);
+            }
           }}
           zipperPosition={zipperPosition}
           setZipperPosition={setZipperPosition}

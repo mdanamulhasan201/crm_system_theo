@@ -19,6 +19,8 @@ export type ZusaetzeOptionenCardProps = {
   onEditZipperPosition: () => void;
   /** true = „Ja, Reißverschluss“ nicht wählbar (Kollektion ohne Zusatz-Reißverschluss) */
   zipperJaDisabled?: boolean;
+  /** true = beide Optionen gesperrt (API `is_zipper === false`) — nur „Nein“ sichtbar, keine Umschaltung */
+  zipperLocked?: boolean;
 };
 
 function ZipperNeinJaPills({
@@ -26,33 +28,44 @@ function ZipperNeinJaPills({
   onChange,
   jaPriceLabel,
   jaDisabled,
+  locked,
 }: {
   value: boolean | undefined;
   onChange: (next: boolean | undefined) => void;
   jaPriceLabel: string;
   jaDisabled?: boolean;
+  locked?: boolean;
 }) {
+  const jaOff = locked || jaDisabled;
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1.5 rounded-xl border border-gray-200 bg-gray-100 p-1 sm:flex-row sm:gap-1">
+    <div
+      className={cn(
+        'flex w-full min-w-0 flex-col gap-1.5 rounded-xl border border-gray-200 bg-gray-100 p-1 sm:flex-row sm:gap-1',
+        locked && 'opacity-90'
+      )}
+    >
       <button
         type="button"
-        onClick={() => onChange(value === false ? undefined : false)}
+        disabled={locked}
+        aria-disabled={locked}
+        onClick={() => !locked && onChange(value === false ? undefined : false)}
         className={cn(
           'flex-1 rounded-full px-3 py-2.5 text-left text-xs font-medium transition-colors sm:text-center sm:text-sm',
-          value === false ? ACTIVE_GREEN : 'text-gray-700 hover:bg-white/70'
+          value === false ? ACTIVE_GREEN : 'text-gray-700 hover:bg-white/70',
+          locked && 'cursor-not-allowed opacity-80'
         )}
       >
         Nein, ohne zusätzlichen Reißverschluss
       </button>
       <button
         type="button"
-        disabled={jaDisabled}
-        aria-disabled={jaDisabled}
-        onClick={() => !jaDisabled && onChange(value === true ? undefined : true)}
+        disabled={jaOff}
+        aria-disabled={jaOff}
+        onClick={() => !jaOff && onChange(value === true ? undefined : true)}
         className={cn(
           'flex-1 rounded-full px-3 py-2.5 text-left text-xs font-medium transition-colors sm:text-center sm:text-sm',
           value === true ? ACTIVE_GREEN : 'text-gray-700 hover:bg-white/70',
-          jaDisabled && 'cursor-not-allowed opacity-50'
+          jaOff && 'cursor-not-allowed opacity-50'
         )}
       >
         Ja, zusätzlichen Reißverschluss {jaPriceLabel}
@@ -70,6 +83,7 @@ export default function ZusaetzeOptionenCard({
   shoeImage,
   onEditZipperPosition,
   zipperJaDisabled = false,
+  zipperLocked = false,
 }: ZusaetzeOptionenCardProps) {
   const jaPriceLabel =
     effectiveZipperPosition === 'both' ? '+19,99 €' : '+9,99 €';
@@ -100,6 +114,7 @@ export default function ZusaetzeOptionenCard({
             onChange={onZipperSegmentChange}
             jaPriceLabel={jaPriceLabel}
             jaDisabled={zipperJaDisabled}
+            locked={zipperLocked}
           />
         </div>
       </div>

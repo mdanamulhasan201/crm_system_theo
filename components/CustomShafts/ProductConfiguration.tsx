@@ -251,8 +251,6 @@ interface ProductConfigurationProps {
   setAdditionalNotes?: (notes: string) => void;
   /** When true, CAD + Kategorie are rendered in the product hero card (parent); omit here */
   hideCadAndCategory?: boolean;
-  /** Kollektion details: API `is_zipper === false` — „Ja, Reißverschluss“ deaktivieren */
-  disableZipperExtraOption?: boolean;
   /** Kollektion details: API `ziernaht === false` — „Ziernaht vorhanden?“ deaktivieren */
   disableZiernahtVorhanden?: boolean;
 }
@@ -354,7 +352,6 @@ const ProductConfiguration = forwardRef<ProductConfigurationHandle, ProductConfi
   additionalNotes = '',
   setAdditionalNotes,
   hideCadAndCategory = false,
-  disableZipperExtraOption = false,
   disableZiernahtVorhanden = false,
 }: ProductConfigurationProps,
 ref: React.Ref<ProductConfigurationHandle>
@@ -501,16 +498,6 @@ ref: React.Ref<ProductConfigurationHandle>
       setLocalZipperExtra(value);
     }
   };
-
-  useEffect(() => {
-    if (!disableZipperExtraOption) return;
-    if (setZipperExtra) setZipperExtra(false);
-    else setLocalZipperExtra(false);
-    if (setZipperPosition) setZipperPosition(null);
-    else setLocalZipperPosition(null);
-    setZipperPlacementImage(null);
-    if (setZipperImage) setZipperImage(null);
-  }, [disableZipperExtraOption, setZipperExtra, setZipperPosition, setZipperImage]);
 
   // Category is read-only from backend, no handler needed
 
@@ -871,9 +858,9 @@ ref: React.Ref<ProductConfigurationHandle>
         <ZusaetzeOptionenCard
           value={effektZipperExtra}
           effectiveZipperPosition={effectiveZipperPosition}
-          zipperJaDisabled={disableZipperExtraOption}
+          zipperJaDisabled={false}
+          zipperLocked={false}
           onZipperSegmentChange={(v) => {
-            if (disableZipperExtraOption && v === true) return;
             if (v === false) {
               updateZipperExtra(false);
               return;
