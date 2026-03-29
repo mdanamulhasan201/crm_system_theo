@@ -38,12 +38,13 @@ export const getAllBrand = async () => {
     }
 }
 
-// /}store/settings/toggle-brand/
-// body:
-// {
-//     "brand": "beand name"
-// }
-export const toggleBrand = async (body: { brand: string }) => {
+// POST /store/settings/toggle-brand/
+// body: { brand: string; isActive: boolean; isPdf: boolean }
+export const toggleBrand = async (body: {
+    brand: string;
+    isActive: boolean;
+    isPdf: boolean;
+}) => {
     try {
         const response = await axiosClient.post(`/store/settings/toggle-brand`, body);
         return response.data;
@@ -51,3 +52,4 @@ export const toggleBrand = async (body: { brand: string }) => {
         throw error;
     }
 }
+

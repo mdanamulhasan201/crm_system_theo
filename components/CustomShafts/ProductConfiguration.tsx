@@ -10,7 +10,74 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
 import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModal';
+import ProductCadCategoryFields from './ProductCadCategoryFields';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+const SELECT_FIELD_CLASS =
+  'h-9 w-full border-gray-300 bg-white text-sm shadow-sm';
+
+function ConfigCard({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+      <header className="mb-5">
+        <h3 className="text-lg font-semibold tracking-tight text-gray-900">{title}</h3>
+        {subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
+      </header>
+      <div className="flex flex-col gap-5">{children}</div>
+    </section>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="mb-1.5 block text-xs font-semibold text-gray-900 sm:text-sm">{children}</span>
+  );
+}
+
+/** Nein / Ja — same visual as design mockup; value `undefined` = keine Auswahl */
+function SegmentedNeinJa({
+  value,
+  onChange,
+  className,
+}: {
+  value: boolean | undefined;
+  onChange: (next: boolean | undefined) => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex w-full rounded-lg border border-gray-200 bg-gray-100 p-0.5 sm:max-w-md', className)}>
+      <button
+        type="button"
+        onClick={() => onChange(value === false ? undefined : false)}
+        className={cn(
+          'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+          value === false ? 'bg-[#1e293b] text-white shadow-sm' : 'text-gray-700 hover:bg-white/60'
+        )}
+      >
+        Nein
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(value === true ? undefined : true)}
+        className={cn(
+          'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+          value === true ? 'bg-[#1e293b] text-white shadow-sm' : 'text-gray-700 hover:bg-white/60'
+        )}
+      >
+        Ja
+      </button>
+    </div>
+  );
+}
 
 interface ProductConfigurationProps {
   // CAD Modeling selection
@@ -96,6 +163,8 @@ interface ProductConfigurationProps {
 
   additionalNotes?: string;
   setAdditionalNotes?: (notes: string) => void;
+  /** When true, CAD + Kategorie are rendered in the product hero card (parent); omit here */
+  hideCadAndCategory?: boolean;
 }
 
 export default function ProductConfiguration({
@@ -174,6 +243,7 @@ export default function ProductConfiguration({
   isVersendenSelected = false,
   additionalNotes = '',
   setAdditionalNotes,
+  hideCadAndCategory = false,
 }: ProductConfigurationProps) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
@@ -233,25 +303,6 @@ export default function ProductConfiguration({
       showKnoechelumfang: h > 13,
       requireCircumference: h > 13,
     };
-  };
-
-  const CATEGORY_OPTIONS = [
-    { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
-    { value: 'Stiefel', label: 'Stiefel', price: 314.99 },
-    { value: 'Knöchelhoch', label: 'Knöchelhoch', price: 219.99 },
-    { value: 'Sandalen', label: 'Sandalen', price: 189.99 },
-    { value: 'Bergschuhe', label: 'Bergschuhe', price: 234.99 },
-    { value: 'Businessschuhe', label: 'Businessschuhe', price: 224.99 },
-  ];
-
-  const handleCategoryChange = (value: string) => {
-    setCustomCategory(value);
-    const found = CATEGORY_OPTIONS.find((opt) => opt.value === value);
-    if (found) {
-      setCustomCategoryPrice(found.price);
-    } else {
-      setCustomCategoryPrice(null);
-    }
   };
 
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
@@ -320,203 +371,225 @@ export default function ProductConfiguration({
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-6">
-        {/* CAD-Modellierung Section */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex items-center gap-2 md:w-1/3">
-            <Label className="font-medium text-base">CAD-Modellierung</Label>
-            <div className="relative group">
-              <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
-                <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                Bei deutlich unterschiedlichen Füßen bzw. Leisten empfehlen wir zwei separate CAD-Modellierungen. So kann jede Seite individuell angepasst werden und die Passform wird präziser.
-              </div>
-            </div>
+      <div className="flex flex-col gap-5">
+        {!hideCadAndCategory && (
+          <div className="flex flex-col gap-5">
+            <ProductCadCategoryFields
+              layout="stacked"
+              cadModeling={effectiveCadModeling}
+              setCadModeling={updateCadModeling}
+              customCategory={customCategory}
+              setCustomCategory={setCustomCategory}
+              setCustomCategoryPrice={setCustomCategoryPrice}
+              category={category}
+              allowCategoryEdit={isCategoryEditable}
+            />
           </div>
-          <div className="flex flex-col md:flex-row gap-3 md:gap-6 flex-1">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="cadModeling"
-                value="1x"
-                checked={effectiveCadModeling === '1x'}
-                onChange={() => updateCadModeling('1x')}
-                className="w-4 h-4 text-green-500 focus:ring-green-500"
-              />
-              <span className="text-base text-gray-700">1× CAD-Modellierung (Standard)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
-              <input
-                type="radio"
-                name="cadModeling"
-                value="2x"
-                checked={effectiveCadModeling === '2x'}
-                onChange={() => updateCadModeling('2x')}
-                className="w-4 h-4 text-green-500 focus:ring-green-500"
-              />
-              <span className="text-base text-gray-700">2× CAD-Modellierung (separat) <span className="text-green-600 font-semibold">+6,99 €</span></span>
-            </label>
-          </div>
-        </div>
+        )}
 
-        {/* Kategorie - Conditional: Dropdown if isCategoryEditable, Read-only if not */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Kategorie:</Label>
-          {isCategoryEditable ? (
-            <Select value={customCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-                <SelectValue placeholder="Kategorie wählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} className="cursor-pointer" value={opt.value}>
-                    {opt.label}
+        <ConfigCard title="Material & Ausführung" subtitle="Leder, Futter, Naht und Verschluss">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4">
+            <div className="flex min-w-0 flex-col">
+              <FieldLabel>Anzahl der Ledertypen</FieldLabel>
+              <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
+                <SelectTrigger className={SELECT_FIELD_CLASS}>
+                  <SelectValue placeholder="Auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem className="cursor-pointer" value="1">
+                    1
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              type="text"
-              readOnly
-              value={category || ''}
-              className="w-full md:w-1/2 bg-gray-50 cursor-not-allowed border-gray-300"
-            />
-          )}
-        </div>
+                  <SelectItem className="cursor-pointer" value="2">
+                    2
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="3">
+                    3
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Number of Leather Colors */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Anzahl der Ledertypen:</Label>
-          <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
-            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Auswählen " />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem className='cursor-pointer' value="1">1</SelectItem>
-              <SelectItem className='cursor-pointer' value="2">2</SelectItem>
-              <SelectItem className='cursor-pointer' value="3">3</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="flex min-w-0 flex-col">
+              <FieldLabel>Innenfutter</FieldLabel>
+              <Select value={innenfutter} onValueChange={setInnenfutter}>
+                <SelectTrigger className={SELECT_FIELD_CLASS}>
+                  <SelectValue placeholder="Innenfutter wählen…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem className="cursor-pointer" value="ziegenleder-hellbraun">
+                    Ziegenleder hellbraun
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="kalbsleder-beige">
+                    Kalbsleder Beige
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="sport-mesh-nero-schwarz">
+                    Sport Mesh Nero/Schwarz
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="sport-mesh-grau-grigio">
+                    Sport Mesh Grau/Grigio
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="sport-mesh-weiss-bianco">
+                    Sport Mesh Weiß/Bianco
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="comfort-line-nero-schwarz">
+                    Comfort Line Nero/Schwarz
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="comfort-line-blau-blu">
+                    Comfort Line Blau/Blu
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="comfort-line-braun-marrone">
+                    Comfort Line Braun/Marrone
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Ledertyp - only show when exactly 1 leather type is selected, directly under Anzahl */}
-        {numberOfLeatherColors === '1' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">Ledertyp:</Label>
-            <Select value={lederType} onValueChange={setLederType}>
-              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-                <SelectValue placeholder="Ledertyp wählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem className='cursor-pointer' value="kalbleder-vitello">Kalbleder Vitello</SelectItem>
-                <SelectItem className='cursor-pointer' value="nappa">Nappa (weiches Glattleder)</SelectItem>
-                <SelectItem className='cursor-pointer' value="nubukleder">Nubukleder</SelectItem>
-                <SelectItem className='cursor-pointer' value="softvelourleder">Softvelourleder</SelectItem>
-                <SelectItem className='cursor-pointer' value="hirschleder-gemustert">Hirschleder Gemustert</SelectItem>
-                <SelectItem className='cursor-pointer' value="performance-textil">Performance Textil</SelectItem>
-                <SelectItem className='cursor-pointer' value="fashion-mesh-gepolstert">Fashion Mesh Gepolstert</SelectItem>
-                <SelectItem className='cursor-pointer' value="soft-touch-material-gepraegt">Soft Touch Material - Geprägt</SelectItem>
-                <SelectItem className='cursor-pointer' value="textil-python-effekt">Textil Python-Effekt</SelectItem>
-                <SelectItem className='cursor-pointer' value="glitter">Glitter</SelectItem>
-                <SelectItem className='cursor-pointer' value="luxury-glitter-fabric">Luxury Glitter Fabric</SelectItem>
-                <SelectItem className='cursor-pointer' value="metallic-finish">Metallic Finish</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Lederfarbe - Show only when 1 color is selected */}
-        {numberOfLeatherColors === '1' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">Lederfarbe:</Label>
-            <Input
-              type="text"
-              placeholder="Lederfarbe wählen..."
-              className="w-full md:w-1/2 border-gray-300"
-              value={lederfarbe}
-              onChange={(e) => setLederfarbe(e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Show summary when multiple colors are configured */}
-        {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && leatherColorAssignments.length > 0 && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-gray-50 rounded-lg border">
-            <Label className="font-medium text-base md:w-1/3">Ledertypen-Zuordnung:</Label>
-            <div className="flex-1 space-y-2">
-              <div className="text-sm font-medium text-gray-700 mb-2">
-                {leatherColors.map((color, index) => (
-                  <span key={index} className="inline-block mr-4">
-                    Leder {index + 1}: <span className="font-normal">{color || 'Nicht definiert'}</span>
-                  </span>
-                ))}
+            <div className="flex min-w-0 flex-col">
+              <FieldLabel>Nahtfarbe</FieldLabel>
+              <div className="flex flex-col gap-2">
+                <Select value={nahtfarbeOption} onValueChange={setNahtfarbeOption}>
+                  <SelectTrigger className={SELECT_FIELD_CLASS}>
+                    <SelectValue placeholder="Passend zur Lederfarbe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem className="cursor-pointer" value="default">
+                      Passend zur Lederfarbe
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="personal">
+                      Passendste Nahtfarbe nach Personal
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="custom">
+                      Eigene Farbe angeben
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {nahtfarbeOption === 'custom' && (
+                  <Input
+                    type="text"
+                    placeholder="Eigene Nahtfarbe angeben…"
+                    className="h-9 border-gray-300 text-sm"
+                    value={customNahtfarbe}
+                    onChange={(e) => setCustomNahtfarbe(e.target.value)}
+                  />
+                )}
               </div>
-              <div className="text-xs text-gray-600">
-                {leatherColorAssignments.length} Bereich(e) zugeordnet
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLeatherColorModal(true)}
-                className="mt-2"
+            </div>
+
+            <div className="flex min-w-0 flex-col">
+              <FieldLabel>Verschlussart</FieldLabel>
+              <Select
+                value={closureType}
+                onValueChange={(value) => {
+                  setClosureType(value);
+                  if (value === 'Velcro') {
+                    updateSchnursenkel(undefined);
+                    updateOsen(undefined);
+                  }
+                }}
               >
-                Zuordnung bearbeiten
-              </Button>
+                <SelectTrigger className={SELECT_FIELD_CLASS}>
+                  <SelectValue placeholder="Verschlussart wählen…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem className="cursor-pointer" value="Eyelets">
+                    Ösen (Schnürung)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="Velcro">
+                    Klettverschluss
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        )}
 
-        {/* Innenfutter */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Innenfutter:</Label>
-          <Select value={innenfutter} onValueChange={setInnenfutter}>
-            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Innenfutter wählen..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem className='cursor-pointer' value="ziegenleder-hellbraun">Ziegenleder hellbraun</SelectItem>
-              <SelectItem className='cursor-pointer' value="kalbsleder-beige">Kalbsleder Beige</SelectItem>
-              <SelectItem className='cursor-pointer' value="sport-mesh-nero-schwarz">Sport Mesh Nero/Schwarz</SelectItem>
-              <SelectItem className='cursor-pointer' value="sport-mesh-grau-grigio">Sport Mesh Grau/Grigio</SelectItem>
-              <SelectItem className='cursor-pointer' value="sport-mesh-weiss-bianco">Sport Mesh Weiß/Bianco</SelectItem>
-              <SelectItem className='cursor-pointer' value="comfort-line-nero-schwarz">Comfort Line Nero/Schwarz</SelectItem>
-              <SelectItem className='cursor-pointer' value="comfort-line-blau-blu">Comfort Line Blau/Blu</SelectItem>
-              <SelectItem className='cursor-pointer' value="comfort-line-braun-marrone">Comfort Line Braun/Marrone</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          {numberOfLeatherColors === '1' && (
+            <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
+              <div className="flex flex-col gap-2 md:max-w-xl">
+                <FieldLabel>Ledertyp</FieldLabel>
+                <Select value={lederType} onValueChange={setLederType}>
+                  <SelectTrigger className={SELECT_FIELD_CLASS}>
+                    <SelectValue placeholder="Ledertyp wählen…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem className="cursor-pointer" value="kalbleder-vitello">
+                      Kalbleder Vitello
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="nappa">
+                      Nappa (weiches Glattleder)
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="nubukleder">
+                      Nubukleder
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="softvelourleder">
+                      Softvelourleder
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="hirschleder-gemustert">
+                      Hirschleder Gemustert
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="performance-textil">
+                      Performance Textil
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="fashion-mesh-gepolstert">
+                      Fashion Mesh Gepolstert
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="soft-touch-material-gepraegt">
+                      Soft Touch Material - Geprägt
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="textil-python-effekt">
+                      Textil Python-Effekt
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="glitter">
+                      Glitter
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="luxury-glitter-fabric">
+                      Luxury Glitter Fabric
+                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="metallic-finish">
+                      Metallic Finish
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2 md:max-w-xl">
+                <FieldLabel>Lederfarbe</FieldLabel>
+                <Input
+                  type="text"
+                  placeholder="Lederfarbe wählen…"
+                  className="h-9 border-gray-300 text-sm"
+                  value={lederfarbe}
+                  onChange={(e) => setLederfarbe(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
-        {/* Nahtfarbe */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Nahtfarbe:</Label>
-          <div className="w-full md:w-1/2 flex flex-col gap-2">
-            <Select value={nahtfarbeOption} onValueChange={setNahtfarbeOption}>
-              <SelectTrigger className="w-full border-gray-300">
-                <SelectValue placeholder="Passend zur Lederfarbe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem className='cursor-pointer' value="default">Passend zur Lederfarbe</SelectItem>
-                <SelectItem className='cursor-pointer' value="personal">Passendste Nahtfarbe nach Personal</SelectItem>
-                <SelectItem className='cursor-pointer' value="custom">Eigene Farbe angeben</SelectItem>
-              </SelectContent>
-            </Select>
-            {nahtfarbeOption === 'custom' && (
-              <Input
-                type="text"
-                placeholder="Eigene Nahtfarbe angeben..."
-                className="w-full border-gray-300"
-                value={customNahtfarbe}
-                onChange={e => setCustomNahtfarbe(e.target.value)}
-              />
-            )}
-          </div>
-        </div>
+          {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && leatherColorAssignments.length > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <FieldLabel>Ledertypen-Zuordnung</FieldLabel>
+              <div className="mt-2 space-y-2">
+                <div className="mb-2 text-sm font-medium text-gray-700">
+                  {leatherColors.map((color, index) => (
+                    <span key={index} className="mr-4 inline-block">
+                      Leder {index + 1}: <span className="font-normal">{color || 'Nicht definiert'}</span>
+                    </span>
+                  ))}
+                </div>
+                <div className="text-xs text-gray-600">{leatherColorAssignments.length} Bereich(e) zugeordnet</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLeatherColorModal(true)}
+                  className="mt-2"
+                >
+                  Zuordnung bearbeiten
+                </Button>
+              </div>
+            </div>
+          )}
+        </ConfigCard>
 
+        <ConfigCard title="Maße & Polsterung" subtitle="Schafthöhen, Umfänge, Polsterung und Verstärkungen">
         {/* Schafthöhe Links (Left) */}
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Links:</Label>
@@ -748,164 +821,61 @@ export default function ProductConfiguration({
             onChange={(e) => setVerstarkungenText(e.target.value)}
           />
         </div>
+        </ConfigCard>
 
-        {/* Verschlussart */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
-          <Select 
-            value={closureType} 
-            onValueChange={(value) => {
-              setClosureType(value);
-              // Clear checkbox states when switching closure types
-              // Only Eyelets supports Schnürsenkel and Ösen, so clear them for Velcro
-              if (value === 'Velcro') {
-                updateSchnursenkel(undefined);
-                updateOsen(undefined);
+        <ConfigCard title="Zusätze & Optionen" subtitle="Schnürsenkel, Ösen, Reißverschluss und Notizen">
+        {closureType === 'Eyelets' && (
+          <div className="flex flex-col gap-2">
+            <FieldLabel>Passende Schnürsenkel zum Schuh?</FieldLabel>
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-green-600">+4,49 €</span> bei Ja
+            </p>
+            <SegmentedNeinJa value={effektSchnursenkel} onChange={updateSchnursenkel} />
+          </div>
+        )}
+
+        {closureType === 'Eyelets' && (
+          <div className="flex flex-col gap-2">
+            <FieldLabel>Schaft mit eingesetzten Ösen?</FieldLabel>
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-green-600">+8,99 €</span> bei Ja
+            </p>
+            <SegmentedNeinJa value={effektOsen} onChange={updateOsen} />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <FieldLabel>Zusätzlicher Reißverschluss?</FieldLabel>
+          <p className="text-xs text-gray-500">
+            {effectiveZipperPosition === 'both' ? (
+              <span className="font-medium text-green-600">+19,99 €</span>
+            ) : (
+              <span className="font-medium text-green-600">+9,99 €</span>
+            )}{' '}
+            bei Ja (nach Position)
+          </p>
+          <SegmentedNeinJa
+            value={effektZipperExtra}
+            onChange={(v) => {
+              if (v === false) {
+                updateZipperExtra(false);
+                return;
               }
+              if (v === true) {
+                if (zipperPlacementImage) {
+                  updateZipperExtra(true);
+                } else {
+                  if (!shoeImage) {
+                    toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                    return;
+                  }
+                  setShowZipperPlacementModal(true);
+                }
+                return;
+              }
+              updateZipperExtra(undefined);
             }}
-          >
-            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Verschlussart wählen..." />
-            </SelectTrigger>
-              <SelectContent>
-                <SelectItem className='cursor-pointer' value="Eyelets">Ösen (Schnürung)</SelectItem>
-                <SelectItem className='cursor-pointer' value="Velcro">Klettverschluss</SelectItem>
-              </SelectContent>
-          </Select>
-        </div>
-
-
-        {/* Zusätze: Schnürsenkel - Only show for Eyelets */}
-        {closureType === 'Eyelets' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
-            <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie passende Schnürsenkel zum Schuh?
-            </Label>
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektSchnursenkel === false}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateSchnursenkel(false);
-                    } else {
-                      updateSchnursenkel(undefined);
-                    }
-                  }}
-                />
-                <span>Nein, ohne</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektSchnursenkel === true}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateSchnursenkel(true);
-                    } else {
-                      updateSchnursenkel(undefined);
-                    }
-                  }}
-                />
-                <span>Ja mit passenden Schnürsenkel
-                  <span className="text-green-600 font-semibold"> (+4,49€)</span>
-                </span>
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* Zusätze: Ösen einsetzen - Only show for Eyelets */}
-        {closureType === 'Eyelets' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie den Schaft bereits mit eingesetzten Ösen?
-            </Label>
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektOsen === false}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateOsen(false);
-                    } else {
-                      updateOsen(undefined);
-                    }
-                  }}
-                />
-                <span>Nein, ohne Ösen</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektOsen === true}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateOsen(true);
-                    } else {
-                      updateOsen(undefined);
-                    }
-                  }}
-                />
-                <span>Ja, Ösen einsetzen
-                  <span className="text-green-600 font-semibold"> (+8,99€)</span>
-                </span>
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* Zusätze: Zusätzlicher Reißverschluss - Always visible */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie einen zusätzlichen Reißverschluss?
-          </Label>
-          <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === false}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateZipperExtra(false);
-                    } else {
-                      updateZipperExtra(undefined);
-                    }
-                  }}
-                />
-                <span>Nein, ohne zusätzlichen Reißverschluss</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === true}
-                  onChange={(e) => {
-                    // If checking the box (turning it on)
-                    if (e.target.checked) {
-                      // Check if there's already a zipper image
-                      if (zipperPlacementImage) {
-                        // Just update the checkbox
-                        updateZipperExtra(true);
-                      } else {
-                        // Need to show modal to mark zipper placement
-                        if (!shoeImage) {
-                          toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
-                          return;
-                        }
-                        // Show modal first, then update checkbox after save
-                        setShowZipperPlacementModal(true);
-                      }
-                    } else {
-                      // Unchecking - just update the checkbox
-                      updateZipperExtra(undefined);
-                    }
-                  }}
-                />
-                <span>Ja, zusätzlichen Reißverschluss
-                  {effectiveZipperPosition === 'both' ? (
-                    <span className="text-green-600 font-semibold"> (+19,99 €)</span>
-                  ) : (
-                    <span className="text-green-600 font-semibold"> (+9,99 €)</span>
-                  )}
-                </span>
-              </label>
-          </div>
+          />
         </div>
 
         {/* Display Zipper Drawing Image if exists */}
@@ -956,22 +926,18 @@ export default function ProductConfiguration({
           </div>
         )}
 
-        {/* Additional Notes */}
-        <div className="flex flex-col md:flex-row md:items-start gap-4 mt-6">
-          <Label className="font-medium text-base md:w-1/3">Sonstige Notizen:</Label>
-          <div className="w-full md:w-2/3">
-            <Textarea
-              placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"
-              className="w-full border-gray-300 min-h-[100px]"
-              value={additionalNotes}
-              onChange={(e) => setAdditionalNotes?.(e.target.value)}
-            />
-            <p className="text-xs text-gray-500 mt-1">Diese Notizen erscheinen in der Rechnung/PDF</p>
-          </div>
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-5">
+          <FieldLabel>Sonstige Notizen</FieldLabel>
+          <Textarea
+            placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"
+            className="min-h-[100px] w-full border-gray-300 text-sm"
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes?.(e.target.value)}
+          />
+          <p className="text-xs text-gray-500">Diese Notizen erscheinen in der Rechnung/PDF</p>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center pt-2">
           <Button
             onClick={() => {
               // Validate shaft height fields
@@ -1037,6 +1003,7 @@ export default function ProductConfiguration({
             Abschließen
           </Button>
         </div>
+        </ConfigCard>
 
         {/* Leather Color Section Modal */}
         {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && (

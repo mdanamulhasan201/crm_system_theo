@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 // Import components
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageUploadInfo from '@/components/CustomShafts/ProductImageUploadInfo';
+import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
@@ -422,17 +423,30 @@ export default function CustomShoeOrderPage() {
           <div className="w-full border-t border-gray-300"></div>
         </div>
 
-        {/* Product Image and Info */}
+        {/* Upload area, price, CAD & Kategorie — one card */}
         <ProductImageUploadInfo
           uploadedImage={uploadedImage}
           setUploadedImage={setUploadedImage}
           productDescription={productDescription}
           setProductDescription={setProductDescription}
           basePrice={customCategoryPrice || 0}
+          footer={
+            <ProductCadCategoryFields
+              layout="card"
+              cadModeling={cadModeling}
+              setCadModeling={setCadModeling}
+              customCategory={customCategory}
+              setCustomCategory={setCustomCategory}
+              setCustomCategoryPrice={setCustomCategoryPrice}
+              category={customCategory}
+              allowCategoryEdit
+            />
+          }
         />
 
         {/* Product Configuration */}
         <ProductConfiguration
+          hideCadAndCategory
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
           customCategory={customCategory}

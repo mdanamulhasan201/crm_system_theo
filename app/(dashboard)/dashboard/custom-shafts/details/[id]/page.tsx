@@ -14,6 +14,7 @@ import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSumma
 // Import components
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageInfo from '@/components/CustomShafts/ProductImageInfo';
+import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
@@ -584,20 +585,35 @@ export default function CollectionShaftDetailsPage() {
         orderId={orderId}
       />
 
-      <div className="flex flex-col border-2 border-gray-200 rounded-lg p-4 sm:p-6 lg:p-8 shadow-md">
+      <div className="flex flex-col ">
         {/* Heading */}
         <div className="text-left mb-6">
-          <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-4">
+          <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-4 uppercase">
             Massschaftkonfigurator
           </h1>
           <div className="w-full border-t border-gray-300"></div>
         </div>
 
-        {/* Product Image and Info */}
-        <ProductImageInfo shaft={shaft} />
+        {/* Product image, details, CAD & Kategorie — one card */}
+        <ProductImageInfo
+          shaft={shaft}
+          footer={
+            <ProductCadCategoryFields
+              layout="card"
+              cadModeling={cadModeling}
+              setCadModeling={setCadModeling}
+              customCategory={customCategory}
+              setCustomCategory={setCustomCategory}
+              setCustomCategoryPrice={setCustomCategoryPrice}
+              category={shaft?.catagoary}
+              allowCategoryEdit={false}
+            />
+          }
+        />
 
         {/* Product Configuration */}
         <ProductConfiguration
+          hideCadAndCategory
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
           customCategory={customCategory}

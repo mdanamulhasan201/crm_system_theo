@@ -19,6 +19,14 @@ interface Manufacturer {
 interface BrandItem {
   brand: string
   isActive: boolean
+  isPdf: boolean
+}
+
+/** API may send real booleans or strings; keep switch in sync with GET response */
+function parseApiBool(v: unknown): boolean {
+  if (v === true || v === 'true' || v === 1 || v === '1') return true
+  if (v === false || v === 'false' || v === 0 || v === '0') return false
+  return Boolean(v)
 }
 
 export default function AutomatischeOrdersPage() {
@@ -38,13 +46,13 @@ export default function AutomatischeOrdersPage() {
       try {
         setBrandsLoading(true)
         const res = await getAllBrand()
-        // Expecting shape: { success: boolean; data: { brand: string; isActive: boolean }[] }
-        const items: BrandItem[] = Array.isArray(res?.data)
-          ? res.data.map((item: any) => ({
-            brand: String(item?.brand ?? '').trim(),
-            isActive: Boolean(item?.isActive),
-          }))
-          : []
+        // { success, data: { brand, isActive, isPdf }[] }
+        const rawList = Array.isArray(res?.data) ? res.data : []
+        const items: BrandItem[] = rawList.map((item: Record<string, unknown>) => ({
+          brand: String(item?.brand ?? '').trim(),
+          isActive: parseApiBool(item?.isActive),
+          isPdf: parseApiBool(item?.isPdf),
+        }))
         setBrands(items)
       } catch (error) {
         console.error('Error fetching brands:', error)
@@ -56,22 +64,33 @@ export default function AutomatischeOrdersPage() {
     fetchBrands()
   }, [])
 
-  const handleToggleBrand = async (index: number) => {
+  const handleBrandFieldToggle = async (index: number, field: 'isActive' | 'isPdf') => {
     const item = brands[index]
     if (!item?.brand) return
     const previousBrands = [...brands]
+    const nextValue = !item[field]
     setBrands(prev =>
       prev.map((it, i) =>
-        i === index ? { ...it, isActive: !it.isActive } : it
+        i === index ? { ...it, [field]: nextValue } : it
       )
     )
     try {
-      const res = await toggleBrand({ brand: item.brand })
-      const newActive = res?.data?.isActive
-      if (typeof newActive === 'boolean') {
+      const res = await toggleBrand({
+        brand: item.brand,
+        isActive: field === 'isActive' ? nextValue : item.isActive,
+        isPdf: field === 'isPdf' ? nextValue : item.isPdf,
+      })
+      const d = res?.data as Record<string, unknown> | undefined
+      if (d && typeof d === 'object') {
         setBrands(prev =>
           prev.map((it, i) =>
-            i === index ? { ...it, isActive: newActive } : it
+            i === index
+              ? {
+                  ...it,
+                  ...(d.isActive !== undefined && { isActive: parseApiBool(d.isActive) }),
+                  ...(d.isPdf !== undefined && { isPdf: parseApiBool(d.isPdf) }),
+                }
+              : it
           )
         )
       }
@@ -174,16 +193,31 @@ export default function AutomatischeOrdersPage() {
                 {brands.map((item, index) => (
                   <div
                     key={`${item.brand}-${index}`}
-                    className="flex items-center justify-between py-3"
+                    className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-900">
                       {item.brand || 'Ohne Namen'}
                     </span>
-                    <Switch
-                      checked={item.isActive}
-                      onCheckedChange={() => handleToggleBrand(index)}
-                      className="cursor-pointer"
-                    />
+                    <div className="flex flex-wrap items-center gap-6 sm:justify-end">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">Auto-Bestellung</span>
+                        <Switch
+                          checked={item.isActive}
+                          onCheckedChange={() => handleBrandFieldToggle(index, 'isActive')}
+                          className="cursor-pointer"
+                          aria-label="Auto-Bestellung"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">PDF</span>
+                        <Switch
+                          checked={item.isPdf}
+                          onCheckedChange={() => handleBrandFieldToggle(index, 'isPdf')}
+                          className="cursor-pointer"
+                          aria-label="PDF (isPdf)"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

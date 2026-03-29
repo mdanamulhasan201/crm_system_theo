@@ -11,6 +11,8 @@ interface ProductImageUploadInfoProps {
   productDescription: string;
   setProductDescription: (description: string) => void;
   basePrice: number;
+  /** CAD + Kategorie in the same card below a divider */
+  footer?: React.ReactNode;
 }
 
 export default function ProductImageUploadInfo({
@@ -19,6 +21,7 @@ export default function ProductImageUploadInfo({
   productDescription,
   setProductDescription,
   basePrice,
+  footer,
 }: ProductImageUploadInfoProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -51,29 +54,30 @@ export default function ProductImageUploadInfo({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-10 items-start lg:items-center mb-6">
+    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col items-start gap-6 md:gap-8 lg:flex-row lg:items-center lg:gap-10">
       {/* Image */}
-      <div className="w-full lg:w-1/2  mb-4 lg:mb-0">
-        <div className="relative group w-full max-w-[350px] sm:max-w-[400px]">
+      <div className="mb-4 w-full lg:mb-0 lg:w-1/2">
+        <div className="group relative w-full max-w-[350px] sm:max-w-[400px]">
           <button
             type="button"
             onClick={handleImageClick}
             className="relative block focus:outline-none cursor-pointer w-full"
           >
             {uploadedImage ? (
-              <div className="relative w-full">
+              <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-[#faf9f7] p-3">
                 <Image
                   src={uploadedImage}
                   alt="Product image"
                   width={1000}
                   height={1000}
-                  className="w-full h-auto object-cover rounded-md border border-gray-200"
+                  className="h-auto w-full rounded-lg object-contain"
                   priority
                   unoptimized={shouldUnoptimizeImage(uploadedImage)}
                 />
               </div>
             ) : (
-              <div className="w-full aspect-4/3 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+              <div className="flex aspect-4/3 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-[#faf9f7] transition-colors hover:bg-gray-50">
                 <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mb-2" />
                 <span className="text-sm sm:text-base text-gray-500 font-medium">Bild hochladen</span>
                 <span className="text-xs text-gray-400 mt-1 px-2 text-center">Klicken Sie hier, um ein Bild auszuwählen</span>
@@ -120,9 +124,9 @@ export default function ProductImageUploadInfo({
       </div>
 
       {/* Product info section */}
-      <div className="w-full lg:w-1/2 flex flex-col gap-4">
+      <div className="flex w-full flex-col gap-4 lg:w-1/2">
         <div className="flex flex-col gap-2">
-          <span className="text-xl sm:text-2xl lg:text-2xl font-bold">
+          <span className="text-xl font-bold sm:text-2xl lg:text-2xl">
             Custom Made #1000
           </span>
           {/* <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
@@ -148,6 +152,13 @@ export default function ProductImageUploadInfo({
           </span>
         </div>
       </div>
+      </div>
+      {footer ? (
+        <>
+          <div className="my-6 border-t border-gray-200" />
+          {footer}
+        </>
+      ) : null}
     </div>
   );
 }
