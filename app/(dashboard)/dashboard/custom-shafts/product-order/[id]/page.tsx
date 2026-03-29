@@ -703,7 +703,7 @@ export default function CustomShoeOrderPage() {
         orderId={existingOrderId}
       />
 
-      {/* Completion Popup - Shows after PDF confirmation for "ohne-boden" only */}
+   
       {showCompletionModal && (
         <CompletionPopUp
           onClose={() => {
