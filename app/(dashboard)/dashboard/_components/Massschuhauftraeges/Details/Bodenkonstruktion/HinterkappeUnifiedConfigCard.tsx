@@ -10,7 +10,6 @@ import OptionCard from "./shared/OptionCard"
 import InfoTooltip from "./shared/InfoTooltip"
 import type { GroupDef2 } from "../Types"
 import {
-  HinterkappeMusterSideField,
   type GleichUnterschiedlichMode,
   type HinterkappeMusterErstellung,
   type HinterkappeMusterSideData,
@@ -202,6 +201,19 @@ export default function HinterkappeUnifiedConfigCard({
     })
   }
 
+  const musterMode: GleichUnterschiedlichMode = musterValue?.mode ?? "gleich"
+  const setMusterMode = (nextMode: NonNullable<Exclude<GleichUnterschiedlichMode, null>>) => {
+    const prev = musterValue
+    onMusterChange({
+      mode: nextMode,
+      sameValue: nextMode === "gleich" ? (prev?.sameValue ?? null) : undefined,
+      leftValue: nextMode === "unterschiedlich" ? (prev?.leftValue ?? null) : undefined,
+      rightValue: nextMode === "unterschiedlich" ? (prev?.rightValue ?? null) : undefined,
+      musterErstellung: prev?.musterErstellung ?? null,
+      musterart: prev?.musterart ?? null,
+    })
+  }
+
   const mode = materialValue?.mode ?? null
   const sameValue = materialValue?.sameValue || null
   const sameSubValue = materialValue?.sameSubValue || null
@@ -258,14 +270,7 @@ export default function HinterkappeUnifiedConfigCard({
           subtitle="Auswahl gilt separat für linken und rechten Schuh"
           icon={<ShieldCheck size={20} />}
         >
-          <HinterkappeMusterSideField
-            embedded
-            def={musterDef}
-            value={musterValue}
-            onChange={onMusterChange}
-          />
-
-          <div className="mt-6 border-t border-gray-200 pt-5">
+          <div>
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Soll ein Muster erstellt werden?
@@ -316,6 +321,22 @@ export default function HinterkappeUnifiedConfigCard({
                 </div>
               </div>
             ) : null}
+
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ausführung</p>
+              <div className="flex flex-wrap gap-x-8 gap-y-2">
+                <RadioOption
+                  selected={musterMode === "gleich"}
+                  onClick={() => setMusterMode("gleich")}
+                  label="Beidseitig identisch"
+                />
+                <RadioOption
+                  selected={musterMode === "unterschiedlich"}
+                  onClick={() => setMusterMode("unterschiedlich")}
+                  label="Links und rechts unterschiedlich"
+                />
+              </div>
+            </div>
           </div>
         </ConfigCard>
 

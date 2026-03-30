@@ -1396,11 +1396,14 @@ export function HinterkappeMusterSideField({
     onChange,
     /** When true, omit title and intro (e.g. outer ConfigCard provides them). */
     embedded = false,
+    /** When true, hide gleich/unterschiedlich selector. */
+    hideModeSelector = false,
 }: {
     def: GroupDef2
     value: HinterkappeMusterSideData | null
     onChange: (value: HinterkappeMusterSideData | null) => void
     embedded?: boolean
+    hideModeSelector?: boolean
 }) {
     const mode = value?.mode || null
     const sameValue = value?.sameValue || null
@@ -1441,9 +1444,12 @@ export function HinterkappeMusterSideField({
             ) : null}
 
             {/* Mode Selection - Auswahlbereich (checkbox-style like other fields) */}
-            <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
-                <div className="flex flex-wrap items-center gap-4">
+            {!hideModeSelector ? (
+                <div className="mb-4">
+                    {!embedded ? (
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                         <div className="relative flex items-center">
                             <input
@@ -1500,8 +1506,9 @@ export function HinterkappeMusterSideField({
                             Beidseitig – unterschiedlich
                         </span>
                     </div>
+                    </div>
                 </div>
-            </div>
+            ) : null}
 
             {/* Mode "gleich": one field "Hinterkappe (beide Seiten)" - Ja / Nein (checkbox-style) */}
             {mode === "gleich" && (
