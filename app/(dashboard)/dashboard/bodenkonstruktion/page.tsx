@@ -1,6 +1,6 @@
 "use client"
 import React, { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CalendarDays, User } from "lucide-react"
 import { GROUPS2, shoe2 } from "../_components/Massschuhauftraeges/Details/ShoeData"
 import PDFPopup, { OrderDataForPDF } from "../_components/Massschuhauftraeges/Details/PDFPopup"
@@ -52,9 +52,15 @@ import {
 
 export default function BodenkonstruktionPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    const prefilledCustomerId = searchParams.get("customerId")
+    const prefilledCustomerName = searchParams.get("customerName")
+    const prefilledOrderId = searchParams.get("orderId")
+    const isCustomerPrefilled = Boolean(prefilledCustomerId || prefilledCustomerName)
 
     // Customer name state
-    const [customerName, setCustomerName] = useState<string>("")
+    const [customerName, setCustomerName] = useState<string>(prefilledCustomerName || "")
 
     // Form states
     const [selected, setSelected] = useState<SelectedState>({
@@ -237,7 +243,7 @@ export default function BodenkonstruktionPage() {
 
     const handleWeiterClick = async () => {
         // Validate customer name
-        if (!customerName.trim()) {
+        if (!customerName.trim() && !prefilledCustomerId) {
             toast.error("Bitte geben Sie einen Kundennamen ein.")
             return
         }
@@ -373,8 +379,14 @@ export default function BodenkonstruktionPage() {
         const formData = new FormData()
 
         // Add customer name
+        if (prefilledCustomerId) {
+            formData.append("customer_id", prefilledCustomerId)
+        }
         if (customerName) {
             formData.append('other_customer_name', customerName)
+        }
+        if (prefilledOrderId) {
+            formData.append("shoe_order_id", prefilledOrderId)
         }
 
         // Add delivery date (ISO format) - from modal when provided (DD.MM.YYYY), else from API count
@@ -752,6 +764,7 @@ export default function BodenkonstruktionPage() {
                                     value={customerName}
                                     onChange={(e) => setCustomerName(e.target.value)}
                                     placeholder="Kundenname eingeben"
+                                    disabled={isCustomerPrefilled}
                                     className="w-full rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#6B9B87] focus:bg-white focus:ring-2 focus:ring-[#6B9B87]/20 focus:outline-none transition-all"
                                 />
                             </div>

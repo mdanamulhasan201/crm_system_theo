@@ -6,6 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 const BODEN_OPTIONS = [
@@ -23,6 +31,11 @@ export interface BodenkonstruktionFiledTextProps {
     onBodenkonstruktionExternNoteChange?: (value: string) => void;
     /** Step 5: orderId + step status for bodenkonstruktion GET (erweitert green + link) */
     orderId?: string;
+    /** Actual shoe order id used for redirects */
+    redirectOrderId?: string;
+    /** Prefill customer in destination page */
+    redirectCustomerId?: string;
+    redirectCustomerName?: string;
     stepStatus?: string;
 }
 
@@ -32,6 +45,9 @@ export default function BodenkonstruktionFiledText({
     onBodenkonstruktionInternNoteChange,
     onBodenkonstruktionExternNoteChange,
     orderId,
+    redirectOrderId,
+    redirectCustomerId,
+    redirectCustomerName,
     stepStatus,
 }: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
@@ -40,6 +56,7 @@ export default function BodenkonstruktionFiledText({
     const [externNoteLocal, setExternNoteLocal] = useState('');
     const [hasBodenkonstruktionData, setHasBodenkonstruktionData] = useState(false);
     const [bodenLoading, setBodenLoading] = useState(false);
+    const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
     const internNote = internControlled ? (bodenkonstruktionInternNote ?? '') : internNoteLocal;
@@ -73,6 +90,16 @@ export default function BodenkonstruktionFiledText({
         } else {
             router.push('/dashboard/bodenkonstruktion-customer-order');
         }
+    };
+
+    const handleExternBestellenRedirect = () => {
+        const targetOrderId = redirectOrderId || orderId;
+        const params = new URLSearchParams();
+        if (targetOrderId) params.set('orderId', targetOrderId);
+        if (redirectCustomerId) params.set('customerId', redirectCustomerId);
+        if (redirectCustomerName) params.set('customerName', redirectCustomerName);
+        const query = params.toString();
+        router.push(query ? `/dashboard/bodenkonstruktion?${query}` : '/dashboard/bodenkonstruktion');
     };
 
     return (
@@ -140,6 +167,15 @@ export default function BodenkonstruktionFiledText({
                         <Label className="text-sm font-medium text-gray-800">
                             Hinweise zur externen Bodenkonstruktion
                         </Label>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                            onClick={() => setExternOrderDialogOpen(true)}
+                        >
+                            erweitert
+                        </Button>
                     </div>
                     <textarea
                         value={externNote}
@@ -150,6 +186,36 @@ export default function BodenkonstruktionFiledText({
                     />
                 </div>
             )}
+
+            <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Externe Bodenkonstruktion</DialogTitle>
+                        <DialogDescription>
+                            Möchten Sie jetzt die Externe Bodenkonstruktion bestellen?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setExternOrderDialogOpen(false)}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-[#61A178] hover:bg-[#4A8A5F]"
+                            onClick={() => {
+                                setExternOrderDialogOpen(false);
+                                handleExternBestellenRedirect();
+                            }}
+                        >
+                            Jetzt bestellen
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -301,6 +301,9 @@ export default function HalbprobeDurchfuehrungStepFields({
                     bodenkonstruktionInternNote={bodenkonstruktionInternNote}
                     bodenkonstruktionExternNote={bodenkonstruktionExternNote}
                     orderId={orderId}
+                    redirectOrderId={redirectOrderId}
+                    redirectCustomerId={redirectCustomerId}
+                    redirectCustomerName={redirectCustomerName}
                     stepStatus={stepStatus}
                     onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange}
                     onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange}
