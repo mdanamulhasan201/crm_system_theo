@@ -492,46 +492,23 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Ledertyp */}
-                  {shaftConfiguration.lederType && (
+                  {/* Lederdetails in einer Zeile */}
+                  {(shaftConfiguration.numberOfLeatherColors || shaftConfiguration.lederType || shaftConfiguration.lederfarbe || (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0)) && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Ledertyp
+                        Lederdetails
                       </div>
                       <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={true} label={shaftConfiguration.lederType} />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Lederfarbe (single color) */}
-                  {shaftConfiguration.numberOfLeatherColors === '1' && shaftConfiguration.lederfarbe && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Lederfarbe
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={true} label={shaftConfiguration.lederfarbe} />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
-                  {shaftConfiguration.numberOfLeatherColors && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Anzahl der Ledertypen
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        {shaftConfiguration.numberOfLeatherColors === '1' && (
-                          <ModalCheckbox isSelected={true} label="1" />
-                        )}
-                        {shaftConfiguration.numberOfLeatherColors === '2' && (
-                          <ModalCheckbox isSelected={true} label="2" />
-                        )}
-                        {shaftConfiguration.numberOfLeatherColors === '3' && (
-                          <ModalCheckbox isSelected={true} label="3" />
-                        )}
+                        <ModalCheckbox
+                          isSelected={true}
+                          label={`Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${shaftConfiguration.lederType || '-'} | Lederfarbe: ${
+                            shaftConfiguration.numberOfLeatherColors === '1'
+                              ? (shaftConfiguration.lederfarbe || '-')
+                              : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0
+                                  ? shaftConfiguration.leatherColors.filter(Boolean).join(', ')
+                                  : '-')
+                          }`}
+                        />
                         {/* Lederfarben list directly under option when 2 or 3 selected */}
                         {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
                           <div className="ml-0 mt-2 text-xs text-slate-600">
@@ -566,6 +543,32 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Nahtfarbe - directly after Innenfutter */}
+                  {(shaftConfiguration.nahtfarbe || shaftConfiguration.nahtfarbeOption) && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Nahtfarbe
+                      </div>
+                      <div className="flex-1 leading-loose">
+                        <ModalCheckbox isSelected={true} label={getNahtfarbeDisplayName(shaftConfiguration.nahtfarbe, shaftConfiguration.nahtfarbeOption)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {shaftConfiguration.ziernahtVorhanden !== undefined && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Ziernaht vorhanden?
+                      </div>
+                      <div className="flex-1 leading-loose">
+                        <ModalCheckbox
+                          isSelected={true}
+                          label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
+                        />
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Schafthöhe */}
                   {(shaftConfiguration.schafthohe || shaftConfiguration.schafthoheLinks || shaftConfiguration.schafthoheRechts) && (
@@ -592,6 +595,27 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                             {shaftConfiguration.schafthoheRechts && (
                               <ModalCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
                             )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Verschlussart - directly after Schafthöhe */}
+                      {shaftConfiguration.closureType && (
+                        <div className="flex py-3 border-b border-gray-300 items-start">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                            Verschlussart
+                          </div>
+                          <div className="flex-1 leading-loose">
+                            <ModalCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
+                          </div>
+                        </div>
+                      )}
+                      {(shaftConfiguration.anzahlKlettstreifen?.trim() || shaftConfiguration.breiteKlettstreifenMm?.trim()) && (
+                        <div className="flex py-3 border-b border-gray-300 items-start">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                            Klettstreifen
+                          </div>
+                          <div className="flex-1 text-xs text-slate-600 pt-1">
+                            Anzahl Klettstreifen: {shaftConfiguration.anzahlKlettstreifen?.trim() || '-'} Stk | Breite Klettstreifen: {shaftConfiguration.breiteKlettstreifenMm?.trim() || '-'} mm
                           </div>
                         </div>
                       )}
@@ -708,43 +732,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Nahtfarbe - Only show selected option */}
-                  {(shaftConfiguration.nahtfarbe || shaftConfiguration.nahtfarbeOption) && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Nahtfarbe
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={true} label={getNahtfarbeDisplayName(shaftConfiguration.nahtfarbe, shaftConfiguration.nahtfarbeOption)} />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {shaftConfiguration.ziernahtVorhanden !== undefined && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Ziernaht vorhanden?
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox
-                          isSelected={true}
-                          label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Verschlussart */}
-                  {shaftConfiguration.closureType && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Verschlussart
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
-                      </div>
-                    </div>
-                  )}
                   {shaftConfiguration.offenstandSchnuerungMm?.trim() && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
@@ -772,26 +759,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </div>
                       <div className="flex-1 text-xs text-slate-600 pt-1">
                         {shaftConfiguration.anzahlHaken.trim()} Stk
-                      </div>
-                    </div>
-                  )}
-                  {shaftConfiguration.anzahlKlettstreifen?.trim() && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Anzahl Klettstreifen
-                      </div>
-                      <div className="flex-1 text-xs text-slate-600 pt-1">
-                        {shaftConfiguration.anzahlKlettstreifen.trim()} Stk
-                      </div>
-                    </div>
-                  )}
-                  {shaftConfiguration.breiteKlettstreifenMm?.trim() && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Breite Klettstreifen
-                      </div>
-                      <div className="flex-1 text-xs text-slate-600 pt-1">
-                        {shaftConfiguration.breiteKlettstreifenMm.trim()} mm
                       </div>
                     </div>
                   )}
@@ -963,46 +930,23 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* Ledertyp */}
-                {shaftConfiguration.lederType && (
+                {/* Lederdetails in einer Zeile */}
+                {(shaftConfiguration.numberOfLeatherColors || shaftConfiguration.lederType || shaftConfiguration.lederfarbe || (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0)) && (
                   <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Ledertyp
+                      Lederdetails
                     </div>
                     <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={shaftConfiguration.lederType} />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Lederfarbe (single) */}
-                {shaftConfiguration.numberOfLeatherColors === '1' && shaftConfiguration.lederfarbe && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Lederfarbe
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={shaftConfiguration.lederfarbe} />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
-                {shaftConfiguration.numberOfLeatherColors && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Anzahl der Ledertypen
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      {shaftConfiguration.numberOfLeatherColors === '1' && (
-                        <PDFCheckbox isSelected={true} label="1" />
-                      )}
-                      {shaftConfiguration.numberOfLeatherColors === '2' && (
-                        <PDFCheckbox isSelected={true} label="2" />
-                      )}
-                      {shaftConfiguration.numberOfLeatherColors === '3' && (
-                        <PDFCheckbox isSelected={true} label="3" />
-                      )}
+                      <PDFCheckbox
+                        isSelected={true}
+                        label={`Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${shaftConfiguration.lederType || '-'} | Lederfarbe: ${
+                          shaftConfiguration.numberOfLeatherColors === '1'
+                            ? (shaftConfiguration.lederfarbe || '-')
+                            : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0
+                                ? shaftConfiguration.leatherColors.filter(Boolean).join(', ')
+                                : '-')
+                        }`}
+                      />
                       {/* Lederfarben list directly under option when 2 or 3 selected */}
                       {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#475569' }}>
@@ -1037,6 +981,32 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Nahtfarbe - directly after Innenfutter */}
+                {(shaftConfiguration.nahtfarbe || shaftConfiguration.nahtfarbeOption) && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Nahtfarbe
+                    </div>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
+                      <PDFCheckbox isSelected={true} label={getNahtfarbeDisplayName(shaftConfiguration.nahtfarbe, shaftConfiguration.nahtfarbeOption)} />
+                    </div>
+                  </div>
+                )}
+
+                {shaftConfiguration.ziernahtVorhanden !== undefined && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Ziernaht vorhanden?
+                    </div>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
+                      <PDFCheckbox
+                        isSelected={true}
+                        label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 {/* Schafthöhe */}
                 {shaftConfiguration.schafthohe && (
@@ -1061,6 +1031,27 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       {shaftConfiguration.schafthoheRechts && (
                         <PDFCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
                       )}
+                    </div>
+                  </div>
+                )}
+                {/* Verschlussart - directly after Schafthöhe */}
+                {shaftConfiguration.closureType && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Verschlussart
+                    </div>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
+                      <PDFCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
+                    </div>
+                  </div>
+                )}
+                {(shaftConfiguration.anzahlKlettstreifen?.trim() || shaftConfiguration.breiteKlettstreifenMm?.trim()) && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Klettstreifen
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      Anzahl Klettstreifen: {shaftConfiguration.anzahlKlettstreifen?.trim() || '-'} Stk | Breite Klettstreifen: {shaftConfiguration.breiteKlettstreifenMm?.trim() || '-'} mm
                     </div>
                   </div>
                 )}
@@ -1187,43 +1178,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* Nahtfarbe - Only show selected option */}
-                {(shaftConfiguration.nahtfarbe || shaftConfiguration.nahtfarbeOption) && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Nahtfarbe
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={getNahtfarbeDisplayName(shaftConfiguration.nahtfarbe, shaftConfiguration.nahtfarbeOption)} />
-                    </div>
-                  </div>
-                )}
-                
-                {shaftConfiguration.ziernahtVorhanden !== undefined && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Ziernaht vorhanden?
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox
-                        isSelected={true}
-                        label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Verschlussart */}
-                {shaftConfiguration.closureType && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Verschlussart
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
-                    </div>
-                  </div>
-                )}
                 {shaftConfiguration.offenstandSchnuerungMm?.trim() && (
                   <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
@@ -1251,26 +1205,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                     <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
                       {shaftConfiguration.anzahlHaken.trim()} Stk
-                    </div>
-                  </div>
-                )}
-                {shaftConfiguration.anzahlKlettstreifen?.trim() && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Anzahl Klettstreifen
-                    </div>
-                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
-                      {shaftConfiguration.anzahlKlettstreifen.trim()} Stk
-                    </div>
-                  </div>
-                )}
-                {shaftConfiguration.breiteKlettstreifenMm?.trim() && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Breite Klettstreifen
-                    </div>
-                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
-                      {shaftConfiguration.breiteKlettstreifenMm.trim()} mm
                     </div>
                   </div>
                 )}
