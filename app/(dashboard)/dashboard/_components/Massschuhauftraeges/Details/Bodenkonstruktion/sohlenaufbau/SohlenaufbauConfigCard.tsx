@@ -11,7 +11,6 @@ import SohlenaufbauColorPicker from "./SohlenaufbauColorPicker"
 import SohlenaufbauLayerSplitControl from "./SohlenaufbauLayerSplitControl"
 import SohlenaufbauHeightGrid from "./SohlenaufbauHeightGrid"
 import SohlenaufbauShoreSection from "./SohlenaufbauShoreSection"
-import SohlenaufbauVerschalungSubsection from "./SohlenaufbauVerschalungSubsection"
 import SohlenaufbauBiomechanicsPanel from "./SohlenaufbauBiomechanicsPanel"
 import { parseSohlenaufbauNum } from "./utils"
 import type { SohlenaufbauPreviewData } from "./SolePreview3D"
@@ -130,7 +129,7 @@ export default function SohlenaufbauConfigCard({
   return (
     <ConfigCard
       title="Sohlenaufbau"
-      subtitle="Höhen, Form, Verschalung, Farben, Shore/Material & Vorschau"
+      subtitle="Höhen, Form, Farben, Shore/Material & Vorschau"
       icon={<Layers size={20} />}
     >
       <div className="space-y-5">
@@ -191,6 +190,26 @@ export default function SohlenaufbauConfigCard({
         ) : null}
 
         {hasValues && calc.valid ? (
+          <div className="space-y-2 border-t border-gray-200 pt-4">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-gray-700">Material / Shore-Härte</p>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <RadioOption
+                selected={value.shoreModus === "einheitlich"}
+                onClick={() => apply({ shoreModus: "einheitlich" })}
+                label="Einheitlich für gesamten Aufbau"
+              />
+              <RadioOption
+                selected={value.shoreModus === "individuell"}
+                onClick={() => apply({ shoreModus: "individuell" })}
+                label="Individuell pro Bereich"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {hasValues && calc.valid ? (
           <div className="space-y-5 border-t border-gray-200 pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schichtaufbau (optional)</p>
             {calc.zwischensohle > 0 ? (
@@ -213,88 +232,26 @@ export default function SohlenaufbauConfigCard({
         ) : null}
 
         {hasValues && calc.valid ? (
-          <SohlenaufbauVerschalungSubsection
-            hoehe={value.verschalungHoehe}
-            ausfuehrung={value.verschalungAusfuehrung}
-            onHoeheChange={(verschalungHoehe) =>
-              apply({
-                verschalungHoehe,
-                verschalungAusfuehrung: verschalungHoehe ? value.verschalungAusfuehrung : "",
-              })
-            }
-            onAusfuehrungChange={(verschalungAusfuehrung) => apply({ verschalungAusfuehrung })}
-          />
-        ) : null}
-
-        {hasValues && calc.valid ? (
           <div className="space-y-4 border-t border-gray-200 pt-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">Farbkonzept</p>
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
-                <RadioOption
-                  selected={value.farbModus === "einheitlich"}
-                  onClick={() => setFarbModus("einheitlich")}
-                  label="Eine Farbe pro Bereich"
+            <p className="text-sm font-medium text-gray-700">Farbkonzept</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {calc.zwischensohle > 0 ? (
+                <SohlenaufbauColorPicker
+                  value={value.zwFarbe}
+                  onChange={(zwFarbe) => apply({ zwFarbe })}
+                  label="Zwischensohle"
+                  shore={getShore("zw")}
                 />
-                <RadioOption
-                  selected={value.farbModus === "individuell"}
-                  onClick={() => setFarbModus("individuell")}
-                  label="Farben individuell pro Lage"
+              ) : null}
+              {calc.absatz > 0 ? (
+                <SohlenaufbauColorPicker
+                  value={value.abFarbe}
+                  onChange={(abFarbe) => apply({ abFarbe })}
+                  label="Absatz"
+                  shore={getShore("ab")}
                 />
-              </div>
+              ) : null}
             </div>
-
-            {value.farbModus === "einheitlich" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {calc.zwischensohle > 0 ? (
-                  <SohlenaufbauColorPicker
-                    value={value.zwFarbe}
-                    onChange={(zwFarbe) => apply({ zwFarbe })}
-                    label="Zwischensohle"
-                    shore={getShore("zw")}
-                  />
-                ) : null}
-                {calc.absatz > 0 ? (
-                  <SohlenaufbauColorPicker
-                    value={value.abFarbe}
-                    onChange={(abFarbe) => apply({ abFarbe })}
-                    label="Absatz"
-                    shore={getShore("ab")}
-                  />
-                ) : null}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {calc.zwischensohle > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-gray-500">Zwischensohle</p>
-                    {(value.zwSplit.mode === "einteilig" ? [0] : value.zwSplit.layers.map((_, i) => i)).map((idx) => (
-                      <SohlenaufbauColorPicker
-                        key={idx}
-                        value={value.zwLayerFarben[idx] || "#1a1a1a"}
-                        onChange={(c) => updateZwLayerFarbe(idx, c)}
-                        label={value.zwSplit.mode === "einteilig" ? undefined : `Lage ${idx + 1}`}
-                        shore={getShore("zw", idx)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-                {calc.absatz > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-gray-500">Absatz</p>
-                    {(value.abSplit.mode === "einteilig" ? [0] : value.abSplit.layers.map((_, i) => i)).map((idx) => (
-                      <SohlenaufbauColorPicker
-                        key={idx}
-                        value={value.abLayerFarben[idx] || "#1a1a1a"}
-                        onChange={(c) => updateAbLayerFarbe(idx, c)}
-                        label={value.abSplit.mode === "einteilig" ? undefined : `Lage ${idx + 1}`}
-                        shore={getShore("ab", idx)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            )}
           </div>
         ) : null}
 
@@ -313,6 +270,7 @@ export default function SohlenaufbauConfigCard({
             hasLayerSplit={hasLayerSplit}
             zwLayerCount={zwLayerCount}
             abLayerCount={abLayerCount}
+            hideModeSelector
           />
         ) : null}
 

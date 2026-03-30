@@ -58,6 +58,7 @@ export default function SohlenaufbauShoreSection({
   hasLayerSplit,
   zwLayerCount,
   abLayerCount,
+  hideModeSelector = false,
 }: {
   modus: SohlenaufbauShoreModus
   onModusChange: (m: SohlenaufbauShoreModus) => void
@@ -72,6 +73,7 @@ export default function SohlenaufbauShoreSection({
   hasLayerSplit: boolean
   zwLayerCount: number
   abLayerCount: number
+  hideModeSelector?: boolean
 }) {
   const updatePerLayerShore = (area: "zwLayers" | "abLayers", idx: number, val: SohlenaufbauShoreValue) => {
     const next = { ...perLayer }
@@ -86,24 +88,26 @@ export default function SohlenaufbauShoreSection({
 
   return (
     <div className="space-y-4 border-t border-gray-200 pt-4">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-gray-700">Material / Shore-Härte</p>
-          <InfoTooltip content="EVA Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar. EVA Shore 58 wird aktuell nicht angeboten." />
+      {!hideModeSelector ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-gray-700">Material / Shore-Härte</p>
+            <InfoTooltip content="EVA Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar. EVA Shore 58 wird aktuell nicht angeboten." />
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <RadioOption
+              selected={modus === "einheitlich"}
+              onClick={() => onModusChange("einheitlich")}
+              label="Einheitlich für gesamten Aufbau"
+            />
+            <RadioOption
+              selected={modus === "individuell"}
+              onClick={() => onModusChange("individuell")}
+              label="Individuell pro Bereich"
+            />
+          </div>
         </div>
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
-          <RadioOption
-            selected={modus === "einheitlich"}
-            onClick={() => onModusChange("einheitlich")}
-            label="Einheitlich für gesamten Aufbau"
-          />
-          <RadioOption
-            selected={modus === "individuell"}
-            onClick={() => onModusChange("individuell")}
-            label="Individuell pro Bereich"
-          />
-        </div>
-      </div>
+      ) : null}
 
       {modus === "einheitlich" ? (
         <div className="flex flex-wrap gap-2">
