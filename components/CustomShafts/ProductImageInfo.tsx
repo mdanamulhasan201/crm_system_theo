@@ -11,7 +11,7 @@ interface ProductImageInfoProps {
     price: number;
     image: string;
   };
-  /** CAD + Kategorie in the same card below a divider */
+  /** CAD + Kategorie block shown in the right content column */
   footer?: React.ReactNode;
 }
 
@@ -77,6 +77,7 @@ export default function ProductImageInfo({ shaft, footer }: ProductImageInfoProp
             </span>
           </div>
         )}
+        {footer ? <div className="mt-6">{footer}</div> : null}
       </div>
     </div>
   );
@@ -84,12 +85,6 @@ export default function ProductImageInfo({ shaft, footer }: ProductImageInfoProp
   return (
     <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
       {productBlock}
-      {footer ? (
-        <>
-          <div className="my-6 border-t border-gray-200" />
-          {footer}
-        </>
-      ) : null}
     </div>
   );
 }

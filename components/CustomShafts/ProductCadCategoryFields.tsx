@@ -4,7 +4,6 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Cpu } from 'lucide-react';
 import SectionCardHeader from './SectionCardHeader';
 
 const CATEGORY_OPTIONS = [
@@ -58,7 +57,6 @@ export default function ProductCadCategoryFields({
     return (
       <div className="flex flex-col gap-5">
         <SectionCardHeader
-          icon={Cpu}
           title="CAD & Kategorie"
           subtitle="Modellierung und Produkttyp"
         />
