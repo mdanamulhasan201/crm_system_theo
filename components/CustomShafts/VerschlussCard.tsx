@@ -122,8 +122,8 @@ export default function VerschlussCard({
   osenEinsetzen,
   onOsenEinsetzenChange,
 }: VerschlussCardProps) {
-  const [advancedEyeletsOpen, setAdvancedEyeletsOpen] = useState(true);
-  const [advancedVelcroOpen, setAdvancedVelcroOpen] = useState(true);
+  const [advancedEyeletsOpen, setAdvancedEyeletsOpen] = useState(false);
+  const [advancedVelcroOpen, setAdvancedVelcroOpen] = useState(false);
 
   const showEyeletsDetails = closureType === 'Eyelets';
   const showVelcroDetails = closureType === 'Velcro';
@@ -210,102 +210,108 @@ export default function VerschlussCard({
           </div>
         )}
 
-        {(showEyeletsDetails || showVelcroDetails) && (
-          <>
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-xs font-semibold text-gray-900 sm:text-sm">Offenstand der Schnürung</span>
-              <SuffixInput
-                id="offenstand-schnuerung"
-                placeholder="Offenstand eingeben"
-                suffix="mm"
-                inputMode="decimal"
-                value={offenstandSchnuerungMm}
-                onChange={setOffenstandSchnuerungMm}
+        {showEyeletsDetails && (
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setAdvancedEyeletsOpen((o) => !o)}
+              className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
+            >
+              <ChevronDown
+                className={cn('h-4 w-4 shrink-0 text-gray-600 transition-transform', advancedEyeletsOpen && 'rotate-180')}
               />
-            </div>
-
-            {showEyeletsDetails && (
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => setAdvancedEyeletsOpen((o) => !o)}
-                  className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
-                >
-                  <ChevronDown
-                    className={cn('h-4 w-4 shrink-0 text-gray-600 transition-transform', advancedEyeletsOpen && 'rotate-180')}
+              Erweiterte Optionen (Ösen / Haken / Löcher)
+            </button>
+            {advancedEyeletsOpen && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Offenstand der Schnürung</span>
+                  <SuffixInput
+                    id="offenstand-schnuerung"
+                    placeholder="Offenstand eingeben"
+                    suffix="mm"
+                    inputMode="decimal"
+                    value={offenstandSchnuerungMm}
+                    onChange={setOffenstandSchnuerungMm}
                   />
-                  Erweiterte Optionen (Ösen / Haken / Löcher)
-                </button>
-                {advancedEyeletsOpen && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Ösen</span>
-                      <SuffixInput
-                        id="anzahl-oesen"
-                        placeholder=""
-                        suffix="Stk"
-                        inputMode="numeric"
-                        value={anzahlOesen}
-                        onChange={setAnzahlOesen}
-                      />
-                    </div>
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Haken</span>
-                      <SuffixInput
-                        id="anzahl-haken"
-                        placeholder=""
-                        suffix="Stk"
-                        inputMode="numeric"
-                        value={anzahlHaken}
-                        onChange={setAnzahlHaken}
-                      />
-                    </div>
-                  </div>
-                )}
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Ösen</span>
+                  <SuffixInput
+                    id="anzahl-oesen"
+                    placeholder=""
+                    suffix="Stk"
+                    inputMode="numeric"
+                    value={anzahlOesen}
+                    onChange={setAnzahlOesen}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Haken</span>
+                  <SuffixInput
+                    id="anzahl-haken"
+                    placeholder=""
+                    suffix="Stk"
+                    inputMode="numeric"
+                    value={anzahlHaken}
+                    onChange={setAnzahlHaken}
+                  />
+                </div>
               </div>
             )}
+          </div>
+        )}
 
-            {showVelcroDetails && (
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => setAdvancedVelcroOpen((o) => !o)}
-                  className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
-                >
-                  <ChevronDown
-                    className={cn('h-4 w-4 shrink-0 text-gray-600 transition-transform', advancedVelcroOpen && 'rotate-180')}
+        {showVelcroDetails && (
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setAdvancedVelcroOpen((o) => !o)}
+              className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
+            >
+              <ChevronDown
+                className={cn('h-4 w-4 shrink-0 text-gray-600 transition-transform', advancedVelcroOpen && 'rotate-180')}
+              />
+              Erweiterte Optionen (Klettstreifen / Breite)
+            </button>
+            {advancedVelcroOpen && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Offenstand der Schnürung</span>
+                  <SuffixInput
+                    id="offenstand-schnuerung"
+                    placeholder="Offenstand eingeben"
+                    suffix="mm"
+                    inputMode="decimal"
+                    value={offenstandSchnuerungMm}
+                    onChange={setOffenstandSchnuerungMm}
                   />
-                  Erweiterte Optionen (Klettstreifen / Breite)
-                </button>
-                {advancedVelcroOpen && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Klettstreifen</span>
-                      <SuffixInput
-                        id="anzahl-klettstreifen"
-                        placeholder=""
-                        suffix="Stk"
-                        inputMode="numeric"
-                        value={anzahlKlettstreifen}
-                        onChange={setAnzahlKlettstreifen}
-                      />
-                    </div>
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-gray-900 sm:text-sm">Breite Klettstreifen</span>
-                      <SuffixInput
-                        id="breite-klettstreifen"
-                        placeholder=""
-                        suffix="mm"
-                        inputMode="decimal"
-                        value={breiteKlettstreifenMm}
-                        onChange={setBreiteKlettstreifenMm}
-                      />
-                    </div>
-                  </div>
-                )}
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Anzahl Klettstreifen</span>
+                  <SuffixInput
+                    id="anzahl-klettstreifen"
+                    placeholder=""
+                    suffix="Stk"
+                    inputMode="numeric"
+                    value={anzahlKlettstreifen}
+                    onChange={setAnzahlKlettstreifen}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-900 sm:text-sm">Breite Klettstreifen</span>
+                  <SuffixInput
+                    id="breite-klettstreifen"
+                    placeholder=""
+                    suffix="mm"
+                    inputMode="decimal"
+                    value={breiteKlettstreifenMm}
+                    onChange={setBreiteKlettstreifenMm}
+                  />
+                </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </section>
