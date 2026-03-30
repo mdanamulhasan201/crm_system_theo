@@ -21,6 +21,7 @@ export default function CustomShafts() {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [displayedCount, setDisplayedCount] = useState(8);
+    const [pendingDisplayedCount, setPendingDisplayedCount] = useState<number | null>(null);
     const [allFetchedItems, setAllFetchedItems] = useState<CustomShaft[]>([]);
     const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
     const [selectedShaftId, setSelectedShaftId] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function CustomShafts() {
     useEffect(() => {
         setAllFetchedItems([]);
         setDisplayedCount(8);
+        setPendingDisplayedCount(null);
         setCurrentPage(1);
         setIsFetchingNewPage(false);
         prevFilteredLengthRef.current = 0;
@@ -115,13 +117,24 @@ export default function CustomShafts() {
     }, [allFetchedItems, gender, category, sortOption]);
 
     useEffect(() => {
-        if (isFetchingNewPage && filteredData.length > prevFilteredLengthRef.current && currentPage > 1) {
-            // New items were added to filteredData from API, automatically show 8 more
-            setDisplayedCount(prevCount => Math.min(prevCount + 8, filteredData.length));
-            setIsFetchingNewPage(false);
+        if (isFetchingNewPage && pendingDisplayedCount !== null) {
+            const hasNextPage = apiData?.pagination?.hasNextPage ?? false;
+            const hasEnoughItemsForStep = filteredData.length >= pendingDisplayedCount;
+            const noMorePages = !hasNextPage;
+            const didFilteredDataGrow = filteredData.length > prevFilteredLengthRef.current;
+
+            if (hasEnoughItemsForStep || noMorePages) {
+                setDisplayedCount(Math.min(pendingDisplayedCount, filteredData.length));
+                setPendingDisplayedCount(null);
+                setIsFetchingNewPage(false);
+            } else if (didFilteredDataGrow && !loading && hasNextPage) {
+                // Keep fetching until this click can reveal a full step (if available).
+                setCurrentPage(prev => prev + 1);
+            }
         }
+
         prevFilteredLengthRef.current = filteredData.length;
-    }, [filteredData.length, currentPage, isFetchingNewPage]);
+    }, [filteredData.length, isFetchingNewPage, pendingDisplayedCount, apiData?.pagination?.hasNextPage, loading]);
 
     // Display only the first `displayedCount` items
     const displayedData = useMemo(() => {
@@ -146,15 +159,30 @@ export default function CustomShafts() {
         // Don't do anything if already loading
         if (loading) return;
 
-        // First, check if we have more items in already fetched data
-        if (hasMoreItems) {
-            // Show next 8 items from already fetched data (instant, no loading needed)
-            setDisplayedCount(prev => Math.min(prev + 8, filteredData.length));
-        } else if (apiData?.pagination?.hasNextPage) {
-            // No more items in fetched data, fetch next page
-            setIsFetchingNewPage(true);
-            setCurrentPage(prev => prev + 1);
+        const targetDisplayedCount = displayedCount + itemsPerPage;
+
+        // If we already have enough cached items, show immediately.
+        if (filteredData.length >= targetDisplayedCount) {
+            setDisplayedCount(targetDisplayedCount);
+            return;
         }
+
+        // Not enough cached items: keep fetching next pages until this click can fill +8 (or no more pages).
+        if (apiData?.pagination?.hasNextPage) {
+            setPendingDisplayedCount(targetDisplayedCount);
+            setIsFetchingNewPage(true);
+
+            // Show any currently available cached items while we fetch remaining ones.
+            if (filteredData.length > displayedCount) {
+                setDisplayedCount(filteredData.length);
+            }
+
+            setCurrentPage(prev => prev + 1);
+            return;
+        }
+
+        // No more API pages, show whatever is left.
+        setDisplayedCount(Math.min(targetDisplayedCount, filteredData.length));
     };
 
     // handle click on the button - open modal instead of direct navigation
