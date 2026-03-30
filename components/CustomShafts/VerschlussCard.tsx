@@ -168,7 +168,7 @@ export default function VerschlussCard({
               <SegmentedEyeletsAddon
                 value={passendenSchnursenkel}
                 onChange={onPassendenSchnursenkelChange}
-                labelNein="Nein, ohne"
+                labelNein="Nein"
                 labelJa={
                   <>
                     Ja, mit passenden Schnürsenkel{' '}
@@ -191,7 +191,7 @@ export default function VerschlussCard({
               <SegmentedEyeletsAddon
                 value={osenEinsetzen}
                 onChange={onOsenEinsetzenChange}
-                labelNein="Nein, ohne Ösen"
+                labelNein="Nein"
                 labelJa={
                   <>
                     Ja, Ösen einsetzen{' '}

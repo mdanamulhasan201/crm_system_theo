@@ -424,6 +424,61 @@ ref: React.Ref<ProductConfigurationHandle>
     };
   };
 
+  // Clear hidden circumference fields so stale values are not kept in state/payload.
+  useEffect(() => {
+    const leftH = parseFloat(schafthoheLinks);
+    if (Number.isNaN(leftH) || leftH <= 13) {
+      if (knoechelumfangLinks) setKnoechelumfangLinks('');
+      if (umfangBei14Links) setUmfangBei14Links('');
+      if (umfangBei16Links) setUmfangBei16Links('');
+      if (umfangBei18Links) setUmfangBei18Links('');
+      return;
+    }
+
+    const leftFields = getCircumferenceFieldsForHeight(leftH);
+    if (!leftFields.showKnoechelumfang && knoechelumfangLinks) setKnoechelumfangLinks('');
+    if (!leftFields.showUmfang15 && umfangBei14Links) setUmfangBei14Links('');
+    if (!leftFields.showUmfang16 && umfangBei16Links) setUmfangBei16Links('');
+    if (!leftFields.showUmfang18 && umfangBei18Links) setUmfangBei18Links('');
+  }, [
+    schafthoheLinks,
+    knoechelumfangLinks,
+    umfangBei14Links,
+    umfangBei16Links,
+    umfangBei18Links,
+    setKnoechelumfangLinks,
+    setUmfangBei14Links,
+    setUmfangBei16Links,
+    setUmfangBei18Links,
+  ]);
+
+  useEffect(() => {
+    const rightH = parseFloat(schafthoheRechts);
+    if (Number.isNaN(rightH) || rightH <= 13) {
+      if (knoechelumfangRechts) setKnoechelumfangRechts('');
+      if (umfangBei14Rechts) setUmfangBei14Rechts('');
+      if (umfangBei16Rechts) setUmfangBei16Rechts('');
+      if (umfangBei18Rechts) setUmfangBei18Rechts('');
+      return;
+    }
+
+    const rightFields = getCircumferenceFieldsForHeight(rightH);
+    if (!rightFields.showKnoechelumfang && knoechelumfangRechts) setKnoechelumfangRechts('');
+    if (!rightFields.showUmfang15 && umfangBei14Rechts) setUmfangBei14Rechts('');
+    if (!rightFields.showUmfang16 && umfangBei16Rechts) setUmfangBei16Rechts('');
+    if (!rightFields.showUmfang18 && umfangBei18Rechts) setUmfangBei18Rechts('');
+  }, [
+    schafthoheRechts,
+    knoechelumfangRechts,
+    umfangBei14Rechts,
+    umfangBei16Rechts,
+    umfangBei18Rechts,
+    setKnoechelumfangRechts,
+    setUmfangBei14Rechts,
+    setUmfangBei16Rechts,
+    setUmfangBei18Rechts,
+  ]);
+
   const buildShaftFieldErrors = useCallback((): Partial<Record<SchafthoheFieldKey, boolean>> => {
     const err: Partial<Record<SchafthoheFieldKey, boolean>> = {};
     const leftH = parseFloat(schafthoheLinks);
