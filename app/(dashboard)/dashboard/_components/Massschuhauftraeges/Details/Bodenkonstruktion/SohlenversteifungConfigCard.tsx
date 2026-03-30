@@ -4,7 +4,6 @@ import { Shield } from "lucide-react"
 import ConfigCard from "./shared/ConfigCard"
 import { RadioOption } from "./shared/RadioOption"
 import SideSelector from "./shared/SideSelector"
-import InputWithUnit from "./shared/InputWithUnit"
 import type { SohlenversteifungData } from "./FormFields"
 
 const SUBTITLE = "Optionale Versteifung der Sohle"
@@ -55,12 +54,12 @@ export default function SohlenversteifungConfigCard({
 
           {value.mode === "gleich" ? (
             <div className="max-w-[200px]">
-              <InputWithUnit
-                label="Versteifung"
+              <label className="mb-1 block text-sm font-medium text-gray-800">Versteifung</label>
+              <input
+                type="text"
                 value={value.gleichMm}
-                onChange={(gleichMm) => patch({ gleichMm })}
-                unit="mm"
-                placeholder="z.B. 180"
+                onChange={(e) => patch({ gleichMm: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
               />
             </div>
           ) : (
@@ -74,17 +73,17 @@ export default function SohlenversteifungConfigCard({
               </p>
 
               <p className="text-sm font-medium text-gray-800">Versteifung</p>
-              <InputWithUnit
+              <input
+                type="text"
                 value={value.linksMm}
-                onChange={(linksMm) => patch({ linksMm })}
-                unit="mm"
-                placeholder="z.B. 180"
+                onChange={(e) => patch({ linksMm: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
               />
-              <InputWithUnit
+              <input
+                type="text"
                 value={value.rechtsMm}
-                onChange={(rechtsMm) => patch({ rechtsMm })}
-                unit="mm"
-                placeholder="z.B. 180"
+                onChange={(e) => patch({ rechtsMm: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
               />
             </div>
           )}

@@ -3,8 +3,6 @@
 import { RadioOption } from "./shared/RadioOption"
 import OptionCard from "./shared/OptionCard"
 import InfoTooltip from "./shared/InfoTooltip"
-import VerschalungAusfuehrungCard from "./shared/VerschalungAusfuehrungCard"
-import { RAHMEN_VERSCHALUNG_IMAGES } from "./rahmenVerschalungAssets"
 import type { RahmenData, RahmenVerschalungAusfuehrung, RahmenVerschalungHoehe } from "./rahmenTypes"
 
 function stripPriceFromOptionLabel(label: string): string {
@@ -110,19 +108,15 @@ export function RahmenOptionsContent({
                 <InfoTooltip content="Die Verschalung wird grundsätzlich am Oberleder geführt und kann je nach Ausführung den gesamten Aufbau umschließen." />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <VerschalungAusfuehrungCard
-                  imageSrc={RAHMEN_VERSCHALUNG_IMAGES.oberleder}
-                  imageAlt="Verschalung am Oberleder geführt"
-                  title="Am Oberleder geführt"
-                  description="Klassische Verschalung des Oberleders, Sohlenaufbau folgt auf Verschalung"
+                <OptionCard
+                  label="Am Oberleder geführt"
+                  desc="Klassische Verschalung des Oberleders, Sohlenaufbau folgt auf Verschalung"
                   selected={ausfuehrung === "oberleder"}
                   onClick={() => setAusfuehrung("oberleder")}
                 />
-                <VerschalungAusfuehrungCard
-                  imageSrc={RAHMEN_VERSCHALUNG_IMAGES.gesamt}
-                  imageAlt="Verschalung über gesamten Aufbau gezogen"
-                  title="Über gesamten Aufbau"
-                  description="Verschalung kleiner Teil Oberleder und Sohlenaufbau, folgt nur mehr Laufsohle"
+                <OptionCard
+                  label="Über gesamten Aufbau"
+                  desc="Verschalung kleiner Teil Oberleder und Sohlenaufbau, folgt nur mehr Laufsohle"
                   selected={ausfuehrung === "gesamt"}
                   onClick={() => setAusfuehrung("gesamt")}
                 />
