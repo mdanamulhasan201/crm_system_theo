@@ -60,6 +60,16 @@ export default function VorderkappeUnifiedConfigCard({
   const rightMaterial = value?.rightMaterial ?? null
   const laenge = value?.laenge ?? "normal"
 
+  React.useEffect(() => {
+    if (!value?.mode) {
+      onChange({
+        mode: "gleich",
+        sameMaterial: value?.sameMaterial ?? null,
+        laenge: value?.laenge ?? "normal",
+      })
+    }
+  }, [value, onChange])
+
   const setMode = (m: NonNullable<Exclude<GleichUnterschiedlichMode, null>>) => {
     onChange({
       mode: m,

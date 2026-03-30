@@ -84,6 +84,21 @@ export default function BrandsohleUnifiedConfigCard({
 
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  React.useEffect(() => {
+    if (!value?.mode) {
+      onChange({
+        mode: "gleich",
+        sameValues: value?.sameValues ?? null,
+        leftValues: undefined,
+        rightValues: undefined,
+        korkEnabled: value?.korkEnabled,
+        korkPosition: value?.korkPosition,
+        korkDicke: value?.korkDicke,
+        korkCustomMm: value?.korkCustomMm,
+      })
+    }
+  }, [value, onChange])
+
   const patch = (next: BrandsohleSideData) => {
     onChange(next)
   }
