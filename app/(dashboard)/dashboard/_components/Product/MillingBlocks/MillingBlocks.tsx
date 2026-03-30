@@ -9,6 +9,7 @@ import MillingBlocksTable from './MillingBlocksTable'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import useDebounce from '@/hooks/useDebounce'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
+import { STORE_LIST_FETCH_LIMIT } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
 import { normalizeFeatures } from '../featureUtils'
@@ -65,8 +66,6 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
     const setSearchQuery = onSearchChange ?? setInternalSearch
     const debouncedSearch = useDebounce(searchQuery, 500)
-    const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
     const [addProductModalOpen, setAddProductModalOpen] = useState(false)
 
     useEffect(() => {
@@ -175,11 +174,11 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
         }
     }
 
-    // Fetch products on component mount and when pagination/search changes
+    // Fetch full list (API returns all rows; no server pagination)
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
                 const convertedProducts = apiProducts.map(convertApiProductToLocal)
                 setProducts(convertedProducts)
             } catch (err) {
@@ -189,12 +188,11 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
 
         fetchProducts()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, itemsPerPage, debouncedSearch, type])
+    }, [debouncedSearch, type])
 
     // Search handler
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value)
-        setCurrentPage(1)
     }
 
     // Filter products based on search query (now handled by API, but keeping for consistency)
@@ -240,7 +238,7 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                                 return
                             }
                         }
-                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                        const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
                         const convertedProducts = apiProducts.map(convertApiProductToLocal)
                         setProducts(convertedProducts)
                     } catch (err) {
@@ -257,7 +255,7 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                     handleCloseAddModal()
                     // Refresh products list
                     try {
-                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                        const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
                         const convertedProducts = apiProducts.map(convertApiProductToLocal)
                         setProducts(convertedProducts)
                     } catch (err) {

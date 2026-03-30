@@ -1,23 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination"
-
 import { IoSearch } from 'react-icons/io5'
 import { Input } from '@/components/ui/input'
 import LagerChart from '@/components/LagerChart/LagerChart'
@@ -30,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from './InventoryHistory'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
+import { STORE_LIST_FETCH_LIMIT } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
@@ -125,11 +109,7 @@ interface ProductsManagementProps {
 export default function ProductsManagement({ type = 'rady_insole', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: ProductsManagementProps) {
     const router = useRouter()
     // Stock management hook
-    const { products, pagination, getAllProducts, refreshProducts, isLoadingProducts, error, updateExistingProduct } = useStockManagementSlice();
-
-    // Pagination state
-    const [itemsPerPage, setItemsPerPage] = useState(10)
-    const [currentPage, setCurrentPage] = useState(1)
+    const { pagination, getAllProducts, isLoadingProducts, error, updateExistingProduct } = useStockManagementSlice();
 
     const [internalSearch, setInternalSearch] = useState('')
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
@@ -186,11 +166,11 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
         };
     };
 
-    // Fetch products on component mount and when pagination/search changes
+    // Fetch full list (API returns all rows; no server pagination)
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
+                const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type);
                 const convertedProducts = apiProducts.map(convertApiProductToLocal);
                 setProductsData(convertedProducts);
             } catch (err) {
@@ -200,19 +180,16 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
 
         fetchProducts();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, itemsPerPage, debouncedSearch, type]);
+    }, [debouncedSearch, type]);
 
 
 
-    // Pagination calculations - use API pagination
-    const totalPages = pagination?.totalPages || 1
     const visibleProducts = productsData // Already filtered by API
 
 
     // Search handler
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value)
-        setCurrentPage(1) // Reset to first page on search
     }
 
     // Stock level helpers
@@ -369,7 +346,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                                     return;
                                 }
                             }
-                            const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
+                            const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type);
                             const convertedProducts = apiProducts.map(convertApiProductToLocal);
                             setProductsData(convertedProducts);
                         } catch (err) {
@@ -377,127 +354,6 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                         }
                     }}
                 />
-            )}
-
-            {/* Pagination */}
-            {pagination && pagination.totalItems > 0 && (
-                <div className="mt-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">Zeige:</span>
-                            <Select
-                                value={itemsPerPage.toString()}
-                                onValueChange={(value) => {
-                                    const numValue = parseInt(value);
-                                    setItemsPerPage(numValue);
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                <SelectTrigger className="w-20">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="10">10</SelectItem>
-                                    <SelectItem value="20">20</SelectItem>
-                                    <SelectItem value="50">50</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <span className="text-sm text-gray-600">
-                                von {pagination.totalItems} Produkten
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Pagination>
-                                <PaginationContent>
-                                    <PaginationItem>
-                                        <PaginationPrevious
-                                            onClick={() => {
-                                                if (currentPage > 1) {
-                                                    setCurrentPage(currentPage - 1);
-                                                }
-                                            }}
-                                            className={currentPage === 1 || !pagination.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                        />
-                                    </PaginationItem>
-
-                                    {/* Show page numbers - limit to 5 pages at a time */}
-                                    {(() => {
-                                        const pages: (number | string)[] = [];
-                                        const maxVisiblePages = 5;
-
-                                        if (totalPages <= maxVisiblePages) {
-                                            // Show all pages if total is less than max
-                                            for (let i = 1; i <= totalPages; i++) {
-                                                pages.push(i);
-                                            }
-                                        } else {
-                                            // Show first page
-                                            pages.push(1);
-
-                                            if (currentPage > 3) {
-                                                pages.push('...');
-                                            }
-
-                                            // Show pages around current page
-                                            const start = Math.max(2, currentPage - 1);
-                                            const end = Math.min(totalPages - 1, currentPage + 1);
-
-                                            for (let i = start; i <= end; i++) {
-                                                if (i !== 1 && i !== totalPages) {
-                                                    pages.push(i);
-                                                }
-                                            }
-
-                                            if (currentPage < totalPages - 2) {
-                                                pages.push('...');
-                                            }
-
-                                            // Show last page
-                                            pages.push(totalPages);
-                                        }
-
-                                        return pages.map((page, index) => {
-                                            if (page === '...') {
-                                                return (
-                                                    <PaginationItem key={`ellipsis-${index}`}>
-                                                        <span className="px-2">...</span>
-                                                    </PaginationItem>
-                                                );
-                                            }
-                                            return (
-                                                <PaginationItem key={page}>
-                                                    <PaginationLink
-                                                        onClick={() => setCurrentPage(page as number)}
-                                                        isActive={currentPage === page}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {page}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            );
-                                        });
-                                    })()}
-
-                                    <PaginationItem>
-                                        <PaginationNext
-                                            onClick={() => {
-                                                if (currentPage < totalPages) {
-                                                    setCurrentPage(currentPage + 1);
-                                                }
-                                            }}
-                                            className={currentPage === totalPages || !pagination.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                        />
-                                    </PaginationItem>
-                                </PaginationContent>
-                            </Pagination>
-                        </div>
-
-                        <div className="text-sm text-gray-600">
-                            Seite {currentPage} von {totalPages}
-                        </div>
-                    </div>
-                </div>
             )}
 
 
@@ -546,7 +402,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
 
                     setProductsData((prev) => {
                         const withoutDuplicate = prev.filter(product => product.id !== newProduct.id)
-                        return [newProduct, ...withoutDuplicate].slice(0, itemsPerPage)
+                        return [newProduct, ...withoutDuplicate]
                     })
 
                     setProductCount?.((pagination?.totalItems ?? productsData.length) + 1)

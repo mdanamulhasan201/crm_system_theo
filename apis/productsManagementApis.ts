@@ -1,5 +1,8 @@
 import axiosClient from "@/lib/axiosClient";
 
+/** Single-page fetch size — backend returns full list without pagination metadata */
+export const STORE_LIST_FETCH_LIMIT = 10_000;
+
 // create product
 export const createProduct = async (productData: any, type: string) => {
     try {

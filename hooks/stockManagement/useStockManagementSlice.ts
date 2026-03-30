@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createProduct, getAllStorages, updateStorage } from '@/apis/productsManagementApis';
+import { createProduct, getAllStorages, STORE_LIST_FETCH_LIMIT, updateStorage } from '@/apis/productsManagementApis';
 import { getSingleStorage } from '@/apis/storeManagement';
 
 interface SizeData {
@@ -222,7 +222,7 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const getAllProducts = async (page: number = 1, limit: number = 10, search: string = '', type?: string) => {
+    const getAllProducts = async (page: number = 1, limit: number = STORE_LIST_FETCH_LIMIT, search: string = '', type?: string) => {
         setIsLoadingProducts(true);
         setError(null);
 
@@ -255,9 +255,22 @@ export const useStockManagementSlice = () => {
                     overview_groessenMengen: item.overview_groessenMengen || {},
                     store_brand_settings: item.store_brand_settings ?? null,
                 }));
-                
+
                 setProducts(products);
-                setPagination(response.pagination);
+                const raw = response.pagination as PaginationInfo | undefined;
+                const listLen = products.length;
+                setPagination(
+                    raw && typeof raw.totalItems === 'number'
+                        ? raw
+                        : {
+                              totalItems: listLen,
+                              totalPages: 1,
+                              currentPage: 1,
+                              itemsPerPage: Math.max(listLen, 1),
+                              hasNextPage: false,
+                              hasPrevPage: false,
+                          }
+                );
                 return products;
             } else {
                 throw new Error(response.message || 'Failed to fetch products');
@@ -305,7 +318,7 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const refreshProducts = async (page: number = 1, limit: number = 10, search: string = '', type?: string) => {
+    const refreshProducts = async (page: number = 1, limit: number = STORE_LIST_FETCH_LIMIT, search: string = '', type?: string) => {
         return await getAllProducts(page, limit, search, type);
     };
 
