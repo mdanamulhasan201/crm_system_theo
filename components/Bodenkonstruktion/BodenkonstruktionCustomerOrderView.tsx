@@ -2,41 +2,50 @@
 import React, { useMemo, useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { CalendarDays, User, Upload } from "lucide-react"
-import { GROUPS2, shoe2 } from "../_components/Massschuhauftraeges/Details/ShoeData"
-import PDFPopup, { OrderDataForPDF } from "../_components/Massschuhauftraeges/Details/PDFPopup"
-import CompletionPopUp from "../_components/Massschuhauftraeges/Details/Completion-PopUp"
+import { GROUPS2, shoe2 } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/ShoeData"
+import PDFPopup, { OrderDataForPDF } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/PDFPopup"
+import CompletionPopUp from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp"
 import toast from "react-hot-toast"
 
 // Types
-import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
+import type { OptionInputsState, TextAreasState } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData, SohlenaufbauData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
-import { defaultSohlenversteifungData, normalizeSohlenversteifungData, defaultSohlenaufbauData, normalizeSohlenaufbauData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData, SohlenaufbauData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData, normalizeSohlenversteifungData, defaultSohlenaufbauData, normalizeSohlenaufbauData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
-import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
-import ChecklistSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/ChecklistSection"
-import SoleSelectionModal from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/SoleSelectionModal"
-import SoleDetailModal from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/SoleDetailModal"
-import AbsatzFormModal from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/AbsatzFormModal"
+import SoleSelectionSection from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
+import ChecklistSection from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/ChecklistSection"
+import SoleSelectionModal from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/SoleSelectionModal"
+import SoleDetailModal from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/SoleDetailModal"
+import AbsatzFormModal from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/modals/AbsatzFormModal"
 
 // Hooks
 import { useSoleData } from "@/hooks/massschuhe/useSoleData"
 import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 
 // Utils
-import { parseEuroFromText } from "../_components/Massschuhauftraeges/Details/HelperFunctions"
+import { parseEuroFromText } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/HelperFunctions"
 
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 import { updateMassschuheOrderStepBodenkonstruktion, getMassschuheOrderStepBodenkonstruktion } from "@/apis/MassschuheAddedApis"
 
 const BODEN_STEP_STATUS = "Halbprobe_durchführen"
 
-export default function BodenkonstruktionCustomerOrderPage() {
+type BodenkonstruktionCustomerOrderViewProps = {
+    embeddedOrderId?: string | null
+    onCloseEmbedded?: () => void
+}
+
+export function BodenkonstruktionCustomerOrderView({
+    embeddedOrderId,
+    onCloseEmbedded,
+}: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const orderId = searchParams.get("orderId")
+    const orderId = embeddedOrderId ?? searchParams.get("orderId")
+    const handleCancel = onCloseEmbedded ?? (() => router.back())
     const prefillDoneRef = useRef(false)
 
     // Customer name state
@@ -422,7 +431,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
             <StickyPriceSummary
                 price={grandTotal}
                 onWeiterClick={handleWeiterClick}
-                onCancel={() => router.back()}
+                onCancel={handleCancel}
                 isSubmitting={isSubmitting}
                 weiterLabel={orderId ? "Abschließen" : undefined}
                 hidePrice={true}
@@ -544,7 +553,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
-                onCancel={() => router.back()}
+                onCancel={handleCancel}
                 isSubmitting={isSubmitting}
                 hideActionButtons={true}
                 selectedSole={selectedSole}
@@ -642,4 +651,8 @@ export default function BodenkonstruktionCustomerOrderPage() {
             />
         </div>
     )
+}
+
+export default function BodenkonstruktionCustomerOrderPage() {
+    return <BodenkonstruktionCustomerOrderView />
 }

@@ -14,6 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { BodenkonstruktionCustomerOrderView } from '@/components/Bodenkonstruktion/BodenkonstruktionCustomerOrderView';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 const BODEN_OPTIONS = [
@@ -56,6 +57,7 @@ export default function BodenkonstruktionFiledText({
     const [externNoteLocal, setExternNoteLocal] = useState('');
     const [hasBodenkonstruktionData, setHasBodenkonstruktionData] = useState(false);
     const [bodenLoading, setBodenLoading] = useState(false);
+    const [internPopupOpen, setInternPopupOpen] = useState(false);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -85,11 +87,7 @@ export default function BodenkonstruktionFiledText({
     }, [isStep5, fetchBodenkonstruktion]);
 
     const handleErweitertClick = () => {
-        if (orderId) {
-            router.push(`/dashboard/bodenkonstruktion-customer-order?orderId=${encodeURIComponent(orderId)}`);
-        } else {
-            router.push('/dashboard/bodenkonstruktion-customer-order');
-        }
+        setInternPopupOpen(true);
     };
 
     const handleExternBestellenRedirect = () => {
@@ -214,6 +212,23 @@ export default function BodenkonstruktionFiledText({
                             Jetzt bestellen
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={internPopupOpen} onOpenChange={setInternPopupOpen}>
+                <DialogContent className="!max-w-4xl h-[92vh] p-0 overflow-hidden">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Interne Bodenkonstruktion</DialogTitle>
+                        <DialogDescription>
+                            Bearbeiten Sie die interne Bodenkonstruktion im eingebetteten Bereich.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="h-full w-full bg-white overflow-y-auto p-2">
+                        <BodenkonstruktionCustomerOrderView
+                            embeddedOrderId={orderId}
+                            onCloseEmbedded={() => setInternPopupOpen(false)}
+                        />
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
