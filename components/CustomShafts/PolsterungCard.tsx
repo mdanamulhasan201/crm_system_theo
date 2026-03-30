@@ -12,18 +12,17 @@ const ACTIVE_GREEN = 'bg-[#679C7A] text-white shadow-sm';
 
 const MM_SELECT_TRIGGER_CLASS =
   'h-9 min-h-9 w-full border-gray-300 bg-white px-2.5 py-0 text-sm shadow-sm';
+const MM_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
 
-/** Pro Feld nur der eine Standard-mm-Wert (keine Mehrfachliste). */
+/** Pro Feld Auswahl 1-12 mm; Standardwert bleibt vorausgewählt. */
 function MmSelect({
   id,
   value,
   onChange,
-  standardMm,
 }: {
   id: string;
   value: string;
   onChange: (v: string) => void;
-  standardMm: string;
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
@@ -31,9 +30,11 @@ function MmSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={standardMm} className="cursor-pointer">
-          {standardMm} mm
-        </SelectItem>
+        {MM_OPTIONS.map((mm) => (
+          <SelectItem key={mm} value={mm} className="cursor-pointer">
+            {mm} mm
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
@@ -58,9 +59,9 @@ export default function PolsterungCard({
 }: PolsterungCardProps) {
   const isErweitert = polsterung.includes('Erweitert');
 
-  const mmForSelect = (raw: string, onlyAllowed: string) => {
+  const mmForSelect = (raw: string, fallback: string) => {
     const t = raw.trim();
-    return t === onlyAllowed ? t : onlyAllowed;
+    return MM_OPTIONS.includes(t) ? t : fallback;
   };
 
   useEffect(() => {
@@ -143,7 +144,6 @@ export default function PolsterungCard({
                 id="polsterung-abschluss"
                 value={mmForSelect(polsterungMm.abschluss, STANDARD_POLSTERUNG_MM.abschluss)}
                 onChange={(v) => setPolsterungMm((m) => ({ ...m, abschluss: v }))}
-                standardMm={STANDARD_POLSTERUNG_MM.abschluss}
               />
             </div>
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -152,7 +152,6 @@ export default function PolsterungCard({
                 id="polsterung-knoechel"
                 value={mmForSelect(polsterungMm.knoechel, STANDARD_POLSTERUNG_MM.knoechel)}
                 onChange={(v) => setPolsterungMm((m) => ({ ...m, knoechel: v }))}
-                standardMm={STANDARD_POLSTERUNG_MM.knoechel}
               />
             </div>
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -161,7 +160,6 @@ export default function PolsterungCard({
                 id="polsterung-lasche"
                 value={mmForSelect(polsterungMm.lasche, STANDARD_POLSTERUNG_MM.lasche)}
                 onChange={(v) => setPolsterungMm((m) => ({ ...m, lasche: v }))}
-                standardMm={STANDARD_POLSTERUNG_MM.lasche}
               />
             </div>
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -170,7 +168,6 @@ export default function PolsterungCard({
                 id="polsterung-ferse"
                 value={mmForSelect(polsterungMm.ferse, STANDARD_POLSTERUNG_MM.ferse)}
                 onChange={(v) => setPolsterungMm((m) => ({ ...m, ferse: v }))}
-                standardMm={STANDARD_POLSTERUNG_MM.ferse}
               />
             </div>
           </div>

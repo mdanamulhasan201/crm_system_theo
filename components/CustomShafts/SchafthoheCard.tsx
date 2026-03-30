@@ -122,7 +122,11 @@ export default function SchafthoheCard({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <SectionCardHeader icon={Ruler} title="Schafthöhe" subtitle="Höhe und Beinmaße konfigurieren" />
+      <SectionCardHeader
+        icon={Ruler}
+        title="Schafthöhe"
+        subtitle="Schafthöhe ohne Zwickeinschlag angeben (wird automatisch von FeetF1rst berechnet)"
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
         <div className="flex min-w-0 flex-col gap-1.5">
@@ -150,9 +154,7 @@ export default function SchafthoheCard({
       {showBeinmasse && (
         <>
           <div className="my-6 border-t border-gray-200" />
-          <p className="mb-4 text-sm font-medium text-emerald-700">
-            Beinmaße erforderlich (Schafthöhe &gt; 13 cm)
-          </p>
+          <p className="mb-4 text-sm font-medium text-emerald-700">(Achtung gemessen ab Boden)</p>
 
           {leftFields.requireCircumference && (
             <div className="mb-6 space-y-3">
