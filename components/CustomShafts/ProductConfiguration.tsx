@@ -486,6 +486,16 @@ ref: React.Ref<ProductConfigurationHandle>
     if (value === 'Velcro') {
       updateSchnursenkel(undefined);
       updateOsen(undefined);
+      setAnzahlOesen('');
+      setAnzahlHaken('');
+      setOffenstandSchnuerungMm('');
+      return;
+    }
+
+    if (value === 'Eyelets') {
+      setAnzahlKlettstreifen('');
+      setBreiteKlettstreifenMm('');
+      setOffenstandSchnuerungMm('');
     }
   };
 

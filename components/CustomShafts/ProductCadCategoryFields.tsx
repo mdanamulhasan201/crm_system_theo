@@ -57,8 +57,8 @@ export default function ProductCadCategoryFields({
     return (
       <div className="flex flex-col gap-5">
         <SectionCardHeader
-          title="CAD & Kategorie"
-          subtitle="Modellierung und Produkttyp"
+          title=""
+          subtitle=""
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
         <div className="flex flex-col gap-1.5">
