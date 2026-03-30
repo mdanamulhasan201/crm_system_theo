@@ -219,7 +219,7 @@ interface ProductConfigurationProps {
   polsterungMm: PolsterungMmFields;
   setPolsterungMm: Dispatch<SetStateAction<PolsterungMmFields>>;
   verstarkungen: string[];
-  setVerstarkungen: (items: string[]) => void;
+  setVerstarkungen: Dispatch<SetStateAction<string[]>>;
   polsterungText: string;
   setPolsterungText: (text: string) => void;
   verstarkungenText: string;
