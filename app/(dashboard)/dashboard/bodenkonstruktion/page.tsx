@@ -57,7 +57,11 @@ export default function BodenkonstruktionPage() {
     const [customerName, setCustomerName] = useState<string>("")
 
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
+    const [selected, setSelected] = useState<SelectedState>({
+        hinterkappe: "kunststoff",
+        sohlenversteifung: "nein",
+        verbindungsleder: "ja",
+    })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",
@@ -589,7 +593,7 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
+        // 3. Brandsohle (prices are per side; "gleich" => x2 for both shoes)
         if (brandsohleSide && brandsohleSide.mode) {
             bodenkonstruktionJson.Seite_wählen = brandsohleSide.mode
             bodenkonstruktionJson.brandsohleSide = {
@@ -603,17 +607,16 @@ export default function BodenkonstruktionPage() {
                 korkCustomMm: brandsohleSide.korkCustomMm || "",
             }
             let price = 0
-            const halfPrice = (p: number) => Math.floor(p * 50) / 100
             if (brandsohleSide.mode === "gleich") {
                 for (const id of (brandsohleSide.sameValues || [])) {
-                    price += getOptionPrice("brandsohle", id)
+                    price += getOptionPrice("brandsohle", id) * 2
                 }
             } else {
                 for (const id of (brandsohleSide.leftValues || [])) {
-                    price += halfPrice(getOptionPrice("brandsohle", id))
+                    price += getOptionPrice("brandsohle", id)
                 }
                 for (const id of (brandsohleSide.rightValues || [])) {
-                    price += halfPrice(getOptionPrice("brandsohle", id))
+                    price += getOptionPrice("brandsohle", id)
                 }
             }
             bodenkonstruktionJson.brandsohle_price = price

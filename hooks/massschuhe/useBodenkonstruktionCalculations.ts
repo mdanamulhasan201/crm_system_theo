@@ -17,7 +17,7 @@ import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, Brands
  * @param rahmen - Rahmen selection data (Verschalung / Gürtel +24,99 €; kein Gummi-Aufpreis)
  * @param hinterkappeMusterSide - Hinterkappe Muster (kein Aufpreis im Gesamtpreis)
  * @param hinterkappeSide - Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
- * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
+ * @param brandsohleSide - Brandsohle (prices are per side; "gleich" applies to both shoes)
  * @param vorderkappeSide - Vorderkappe „Doppelt“ = +2,99 € pro betroffener Seite (bei gleich: beide Schuhe)
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
@@ -121,7 +121,7 @@ export function useBodenkonstruktionCalculations(
             }
         }
 
-        // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
+        // 3. Brandsohle (prices are per side; "gleich" => x2 for both shoes)
         const brandsohleGroup = GROUPS2.find(g => g.id === "brandsohle")
         if (brandsohleSide?.mode && brandsohleGroup) {
             const getFullPrice = (optId: string) => {
@@ -129,11 +129,10 @@ export function useBodenkonstruktionCalculations(
                 return opt ? parseEuroFromText(opt.label) : 0
             }
             if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues?.length) {
-                brandsohleSide.sameValues.forEach(id => { totalExtraPrice += getFullPrice(id) })
+                brandsohleSide.sameValues.forEach(id => { totalExtraPrice += getFullPrice(id) * 2 })
             } else if (brandsohleSide.mode === "unterschiedlich") {
-                const half = (p: number) => Math.floor(p * 50) / 100
-                ;(brandsohleSide.leftValues || []).forEach(id => { totalExtraPrice += half(getFullPrice(id)) })
-                ;(brandsohleSide.rightValues || []).forEach(id => { totalExtraPrice += half(getFullPrice(id)) })
+                ;(brandsohleSide.leftValues || []).forEach(id => { totalExtraPrice += getFullPrice(id) })
+                ;(brandsohleSide.rightValues || []).forEach(id => { totalExtraPrice += getFullPrice(id) })
             }
         }
 
