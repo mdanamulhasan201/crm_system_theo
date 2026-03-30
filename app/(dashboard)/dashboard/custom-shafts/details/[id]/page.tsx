@@ -5,7 +5,6 @@ import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft'
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderIdWithoutCustomModels } from '@/apis/MassschuheAddedApis';
-import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 // import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
@@ -63,17 +62,22 @@ export default function CollectionShaftDetailsPage() {
   // Get params
   const shaftId = params.id as string;
   const orderId = searchParams.get('orderId');
+  const prefilledCustomerId = searchParams.get('customerId');
+  const prefilledCustomerName = searchParams.get('customerName');
   const type = searchParams.get('type');
   const source = searchParams.get('source');
   const isAbholung = type === 'abholung';
   const isFrom3DUpload = source === '3dupload';
+  const hasPrefilledCustomer = Boolean(prefilledCustomerId || prefilledCustomerName);
+
+  const isUuidOrderId = typeof orderId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId);
 
   // Fetch data
   const { data: apiData, loading: shaftLoading, error: shaftError } = useSingleCustomShaft(shaftId);
-  const { order: massschuheOrder, loading: orderLoading } = useGetSingleMassschuheOrder(orderId);
+  const { order: massschuheOrder, loading: orderLoading } = useGetSingleMassschuheOrder(isUuidOrderId ? orderId : null);
   
   const shaft = apiData?.data;
-  const loading = orderLoading || shaftLoading;
+  const loading = shaftLoading || (isUuidOrderId && orderLoading);
   const error = shaftError;
 
   // Customer selection
@@ -180,6 +184,18 @@ export default function CollectionShaftDetailsPage() {
 
   // Pre-fill customer from order
   useEffect(() => {
+    if (hasPrefilledCustomer) {
+      setSelectedCustomer({
+        id: prefilledCustomerId || '',
+        name: prefilledCustomerName || prefilledCustomerId || '',
+        email: '',
+        phone: null,
+        location: '',
+        createdAt: '',
+      });
+      setOtherCustomerNumber('');
+      return;
+    }
     if (massschuheOrder) {
       const orderWithCustomer = massschuheOrder as any;
       if (orderWithCustomer.customer) {
@@ -203,7 +219,7 @@ export default function CollectionShaftDetailsPage() {
         });
       }
     }
-  }, [massschuheOrder]);
+  }, [hasPrefilledCustomer, prefilledCustomerId, prefilledCustomerName, massschuheOrder]);
 
   // Pre-fill category from shaft
   useEffect(() => {
@@ -220,7 +236,7 @@ export default function CollectionShaftDetailsPage() {
   useEffect(() => {
     if (!shaft?.verschlussart) return;
     setClosureType(shaft.verschlussart);
-  }, [shaft?.id]);
+  }, [shaft?.id, shaft?.verschlussart]);
 
   // Reißverschluss: API `is_zipper` — true → default „Ja +9,99 €“, false → default „Nein“ (beide Optionen bleiben wählbar)
   useEffect(() => {
@@ -232,7 +248,7 @@ export default function CollectionShaftDetailsPage() {
       setZipperPosition(null);
       setZipperImage(null);
     }
-  }, [shaft?.id]);
+  }, [shaft]);
 
   // Reset business address when not in abholung mode
   useEffect(() => {
@@ -581,10 +597,11 @@ export default function CollectionShaftDetailsPage() {
         formData.append('deliveryDate', new Date(y, m - 1, d).toISOString());
       }
 
-      // Call appropriate API based on context
-      const response = orderId
-        ? await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact)
-        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact);
+      // Existing shoe order linkage must go in body, not URL params.
+      if (orderId) {
+        formData.append('shoe_order_id', orderId);
+      }
+      const response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact);
 
       toast.success(response.message || (orderId ? "Bestellung erfolgreich aktualisiert!" : "Bestellung erfolgreich erstellt!"), { id: "creating-order" });
 
@@ -649,7 +666,9 @@ export default function CollectionShaftDetailsPage() {
         onSelectCustomer={setSelectedCustomer}
         otherCustomerNumber={otherCustomerNumber}
         setOtherCustomerNumber={setOtherCustomerNumber}
-        hideCustomerSearch={!!orderId}
+        hideCustomerSearch={false}
+        lockCustomerSelection={hasPrefilledCustomer}
+        hideExternalCustomer={hasPrefilledCustomer}
         hideFileUploads={isAbholung}
         businessAddress={businessAddress}
         onBusinessAddressSave={(data) => {

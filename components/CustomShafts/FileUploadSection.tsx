@@ -58,6 +58,10 @@ interface FileUploadSectionProps {
   highlightDeliveryChoice?: boolean;
   /** Nach fehlgeschlagener Validierung: 3D-Upload-Spalten hervorheben */
   highlight3dUploads?: boolean;
+  /** Lock customer field and prevent editing */
+  lockCustomerSelection?: boolean;
+  /** Hide external customer input */
+  hideExternalCustomer?: boolean;
 }
 
 export default function FileUploadSection({
@@ -82,6 +86,8 @@ export default function FileUploadSection({
   orderId,
   highlightDeliveryChoice = false,
   highlight3dUploads = false,
+  lockCustomerSelection = false,
+  hideExternalCustomer = false,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
@@ -97,8 +103,8 @@ export default function FileUploadSection({
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
 
   // Disable one customer input when the other is filled
-  const isCustomerSelectDisabled = !!otherCustomerNumber;
-  const isExternalCustomerDisabled = !!selectedCustomer;
+  const isCustomerSelectDisabled = !!otherCustomerNumber || lockCustomerSelection;
+  const isExternalCustomerDisabled = !!selectedCustomer || lockCustomerSelection;
   
   // Check if buttons are active
   const isAbholenActive = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
@@ -219,7 +225,7 @@ export default function FileUploadSection({
           )}
 
           {/* Kunden Extern Section */}
-          {!hideCustomerSearch && (
+          {!hideCustomerSearch && !hideExternalCustomer && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Kunden Extern</label>
               <div className="relative">

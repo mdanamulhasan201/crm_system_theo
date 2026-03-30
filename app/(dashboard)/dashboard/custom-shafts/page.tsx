@@ -42,6 +42,10 @@ export default function CustomShafts() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get('orderId');
+    const customerId = searchParams.get('customerId');
+    const customerName = searchParams.get('customerName');
+    const categoryFromQuery = searchParams.get('category');
+    const isMassschuhauftraegeOrderCategory = categoryFromQuery === 'massschuhauftraege_order';
 
     // Save showPrices to localStorage whenever it changes
     useEffect(() => {
@@ -199,9 +203,12 @@ export default function CustomShafts() {
     // Handle 3D Upload selection - navigate to details page
     const handle3DUpload = () => {
         if (selectedShaftId) {
-            const url = orderId
-                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&source=3dupload`
-                : `/dashboard/custom-shafts/details/${selectedShaftId}?source=3dupload`;
+            const params = new URLSearchParams();
+            params.set('source', '3dupload');
+            if (orderId) params.set('orderId', orderId);
+            if (customerId) params.set('customerId', customerId);
+            if (customerName) params.set('customerName', customerName);
+            const url = `/dashboard/custom-shafts/details/${selectedShaftId}?${params.toString()}`;
             router.push(url);
         }
     }
@@ -210,9 +217,12 @@ export default function CustomShafts() {
     const handleAbholung = () => {
         if (selectedShaftId) {
             // Navigate to details page for pickup option
-            const url = orderId
-                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&type=abholung`
-                : `/dashboard/custom-shafts/details/${selectedShaftId}?type=abholung`;
+            const params = new URLSearchParams();
+            params.set('type', 'abholung');
+            if (orderId) params.set('orderId', orderId);
+            if (customerId) params.set('customerId', customerId);
+            if (customerName) params.set('customerName', customerName);
+            const url = `/dashboard/custom-shafts/details/${selectedShaftId}?${params.toString()}`;
             router.push(url);
         }
     }
@@ -379,10 +389,13 @@ export default function CustomShafts() {
             />
 
 
-            {/* footer  logo*/}
-            <LeistenDigitalGenerieren />
-
-            <BottomFooter />
+            {!isMassschuhauftraegeOrderCategory && (
+                <>
+                    {/* footer  logo*/}
+                    <LeistenDigitalGenerieren />
+                    <BottomFooter />
+                </>
+            )}
         </div>
     );
 }

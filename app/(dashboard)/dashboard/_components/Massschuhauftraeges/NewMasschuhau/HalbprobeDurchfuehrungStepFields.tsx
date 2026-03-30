@@ -48,6 +48,11 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     schafttypExternNote: string;
     /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen). Also used for step 5 massschafterstellung GET/POST. */
     orderId?: string;
+    /** Actual orderId to use in custom-shafts redirect query */
+    redirectOrderId?: string;
+    /** Prefill customer in custom-shafts details page */
+    redirectCustomerId?: string;
+    redirectCustomerName?: string;
     /** Step 5 status for massschafterstellung API (e.g. "Halbprobe_durchführen") */
     stepStatus?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
@@ -90,6 +95,9 @@ export default function HalbprobeDurchfuehrungStepFields({
     schafttypInternNote,
     schafttypExternNote,
     orderId,
+    redirectOrderId,
+    redirectCustomerId,
+    redirectCustomerName,
     stepStatus,
     checklisteHalbprobe,
     bodenkonstruktionInternNote,
@@ -278,6 +286,9 @@ export default function HalbprobeDurchfuehrungStepFields({
                 schafttypInternNote={schafttypInternNote}
                 schafttypExternNote={schafttypExternNote}
                 orderId={orderId}
+                redirectOrderId={redirectOrderId}
+                redirectCustomerId={redirectCustomerId}
+                redirectCustomerName={redirectCustomerName}
                 stepStatus={stepStatus}
                 onSchafttypChange={onSchafttypChange}
                 onSchafttypInternNoteChange={onSchafttypInternNoteChange}

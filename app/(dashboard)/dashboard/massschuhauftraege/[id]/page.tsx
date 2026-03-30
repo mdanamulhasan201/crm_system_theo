@@ -296,6 +296,9 @@ export default function MassschuhauftraegePage() {
     // Completed-by from API for current step (partner or employee who completed this step)
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
+    const [redirectOrderId, setRedirectOrderId] = useState('');
+    const [redirectCustomerId, setRedirectCustomerId] = useState('');
+    const [redirectCustomerName, setRedirectCustomerName] = useState('');
     useEffect(() => {
         if (!id) {
             setLoading(false);
@@ -315,6 +318,11 @@ export default function MassschuhauftraegePage() {
                 setOrderData(mapApiOrderToDetailData(res));
                 const data = res?.data;
                 if (data) {
+                    setRedirectOrderId(data.orderId ? String(data.orderId) : '');
+                    const customer = data.order?.customer;
+                    setRedirectCustomerId(customer?.id ? String(customer.id) : '');
+                    const customerName = [customer?.vorname, customer?.nachname].filter(Boolean).join(' ').trim();
+                    setRedirectCustomerName(customerName);
                     setStepCompletedByPartner(data.partner ?? null);
                     setStepCompletedByEmployee(data.employee ?? null);
                     setNotes(data.notes != null ? String(data.notes) : '');
@@ -370,6 +378,9 @@ export default function MassschuhauftraegePage() {
                         fileType: f.fileType,
                     })) : []);
                 } else {
+                    setRedirectOrderId('');
+                    setRedirectCustomerId('');
+                    setRedirectCustomerName('');
                     setStepCompletedByPartner(null);
                     setStepCompletedByEmployee(null);
                     setNotes('');
@@ -528,6 +539,11 @@ export default function MassschuhauftraegePage() {
                 setOrderData(updated);
                 const data = res?.data;
                 if (data) {
+                    setRedirectOrderId(data.orderId ? String(data.orderId) : '');
+                    const customer = data.order?.customer;
+                    setRedirectCustomerId(customer?.id ? String(customer.id) : '');
+                    const customerName = [customer?.vorname, customer?.nachname].filter(Boolean).join(' ').trim();
+                    setRedirectCustomerName(customerName);
                     setNotes(data.notes != null ? String(data.notes) : '');
                     if (data.material != null && data.material !== '') setMaterial(String(data.material));
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
@@ -576,6 +592,9 @@ export default function MassschuhauftraegePage() {
                         fileType: f.fileType,
                     })) : []);
                 } else {
+                    setRedirectOrderId('');
+                    setRedirectCustomerId('');
+                    setRedirectCustomerName('');
                     setStepFilesFromApi([]);
                 }
                 // Auto-activate next step: navigate so the next step is shown (e.g. Auftragserstellung done → Leistenerstellung active)
@@ -979,6 +998,9 @@ export default function MassschuhauftraegePage() {
                                     {activeStepIndex === 4 && (
                                         <HalbprobeDurchfuehrungStepFields
                                             orderId={id}
+                                            redirectOrderId={redirectOrderId}
+                                            redirectCustomerId={redirectCustomerId}
+                                            redirectCustomerName={redirectCustomerName}
                                             stepStatus="Halbprobe_durchführen"
                                             probenergebnis={probenergebnis}
                                             schafttyp={schafttyp}

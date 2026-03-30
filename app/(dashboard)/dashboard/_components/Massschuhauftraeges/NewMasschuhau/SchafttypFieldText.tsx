@@ -35,6 +35,11 @@ export interface SchafttypFieldTextProps {
     onSchafttypExternNoteChange: (value: string) => void;
     /** Step 5: orderId + step status for massschafterstellung GET/POST (erweitert modal) */
     orderId?: string;
+    /** Actual orderId used for custom-shafts redirect query param */
+    redirectOrderId?: string;
+    /** Prefill customer in custom-shafts details page */
+    redirectCustomerId?: string;
+    redirectCustomerName?: string;
     stepStatus?: string;
 }
 
@@ -46,6 +51,9 @@ export default function SchafttypFieldText({
     onSchafttypInternNoteChange,
     onSchafttypExternNoteChange,
     orderId,
+    redirectOrderId,
+    redirectCustomerId,
+    redirectCustomerName,
     stepStatus,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
@@ -223,7 +231,14 @@ export default function SchafttypFieldText({
                             className="bg-[#61A178] hover:bg-[#4A8A5F]"
                             onClick={() => {
                                 setExternOrderDialogOpen(false);
-                                router.push('/dashboard/custom-shafts');
+                                const targetOrderId = redirectOrderId || orderId;
+                                const params = new URLSearchParams();
+                                params.set('category', 'massschuhauftraege_order');
+                                if (targetOrderId) params.set('orderId', targetOrderId);
+                                if (redirectCustomerId) params.set('customerId', redirectCustomerId);
+                                if (redirectCustomerName) params.set('customerName', redirectCustomerName);
+                                const query = `?${params.toString()}`;
+                                router.push(`/dashboard/custom-shafts${query}`);
                             }}
                         >
                             Jetzt bestellen

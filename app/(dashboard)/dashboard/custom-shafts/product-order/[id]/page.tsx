@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
-import { sendMassschuheCustomShaftOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 import { prepareStep1FormData, buildUmfangmasseWithTitles } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 
@@ -423,10 +422,11 @@ export default function CustomShoeOrderPage() {
         formData.append('invoice', finalBlob, 'invoice.pdf');
       }
 
-      // Call appropriate API based on whether this is a new order or updating an existing order
-      const response = existingOrderId
-        ? await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData, isCourierContact)
-        : await createMassschuheWithoutOrderId(formData, isCourierContact);
+      // Existing shoe order linkage must go in body, not URL params.
+      if (existingOrderId) {
+        formData.append('shoe_order_id', existingOrderId);
+      }
+      const response = await createMassschuheWithoutOrderId(formData, isCourierContact);
 
       toast.success(response.message || (existingOrderId ? "Bestellung erfolgreich aktualisiert!" : "Bestellung erfolgreich erstellt!"), { id: "creating-order" });
 
