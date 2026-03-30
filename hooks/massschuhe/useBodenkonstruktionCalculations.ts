@@ -113,7 +113,8 @@ export function useBodenkonstruktionCalculations(
                 return sub?.price ?? 0
             }
             if (hinterkappeSide.mode === "gleich" && hinterkappeSide.sameValue === "leder") {
-                totalExtraPrice += getLederSubPrice(hinterkappeSide.sameSubValue)
+                // Prices are defined per side; "gleich" applies to both shoes.
+                totalExtraPrice += getLederSubPrice(hinterkappeSide.sameSubValue) * 2
             } else if (hinterkappeSide.mode === "unterschiedlich") {
                 if (hinterkappeSide.leftValue === "leder") totalExtraPrice += getLederSubPrice(hinterkappeSide.leftSubValue)
                 if (hinterkappeSide.rightValue === "leder") totalExtraPrice += getLederSubPrice(hinterkappeSide.rightSubValue)

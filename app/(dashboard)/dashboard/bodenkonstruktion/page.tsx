@@ -562,18 +562,23 @@ export default function BodenkonstruktionPage() {
             }
             if (leftVal === "leder" && leftSub) {
                 bodenkonstruktionJson.leder_auswahl_links = leftSub
-                bodenkonstruktionJson.leder_auswahl_links_price = getSubOptionPrice("hinterkappe", leftSub)
+                const leftSubPrice = getSubOptionPrice("hinterkappe", leftSub)
+                bodenkonstruktionJson.leder_auswahl_links_price = leftSubPrice
                 bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl || leftSub
-                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", leftSub)
+                bodenkonstruktionJson.leder_auswahl_price += leftSubPrice
             }
             if (rightVal === "leder" && rightSub) {
                 bodenkonstruktionJson.leder_auswahl_rechts = rightSub
                 if (hinterkappeSide.mode === "unterschiedlich") {
-                    bodenkonstruktionJson.leder_auswahl_rechts_price = getSubOptionPrice("hinterkappe", rightSub)
+                    const rightSubPrice = getSubOptionPrice("hinterkappe", rightSub)
+                    bodenkonstruktionJson.leder_auswahl_rechts_price = rightSubPrice
                     bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl ? `${bodenkonstruktionJson.leder_auswahl},${rightSub}` : rightSub
-                    bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", rightSub)
+                    bodenkonstruktionJson.leder_auswahl_price += rightSubPrice
                 } else {
                     bodenkonstruktionJson.leder_auswahl_rechts = leftSub
+                    // "gleich" means both shoes; price is per side => multiply by 2 total.
+                    bodenkonstruktionJson.leder_auswahl_rechts_price = bodenkonstruktionJson.leder_auswahl_links_price
+                    bodenkonstruktionJson.leder_auswahl_price = bodenkonstruktionJson.leder_auswahl_links_price * 2
                 }
             }
         } else if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {

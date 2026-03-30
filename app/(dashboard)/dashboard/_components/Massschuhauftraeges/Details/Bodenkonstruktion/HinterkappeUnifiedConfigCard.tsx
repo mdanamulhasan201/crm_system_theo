@@ -188,6 +188,19 @@ export default function HinterkappeUnifiedConfigCard({
     }
   }
 
+  React.useEffect(() => {
+    if (!musterValue?.musterErstellung) {
+      onMusterChange({
+        mode: (musterValue?.mode ?? "gleich") as GleichUnterschiedlichMode,
+        sameValue: musterValue?.sameValue,
+        leftValue: musterValue?.leftValue,
+        rightValue: musterValue?.rightValue,
+        musterErstellung: "nein",
+        musterart: null,
+      })
+    }
+  }, [musterValue, onMusterChange])
+
   const setMusterart = (art: string) => {
     if (musterValue?.musterErstellung !== "ja" && erstellung !== "ja") return
     const prev = musterValue
@@ -201,19 +214,6 @@ export default function HinterkappeUnifiedConfigCard({
     })
   }
 
-  const musterMode: GleichUnterschiedlichMode = musterValue?.mode ?? "gleich"
-  const setMusterMode = (nextMode: NonNullable<Exclude<GleichUnterschiedlichMode, null>>) => {
-    const prev = musterValue
-    onMusterChange({
-      mode: nextMode,
-      sameValue: nextMode === "gleich" ? (prev?.sameValue ?? null) : undefined,
-      leftValue: nextMode === "unterschiedlich" ? (prev?.leftValue ?? null) : undefined,
-      rightValue: nextMode === "unterschiedlich" ? (prev?.rightValue ?? null) : undefined,
-      musterErstellung: prev?.musterErstellung ?? null,
-      musterart: prev?.musterart ?? null,
-    })
-  }
-
   const mode = materialValue?.mode ?? null
   const sameValue = materialValue?.sameValue || null
   const sameSubValue = materialValue?.sameSubValue || null
@@ -221,6 +221,16 @@ export default function HinterkappeUnifiedConfigCard({
   const leftSubValue = materialValue?.leftSubValue || null
   const rightValue = materialValue?.rightValue || null
   const rightSubValue = materialValue?.rightSubValue || null
+
+  React.useEffect(() => {
+    if (!materialValue?.mode) {
+      onMaterialChange({
+        mode: "gleich",
+        sameValue: materialValue?.sameValue ?? null,
+        sameSubValue: materialValue?.sameSubValue ?? null,
+      })
+    }
+  }, [materialValue, onMaterialChange])
 
   const setMode = (m: NonNullable<Exclude<GleichUnterschiedlichMode, null>>) => {
     onMaterialChange({
@@ -277,14 +287,14 @@ export default function HinterkappeUnifiedConfigCard({
               </p>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 <RadioOption
-                  selected={erstellung === "ja"}
-                  onClick={() => setErstellung("ja")}
-                  label="Ja, ein Muster erstellen"
-                />
-                <RadioOption
                   selected={erstellung === "nein"}
                   onClick={() => setErstellung("nein")}
                   label="Nein, Muster liefern wir selbst"
+                />
+                <RadioOption
+                  selected={erstellung === "ja"}
+                  onClick={() => setErstellung("ja")}
+                  label="Ja, ein Muster erstellen"
                 />
                 <RadioOption
                   selected={erstellung === "leisten"}
@@ -292,6 +302,58 @@ export default function HinterkappeUnifiedConfigCard({
                   label="Wird auf dem Leisten gekennzeichnet"
                 />
               </div>
+            </div>
+
+            <div className="mt-5 border-t border-gray-200 pt-5">
+              <SideSelector value={mode} onChange={setMode} />
+
+              {mode ? (
+                <div className="mt-5 border-t border-gray-200 pt-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
+                  {mode === "gleich" ? (
+                    <div className="mt-3">
+                      <MaterialRow
+                        material={sameValue}
+                        subValue={sameSubValue}
+                        def={materialDef}
+                        onMaterial={(id) => {
+                          if (id === null) patchGleich({ sameValue: null, sameSubValue: null })
+                          else if (id !== "leder") patchGleich({ sameValue: id, sameSubValue: null })
+                          else patchGleich({ sameValue: "leder", sameSubValue: sameSubValue })
+                        }}
+                        onSub={(id) => patchGleich({ sameSubValue: id })}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-6">
+                      <MaterialRow
+                        sideLabel="LINKS"
+                        material={leftValue}
+                        subValue={leftSubValue}
+                        def={materialDef}
+                        onMaterial={(id) => {
+                          if (id === null) patchLinks({ leftValue: null, leftSubValue: null })
+                          else if (id !== "leder") patchLinks({ leftValue: id, leftSubValue: null })
+                          else patchLinks({ leftValue: "leder", leftSubValue: leftSubValue })
+                        }}
+                        onSub={(id) => patchLinks({ leftSubValue: id })}
+                      />
+                      <MaterialRow
+                        sideLabel="RECHTS"
+                        material={rightValue}
+                        subValue={rightSubValue}
+                        def={materialDef}
+                        onMaterial={(id) => {
+                          if (id === null) patchRechts({ rightValue: null, rightSubValue: null })
+                          else if (id !== "leder") patchRechts({ rightValue: id, rightSubValue: null })
+                          else patchRechts({ rightValue: "leder", rightSubValue: rightSubValue })
+                        }}
+                        onSub={(id) => patchRechts({ rightSubValue: id })}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
 
             {erstellung === "ja" ? (
@@ -322,79 +384,9 @@ export default function HinterkappeUnifiedConfigCard({
               </div>
             ) : null}
 
-            <div className="mt-4 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ausführung</p>
-              <div className="flex flex-wrap gap-x-8 gap-y-2">
-                <RadioOption
-                  selected={musterMode === "gleich"}
-                  onClick={() => setMusterMode("gleich")}
-                  label="Beidseitig identisch"
-                />
-                <RadioOption
-                  selected={musterMode === "unterschiedlich"}
-                  onClick={() => setMusterMode("unterschiedlich")}
-                  label="Links und rechts unterschiedlich"
-                />
-              </div>
-            </div>
           </div>
         </ConfigCard>
 
-        <ConfigCard
-          title="Hinterkappe"
-          subtitle="Material und Leder können links und rechts unterschiedlich gewählt werden"
-          icon={<ShieldCheck size={20} />}
-        >
-          <SideSelector value={mode} onChange={setMode} />
-
-          {mode ? (
-            <div className="mt-5 border-t border-gray-200 pt-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
-              {mode === "gleich" ? (
-                <div className="mt-3">
-                  <MaterialRow
-                    material={sameValue}
-                    subValue={sameSubValue}
-                    def={materialDef}
-                    onMaterial={(id) => {
-                      if (id === null) patchGleich({ sameValue: null, sameSubValue: null })
-                      else if (id !== "leder") patchGleich({ sameValue: id, sameSubValue: null })
-                      else patchGleich({ sameValue: "leder", sameSubValue: sameSubValue })
-                    }}
-                    onSub={(id) => patchGleich({ sameSubValue: id })}
-                  />
-                </div>
-              ) : (
-                <div className="mt-3 space-y-6">
-                  <MaterialRow
-                    sideLabel="LINKS"
-                    material={leftValue}
-                    subValue={leftSubValue}
-                    def={materialDef}
-                    onMaterial={(id) => {
-                      if (id === null) patchLinks({ leftValue: null, leftSubValue: null })
-                      else if (id !== "leder") patchLinks({ leftValue: id, leftSubValue: null })
-                      else patchLinks({ leftValue: "leder", leftSubValue: leftSubValue })
-                    }}
-                    onSub={(id) => patchLinks({ leftSubValue: id })}
-                  />
-                  <MaterialRow
-                    sideLabel="RECHTS"
-                    material={rightValue}
-                    subValue={rightSubValue}
-                    def={materialDef}
-                    onMaterial={(id) => {
-                      if (id === null) patchRechts({ rightValue: null, rightSubValue: null })
-                      else if (id !== "leder") patchRechts({ rightValue: id, rightSubValue: null })
-                      else patchRechts({ rightValue: "leder", rightSubValue: rightSubValue })
-                    }}
-                    onSub={(id) => patchRechts({ rightSubValue: id })}
-                  />
-                </div>
-              )}
-            </div>
-          ) : null}
-        </ConfigCard>
       </div>
     </TooltipProvider>
   )
