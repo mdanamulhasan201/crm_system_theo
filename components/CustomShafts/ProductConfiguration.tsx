@@ -621,7 +621,7 @@ ref: React.Ref<ProductConfigurationHandle>
         )}
 
         <ConfigCard icon={Palette} title="Material & Ausführung" subtitle="Leder, Futter und Naht">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4 mt-5">
             <div className="flex min-w-0 flex-col">
               <FieldLabel>Anzahl der Ledertypen</FieldLabel>
               <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>

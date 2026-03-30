@@ -133,7 +133,7 @@ export default function VerschlussCard({
       <SectionCardHeader icon={Link2} title="Verschluss" subtitle="Verschlussart und Details" />
 
       <div className="flex flex-col gap-5">
-        <div className="flex min-w-0 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5 mt-5">
           <span className="text-xs font-semibold text-gray-900 sm:text-sm">Verschlussart</span>
           <div className="flex w-full gap-1 rounded-lg border border-gray-200 bg-gray-100 p-0.5 sm:max-w-xl">
             <button

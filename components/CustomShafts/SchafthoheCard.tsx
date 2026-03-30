@@ -128,7 +128,7 @@ export default function SchafthoheCard({
         subtitle="Schafthöhe ohne Zwickeinschlag angeben (wird automatisch von FeetF1rst berechnet)"
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 mt-5">
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="text-xs font-semibold text-gray-900 sm:text-sm">Schaft Links</span>
           <CmInput
