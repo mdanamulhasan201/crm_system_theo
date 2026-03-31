@@ -66,17 +66,30 @@ export default function SohlenaufbauConfigCard({
 
   const primary = value.links
 
-  const calc = useMemo(() => {
-    const ferse = parseSohlenaufbauNum(primary.ferse)
-    const ballen = parseSohlenaufbauNum(primary.ballen)
-    const spitze = parseSohlenaufbauNum(primary.spitze)
+  const calcForSide = useCallback((side: SohlenaufbauData["links"]) => {
+    const ferse = parseSohlenaufbauNum(side.ferse)
+    const ballen = parseSohlenaufbauNum(side.ballen)
+    const spitze = parseSohlenaufbauNum(side.spitze)
     const zwischensohle = ballen
     const absatz = Math.max(0, ferse - ballen)
     const valid = ferse >= ballen
     return { zwischensohle, absatz, valid, ferse, ballen, spitze }
-  }, [primary.ferse, primary.ballen, primary.spitze])
+  }, [])
 
-  const hasValues = parseSohlenaufbauNum(primary.ferse) > 0 || parseSohlenaufbauNum(primary.ballen) > 0
+  const calc = useMemo(() => {
+    return calcForSide(primary)
+  }, [calcForSide, primary])
+
+  const calcLinks = useMemo(() => calcForSide(value.links), [calcForSide, value.links])
+  const calcRechts = useMemo(() => calcForSide(value.rechts), [calcForSide, value.rechts])
+
+  const hasValues =
+    value.mode === "gleich"
+      ? parseSohlenaufbauNum(primary.ferse) > 0 || parseSohlenaufbauNum(primary.ballen) > 0
+      : parseSohlenaufbauNum(value.links.ferse) > 0 ||
+        parseSohlenaufbauNum(value.links.ballen) > 0 ||
+        parseSohlenaufbauNum(value.rechts.ferse) > 0 ||
+        parseSohlenaufbauNum(value.rechts.ballen) > 0
 
   const warnings = useMemo(() => {
     const w: string[] = []
@@ -163,21 +176,60 @@ export default function SohlenaufbauConfigCard({
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Automatisch berechneter Sohlenaufbau
             </p>
-            {calc.valid ? (
-              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-x-6">
-                <div className="flex justify-between gap-4">
-                  <span className="text-sm text-gray-800">Zwischensohle</span>
-                  <span className="text-sm font-semibold text-gray-900">{calc.zwischensohle} mm</span>
+            {value.mode === "gleich" ? (
+              calc.valid ? (
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-x-6">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-gray-800">Zwischensohle</span>
+                    <span className="text-sm font-semibold text-gray-900">{calc.zwischensohle} mm</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-gray-800">Absatz</span>
+                    <span className="text-sm font-semibold text-gray-900">{calc.absatz} mm</span>
+                  </div>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-sm text-gray-800">Absatz</span>
-                  <span className="text-sm font-semibold text-gray-900">{calc.absatz} mm</span>
+              ) : (
+                <p className="text-xs text-red-600">Ballenhöhe darf nicht größer als Absatzhöhe sein.</p>
+              )
+            ) : (
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Links</p>
+                  {calcLinks.valid ? (
+                    <div className="space-y-1">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-800">Zwischensohle</span>
+                        <span className="text-sm font-semibold text-gray-900">{calcLinks.zwischensohle} mm</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-800">Absatz</span>
+                        <span className="text-sm font-semibold text-gray-900">{calcLinks.absatz} mm</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-600">Ballenhöhe darf nicht größer als Absatzhöhe sein.</p>
+                  )}
+                </div>
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Rechts</p>
+                  {calcRechts.valid ? (
+                    <div className="space-y-1">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-800">Zwischensohle</span>
+                        <span className="text-sm font-semibold text-gray-900">{calcRechts.zwischensohle} mm</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-800">Absatz</span>
+                        <span className="text-sm font-semibold text-gray-900">{calcRechts.absatz} mm</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-600">Ballenhöhe darf nicht größer als Absatzhöhe sein.</p>
+                  )}
                 </div>
               </div>
-            ) : (
-              <p className="text-xs text-red-600">Ballenhöhe darf nicht größer als Absatzhöhe sein.</p>
             )}
-            {calc.valid && warnings.length > 0 ? (
+            {value.mode === "gleich" && calc.valid && warnings.length > 0 ? (
               <div className="space-y-1 pt-2">
                 {warnings.map((w, i) => (
                   <p key={i} className="flex items-center gap-1.5 text-xs text-amber-600">
