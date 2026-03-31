@@ -517,17 +517,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                             ))}
                           </div>
                         )}
-                        {shaftConfiguration.leatherColorAssignments &&
-                          shaftConfiguration.leatherColorAssignments.length > 0 && (
-                            <div className="ml-0 mt-3 text-xs text-slate-600 border-t border-slate-200 pt-2">
-                              <div className="font-semibold text-slate-700 mb-1">Zuordnung auf dem Schuh</div>
-                              {shaftConfiguration.leatherColorAssignments.map((a, idx) => (
-                                <div key={idx} className="mb-1">
-                                  • Leder {a.leatherNumber}: {a.color} (ca. {Math.round(a.x)}% / {Math.round(a.y)}% vom Bild)
-                                </div>
-                              ))}
-                            </div>
-                          )}
                       </div>
                     </div>
                   )}
@@ -935,17 +924,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           ))}
                         </div>
                       )}
-                      {shaftConfiguration.leatherColorAssignments &&
-                        shaftConfiguration.leatherColorAssignments.length > 0 && (
-                          <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#475569' }}>
-                            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '4px' }}>Zuordnung auf dem Schuh</div>
-                            {shaftConfiguration.leatherColorAssignments.map((a, idx) => (
-                              <div key={idx} style={{ marginBottom: '2px' }}>
-                                • Leder {a.leatherNumber}: {a.color} (ca. {Math.round(a.x)}% / {Math.round(a.y)}%)
-                              </div>
-                            ))}
-                          </div>
-                        )}
                     </div>
                   </div>
                 )}
