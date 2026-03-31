@@ -332,7 +332,7 @@ export default function KostenvoranschlagDialog({
                         <div className="p-8 text-center text-gray-600 text-sm">{unavailableMessage}</div>
                     ) : (
                         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div className="min-h-0 flex-1 overflow-hidden px-4 sm:px-6">
+                            <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
                                 <PositionsnummerDropdown
                                     variant="embedded"
                                     embeddedActive={open}
