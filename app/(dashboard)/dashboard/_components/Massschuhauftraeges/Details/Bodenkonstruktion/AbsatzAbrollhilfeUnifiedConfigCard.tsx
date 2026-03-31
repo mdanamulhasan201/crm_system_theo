@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { ChevronDown, Footprints, SlidersHorizontal } from "lucide-react"
+import { FiMinus, FiPlus, FiX } from "react-icons/fi"
 import type { GroupDef2 } from "../Types"
 import type { HeelWidthAdjustmentData } from "./FormFields"
 import ConfigCard from "./shared/ConfigCard"
@@ -40,8 +41,36 @@ function isAbsatzformDisabled(
 
 function isAbrollhilfeDisabled(
   optId: string,
-  selectedSole: { id: string } | null | undefined
+  selectedSole: { id: string } | null | undefined,
+  selectedAbrollhilfe: string | null
 ): boolean {
+  if (
+    selectedAbrollhilfe === "beilemdie" &&
+    optId !== "beilemdie" &&
+    optId !== "abzezzolle"
+  ) {
+    return true
+  }
+  if (
+    selectedAbrollhilfe === "abzezzolle" &&
+    optId !== "abzezzolle" &&
+    optId !== "beilemdie"
+  ) {
+    return true
+  }
+  if (
+    selectedAbrollhilfe === "mittelfussrolle" &&
+    optId !== "mittelfussrolle" &&
+    optId !== "abzezzolle"
+  ) {
+    return true
+  }
+  if (
+    selectedAbrollhilfe === "keine" &&
+    (optId === "mittelfussrolle" || optId === "abzezzolle" || optId === "beilemdie")
+  ) {
+    return true
+  }
   const id = selectedSole?.id
   if ((id === "9" || id === "10" || id === "11" || id === "12") && optId === "abzezzolle") return true
   return false
@@ -105,11 +134,37 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
   }, [selectedAbrollhilfe])
 
   const abrollSingle = abrollArray.length === 1 ? abrollArray[0] : abrollArray.length > 1 ? abrollArray[0] : null
+  const abrollhilfeDisplayOrder: Record<string, number> = {
+    keine: 0,
+    abzezzolle: 1,
+    mittelfussrolle: 2,
+    beilemdie: 3,
+  }
+  const orderedAbrollhilfeOptions = [...abrollhilfeDef.options].sort((a, b) => {
+    const aOrder = abrollhilfeDisplayOrder[a.id] ?? Number.MAX_SAFE_INTEGER
+    const bOrder = abrollhilfeDisplayOrder[b.id] ?? Number.MAX_SAFE_INTEGER
+    return aOrder - bOrder
+  })
 
   const lm = formatMmCell(heelWidthAdjustment?.leftMedial)
   const ll = formatMmCell(heelWidthAdjustment?.leftLateral)
   const rm = formatMmCell(heelWidthAdjustment?.rightMedial)
   const rl = formatMmCell(heelWidthAdjustment?.rightLateral)
+  const [heelDrafts, setHeelDrafts] = useState<Record<"leftMedial" | "rightMedial" | "leftLateral" | "rightLateral", string>>({
+    leftMedial: lm,
+    rightMedial: rm,
+    leftLateral: ll,
+    rightLateral: rl,
+  })
+
+  useEffect(() => {
+    setHeelDrafts({
+      leftMedial: lm,
+      rightMedial: rm,
+      leftLateral: ll,
+      rightLateral: rl,
+    })
+  }, [lm, rm, ll, rl])
 
   const patchHeel = (key: keyof HeelWidthAdjustmentData, raw: string) => {
     const parsed = parseMmCell(raw)
@@ -127,6 +182,72 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
     onHeelWidthChange(has ? base : null)
   }
 
+  const sanitizeSignedMmInput = (raw: string, previous: string): string => {
+    const trimmed = raw.trim()
+    if (!trimmed) return ""
+    const sign = trimmed[0]
+    if (sign !== "+" && sign !== "-") {
+      return previous
+    }
+    const digits = trimmed.slice(1).replace(/\D/g, "").slice(0, 2)
+    return `${sign}${digits}`
+  }
+
+  const handleHeelInputChange = (
+    key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral",
+    value: string
+  ) => {
+    setHeelDrafts((prev) => {
+      const next = sanitizeSignedMmInput(value, prev[key])
+      if (!next) {
+        patchHeel(key, "")
+      } else if (/^[+-]\d+$/.test(next)) {
+        patchHeel(key, next)
+      }
+      return { ...prev, [key]: next }
+    })
+  }
+
+  const setHeelSign = (
+    key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral",
+    sign: "+" | "-"
+  ) => {
+    setHeelDrafts((prev) => {
+      const current = prev[key] || ""
+      const digits = current.replace(/^[+-]/, "").replace(/\D/g, "").slice(0, 2)
+      const next = `${sign}${digits}`
+      if (digits) {
+        patchHeel(key, next)
+      }
+      return { ...prev, [key]: next }
+    })
+  }
+
+  const clearHeelField = (key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral") => {
+    setHeelDrafts((prev) => ({ ...prev, [key]: "" }))
+    patchHeel(key, "")
+  }
+
+  const getActiveSign = (key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral"): "+" | "-" | null => {
+    const value = heelDrafts[key]?.trim()
+    if (!value) return null
+    if (value.startsWith("+")) return "+"
+    if (value.startsWith("-")) return "-"
+    return null
+  }
+
+  const signButtonClass = (isActive: boolean) =>
+    `inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border text-sm font-bold leading-none shadow-sm transition-all ${
+      isActive
+        ? "border-[#6B9B87] bg-[#6B9B87] text-white shadow-[0_0_0_3px_rgba(107,155,135,0.18)]"
+        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+    }`
+  const clearButtonClass =
+    "inline-flex cursor-pointer h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-bold leading-none text-rose-500 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-600"
+  const heelInputClass =
+    "h-9 w-full min-w-0 rounded-full border-gray-200 bg-white shadow-sm"
+  const heelControlRowClass = "grid w-full grid-cols-[36px_36px_minmax(0,1fr)_36px] items-center gap-2"
+
   const handleAbsatzClick = (optId: string) => {
     if (isAbsatzformDisabled(optId, selectedSole)) return
     if (onAbsatzFormClick) {
@@ -137,7 +258,7 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
   }
 
   const handleAbrollClick = (optId: string) => {
-    if (isAbrollhilfeDisabled(optId, selectedSole)) return
+    if (isAbrollhilfeDisabled(optId, selectedSole, abrollSingle)) return
     if (abrollSingle === optId) {
       onAbrollhilfeReplace(null)
     } else {
@@ -153,9 +274,9 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
     >
       <div className="space-y-6">
         {/* Absatzform */}
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-gray-800">Absatzform</p>
-          <p className="text-xs text-gray-500">Achtung: Bitte auch Sohle beachten, ob möglich</p>
+        <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+          <p className="text-sm font-semibold text-gray-900">Absatzform</p>
+          <p className="text-xs text-gray-500">Achtung: Bitte auch Sohle beachten, ob moeglich</p>
           <div className="flex flex-wrap gap-2">
             {absatzformDef.options.map((opt) => {
               const dis = Boolean(opt.disabled || isAbsatzformDisabled(opt.id, selectedSole))
@@ -173,14 +294,15 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
           </div>
         </div>
 
-        <div className="border-t border-gray-200" />
+        <div className="border-t border-gray-100" />
 
         {/* Abrollhilfe */}
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-gray-800">{abrollhilfeDef.question}</p>
+        <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+          <p className="text-sm font-semibold text-gray-900">{abrollhilfeDef.question}</p>
+          <p className="text-xs text-gray-500">Optionen werden je nach Auswahl intelligent eingeschraenkt.</p>
           <div className="flex flex-wrap gap-2">
-            {abrollhilfeDef.options.map((opt) => {
-              const dis = Boolean(opt.disabled || isAbrollhilfeDisabled(opt.id, selectedSole))
+            {orderedAbrollhilfeOptions.map((opt) => {
+              const dis = Boolean(opt.disabled || isAbrollhilfeDisabled(opt.id, selectedSole, abrollSingle))
               const selected = !dis && abrollSingle === opt.id
               return (
                 <OptionCard
@@ -195,14 +317,14 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
           </div>
         </div>
 
-        <div className="border-t border-gray-200" />
+        <div className="border-t border-gray-100" />
 
         {/* Erweiterte Produktionsoptionen */}
         <div>
           <button
             type="button"
             onClick={() => setAdvancedOpen((o) => !o)}
-            className="flex w-full items-center justify-between py-1 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+            className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
             <span className="flex items-center gap-2">
               <SlidersHorizontal size={16} className="text-gray-500" />
@@ -212,7 +334,7 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
           </button>
 
           {advancedOpen ? (
-            <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
+            <div className="mt-4 space-y-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4">
               <RadioOption
                 selected={absatzbreiteEnabled}
                 onClick={() => {
@@ -225,44 +347,177 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
 
               {absatzbreiteEnabled ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-[minmax(0,1fr)_1fr_1fr] gap-x-3 gap-y-2 sm:items-end">
-                    <div />
-                    <p className="text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Links</p>
-                    <p className="text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Rechts</p>
+                  <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-[minmax(0,1fr)_1fr_1fr] md:items-end">
+                    <div className="hidden md:block" />
+                    <p className="hidden text-center text-xs font-semibold uppercase tracking-wide text-gray-500 md:block">Links</p>
+                    <p className="hidden text-center text-xs font-semibold uppercase tracking-wide text-gray-500 md:block">Rechts</p>
 
-                    <p className="self-center text-xs font-medium text-gray-600">Innen (medial)</p>
-                    <InputWithUnit
-                      value={lm}
-                      onChange={(v) => patchHeel("leftMedial", v)}
-                      unit="mm"
-                      placeholder="±0"
-                      className="rounded-full border-gray-200 bg-gray-50/90"
-                    />
-                    <InputWithUnit
-                      value={rm}
-                      onChange={(v) => patchHeel("rightMedial", v)}
-                      unit="mm"
-                      placeholder="±0"
-                      className="rounded-full border-gray-200 bg-gray-50/90"
-                    />
+                    <p className="self-center text-xs font-medium text-gray-600 md:col-auto">Innen (medial)</p>
+                    <div className={heelControlRowClass}>
+                      <p className="col-span-4 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:hidden">Links</p>
+                      {(() => {
+                        const activeSign = getActiveSign("leftMedial")
+                        return (
+                          <>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("leftMedial", "+")}
+                        className={signButtonClass(activeSign === "+")}
+                        aria-label="Plus"
+                      >
+                        <FiPlus size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("leftMedial", "-")}
+                        className={signButtonClass(activeSign === "-")}
+                        aria-label="Minus"
+                      >
+                        <FiMinus size={14} />
+                      </button>
+                          </>
+                        )
+                      })()}
+                      <InputWithUnit
+                        value={heelDrafts.leftMedial}
+                        onChange={(v) => handleHeelInputChange("leftMedial", v)}
+                        unit="mm"
+                        className={heelInputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => clearHeelField("leftMedial")}
+                        className={clearButtonClass}
+                        aria-label="Feld leeren"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </div>
+                    <div className={heelControlRowClass}>
+                      <p className="col-span-4 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:hidden">Rechts</p>
+                      {(() => {
+                        const activeSign = getActiveSign("rightMedial")
+                        return (
+                          <>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("rightMedial", "+")}
+                        className={signButtonClass(activeSign === "+")}
+                        aria-label="Plus"
+                      >
+                        <FiPlus size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("rightMedial", "-")}
+                        className={signButtonClass(activeSign === "-")}
+                        aria-label="Minus"
+                      >
+                        <FiMinus size={14} />
+                      </button>
+                          </>
+                        )
+                      })()}
+                      <InputWithUnit
+                        value={heelDrafts.rightMedial}
+                        onChange={(v) => handleHeelInputChange("rightMedial", v)}
+                        unit="mm"
+                        className={heelInputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => clearHeelField("rightMedial")}
+                        className={clearButtonClass}
+                        aria-label="Feld leeren"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </div>
 
-                    <p className="self-center text-xs font-medium text-gray-600">Außen (lateral)</p>
-                    <InputWithUnit
-                      value={ll}
-                      onChange={(v) => patchHeel("leftLateral", v)}
-                      unit="mm"
-                      placeholder="±0"
-                      className="rounded-full border-gray-200 bg-gray-50/90"
-                    />
-                    <InputWithUnit
-                      value={rl}
-                      onChange={(v) => patchHeel("rightLateral", v)}
-                      unit="mm"
-                      placeholder="±0"
-                      className="rounded-full border-gray-200 bg-gray-50/90"
-                    />
+                    <p className="self-center text-xs font-medium text-gray-600 md:col-auto">Außen (lateral)</p>
+                    <div className={heelControlRowClass}>
+                      <p className="col-span-4 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:hidden">Links</p>
+                      {(() => {
+                        const activeSign = getActiveSign("leftLateral")
+                        return (
+                          <>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("leftLateral", "+")}
+                        className={signButtonClass(activeSign === "+")}
+                        aria-label="Plus"
+                      >
+                        <FiPlus size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("leftLateral", "-")}
+                        className={signButtonClass(activeSign === "-")}
+                        aria-label="Minus"
+                      >
+                        <FiMinus size={14} />
+                      </button>
+                          </>
+                        )
+                      })()}
+                      <InputWithUnit
+                        value={heelDrafts.leftLateral}
+                        onChange={(v) => handleHeelInputChange("leftLateral", v)}
+                        unit="mm"
+                        className={heelInputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => clearHeelField("leftLateral")}
+                        className={clearButtonClass}
+                        aria-label="Feld leeren"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </div>
+                    <div className={heelControlRowClass}>
+                      <p className="col-span-4 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:hidden">Rechts</p>
+                      {(() => {
+                        const activeSign = getActiveSign("rightLateral")
+                        return (
+                          <>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("rightLateral", "+")}
+                        className={signButtonClass(activeSign === "+")}
+                        aria-label="Plus"
+                      >
+                        <FiPlus size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeelSign("rightLateral", "-")}
+                        className={signButtonClass(activeSign === "-")}
+                        aria-label="Minus"
+                      >
+                        <FiMinus size={14} />
+                      </button>
+                          </>
+                        )
+                      })()}
+                      <InputWithUnit
+                        value={heelDrafts.rightLateral}
+                        onChange={(v) => handleHeelInputChange("rightLateral", v)}
+                        unit="mm"
+                        className={heelInputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => clearHeelField("rightLateral")}
+                        className={clearButtonClass}
+                        aria-label="Feld leeren"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">+ = aufbauen · − = einschleifen</p>
+                  <p className="text-xs text-gray-500">Regel: zuerst + / - eingeben, danach Zahl.</p>
+                  <p className="text-xs text-gray-500">+ = aufbauen · - = einschleifen</p>
                 </div>
               ) : null}
             </div>

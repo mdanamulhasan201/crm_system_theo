@@ -731,7 +731,7 @@ export default function BodenkonstruktionPage() {
     }
 
     return (
-        <div className="relative bg-white ">
+        <div className="relative bg-white lg:px-10">
             {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
             <StickyPriceSummary
                 price={grandTotal}
