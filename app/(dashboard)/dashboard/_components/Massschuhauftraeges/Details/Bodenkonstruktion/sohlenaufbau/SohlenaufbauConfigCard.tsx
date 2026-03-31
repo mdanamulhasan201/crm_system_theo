@@ -210,52 +210,6 @@ export default function SohlenaufbauConfigCard({
         ) : null}
 
         {hasValues && calc.valid ? (
-          <div className="space-y-5 border-t border-gray-200 pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schichtaufbau (optional)</p>
-            {calc.zwischensohle > 0 ? (
-              <SohlenaufbauLayerSplitControl
-                label="Zwischensohle"
-                total={calc.zwischensohle}
-                split={value.zwSplit}
-                onChange={(zwSplit) => apply({ zwSplit })}
-              />
-            ) : null}
-            {calc.absatz > 0 ? (
-              <SohlenaufbauLayerSplitControl
-                label="Absatz"
-                total={calc.absatz}
-                split={value.abSplit}
-                onChange={(abSplit) => apply({ abSplit })}
-              />
-            ) : null}
-          </div>
-        ) : null}
-
-        {hasValues && calc.valid ? (
-          <div className="space-y-4 border-t border-gray-200 pt-4">
-            <p className="text-sm font-medium text-gray-700">Farbkonzept</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {calc.zwischensohle > 0 ? (
-                <SohlenaufbauColorPicker
-                  value={value.zwFarbe}
-                  onChange={(zwFarbe) => apply({ zwFarbe })}
-                  label="Zwischensohle"
-                  shore={getShore("zw")}
-                />
-              ) : null}
-              {calc.absatz > 0 ? (
-                <SohlenaufbauColorPicker
-                  value={value.abFarbe}
-                  onChange={(abFarbe) => apply({ abFarbe })}
-                  label="Absatz"
-                  shore={getShore("ab")}
-                />
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {hasValues && calc.valid ? (
           <SohlenaufbauShoreSection
             modus={value.shoreModus}
             onModusChange={(shoreModus) => apply({ shoreModus })}
@@ -272,6 +226,55 @@ export default function SohlenaufbauConfigCard({
             abLayerCount={abLayerCount}
             hideModeSelector
           />
+        ) : null}
+
+        {hasValues && calc.valid ? (
+          <div className="space-y-5 border-t border-gray-200 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schichtaufbau (optional)</p>
+            {calc.zwischensohle > 0 ? (
+              value.zwSplit.mode === "gleichmaessig" ? (
+                <SohlenaufbauLayerSplitControl
+                  label="Zwischensohle"
+                  total={calc.zwischensohle}
+                  split={value.zwSplit}
+                  onChange={(zwSplit) => apply({ zwSplit })}
+                  sideContent={
+                    <div className="lg:w-[220px]">
+                      <SohlenaufbauColorPicker
+                        value={value.zwFarbe}
+                        onChange={(zwFarbe) => apply({ zwFarbe })}
+                        label="Zwischensohle"
+                        shore={getShore("zw")}
+                      />
+                    </div>
+                  }
+                />
+              ) : (
+                <SohlenaufbauLayerSplitControl
+                  label="Zwischensohle"
+                  total={calc.zwischensohle}
+                  split={value.zwSplit}
+                  onChange={(zwSplit) => apply({ zwSplit })}
+                />
+              )
+            ) : null}
+            {calc.absatz > 0 ? (
+              <div className="space-y-4">
+                <SohlenaufbauLayerSplitControl
+                  label="Absatz"
+                  total={calc.absatz}
+                  split={value.abSplit}
+                  onChange={(abSplit) => apply({ abSplit })}
+                />
+                <SohlenaufbauColorPicker
+                  value={value.abFarbe}
+                  onChange={(abFarbe) => apply({ abFarbe })}
+                  label="Absatz"
+                  shore={getShore("ab")}
+                />
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         {hasValues && calc.valid ? (

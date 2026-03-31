@@ -9,11 +9,13 @@ export default function SohlenaufbauLayerSplitControl({
   total,
   split,
   onChange,
+  sideContent,
 }: {
   label: string
   total: number
   split: SohlenaufbauLayerSplit
   onChange: (s: SohlenaufbauLayerSplit) => void
+  sideContent?: React.ReactNode
 }) {
   const setMode = (mode: SohlenaufbauSplitMode) => {
     if (mode === "einteilig") {
@@ -65,40 +67,45 @@ export default function SohlenaufbauLayerSplitControl({
       </div>
 
       {split.mode !== "einteilig" ? (
-        <div className="space-y-2 pt-2">
-          {split.layers.map((val, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <span className="w-14 text-xs font-medium text-gray-500">Lage {idx + 1}</span>
-              <div className="w-24">
-                <InputWithUnit
-                  value={val}
-                  onChange={(v) => updateLayer(idx, v)}
-                  unit="mm"
-                  placeholder="0"
-                />
-              </div>
-              {split.mode === "individuell" && split.layers.length > 2 ? (
-                <button
-                  type="button"
-                  onClick={() => removeLayer(idx)}
-                  className="text-xs text-gray-500 transition-colors hover:text-red-600"
-                >
-                  ✕
-                </button>
-              ) : null}
+        <div className="pt-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+            <div className="space-y-2">
+              {split.layers.map((val, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="w-14 text-xs font-medium text-gray-500">Lage {idx + 1}</span>
+                  <div className="w-24">
+                    <InputWithUnit
+                      value={val}
+                      onChange={(v) => updateLayer(idx, v)}
+                      unit="mm"
+                      placeholder="0"
+                    />
+                  </div>
+                  {split.mode === "individuell" && split.layers.length > 2 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeLayer(idx)}
+                      className="text-xs text-gray-500 transition-colors hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
+              ))}
             </div>
-          ))}
+            {sideContent ? <div className="lg:pt-0.5">{sideContent}</div> : null}
+          </div>
           {split.mode === "individuell" && split.layers.length < 5 ? (
             <button
               type="button"
               onClick={addLayer}
-              className="text-xs font-medium text-[#61A175] transition-colors hover:text-[#61A175]/80"
+              className="mt-2 text-xs font-medium text-[#61A175] transition-colors hover:text-[#61A175]/80"
             >
               + weitere Lage
             </button>
           ) : null}
           {!valid && total > 0 ? (
-            <p className="text-xs text-red-600">
+            <p className="mt-2 text-xs text-red-600">
               Summe ({layerSum} mm) ≠ Gesamt ({total} mm)
             </p>
           ) : null}

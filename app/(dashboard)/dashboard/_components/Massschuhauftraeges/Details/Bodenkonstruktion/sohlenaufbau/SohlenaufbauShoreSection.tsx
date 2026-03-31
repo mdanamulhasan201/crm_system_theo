@@ -87,7 +87,7 @@ export default function SohlenaufbauShoreSection({
   const activeLayerOptions = SHORE_OPTIONS.filter((o) => !o.disabled)
 
   return (
-    <div className="space-y-4 border-t border-gray-200 pt-4">
+    <div className={hideModeSelector ? "space-y-4" : "space-y-4 border-t border-gray-200 pt-4"}>
       {!hideModeSelector ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
