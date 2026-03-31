@@ -951,7 +951,7 @@ ref: React.Ref<ProductConfigurationHandle>
         />
 
         <ConfigCard icon={ClipboardList} title="Notizen" subtitle="Optional — erscheinen in Rechnung/PDF">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-5">
           <FieldLabel>Sonstige Notizen</FieldLabel>
           <Textarea
             placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"

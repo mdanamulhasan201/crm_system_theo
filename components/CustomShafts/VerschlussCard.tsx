@@ -127,6 +127,24 @@ export default function VerschlussCard({
 
   const showEyeletsDetails = closureType === 'Eyelets';
   const showVelcroDetails = closureType === 'Velcro';
+  const hasEyeletsAdvancedValues =
+    offenstandSchnuerungMm.trim() !== '' || anzahlOesen.trim() !== '' || anzahlHaken.trim() !== '';
+  const hasVelcroAdvancedValues =
+    offenstandSchnuerungMm.trim() !== '' ||
+    anzahlKlettstreifen.trim() !== '' ||
+    breiteKlettstreifenMm.trim() !== '';
+
+  const toggleEyeletsAdvanced = () => {
+    // Prevent closing when there is already entered data.
+    if (advancedEyeletsOpen && hasEyeletsAdvancedValues) return;
+    setAdvancedEyeletsOpen((o) => !o);
+  };
+
+  const toggleVelcroAdvanced = () => {
+    // Prevent closing when there is already entered data.
+    if (advancedVelcroOpen && hasVelcroAdvancedValues) return;
+    setAdvancedVelcroOpen((o) => !o);
+  };
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -214,7 +232,7 @@ export default function VerschlussCard({
           <div className="flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => setAdvancedEyeletsOpen((o) => !o)}
+              onClick={toggleEyeletsAdvanced}
               className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
             >
               <ChevronDown
@@ -266,7 +284,7 @@ export default function VerschlussCard({
           <div className="flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => setAdvancedVelcroOpen((o) => !o)}
+              onClick={toggleVelcroAdvanced}
               className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200/80"
             >
               <ChevronDown

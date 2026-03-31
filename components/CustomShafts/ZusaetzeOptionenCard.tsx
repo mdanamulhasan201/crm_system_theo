@@ -96,17 +96,17 @@ export default function ZusaetzeOptionenCard({
         subtitle="Optionale Zusatzleistungen"
       />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8 mt-5">
         <div className="flex min-w-0 flex-1 flex-col gap-2 lg:max-w-md">
           <span className="text-sm font-medium text-gray-900">Zusätzlicher Reißverschluss?</span>
-          <p className="text-xs text-gray-500">
+          {/* <p className="text-xs text-gray-500">
             {effectiveZipperPosition === 'both' ? (
               <span className="font-medium text-[#679C7A]">+19,99 €</span>
             ) : (
               <span className="font-medium text-[#679C7A]">+9,99 €</span>
             )}{' '}
             bei Ja (nach Position)
-          </p>
+          </p> */}
         </div>
         <div className="min-w-0 flex-1 lg:pt-0">
           <ZipperNeinJaPills
