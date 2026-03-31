@@ -22,6 +22,9 @@ export interface LastScanRow {
     vorname: string;
     nachname: string;
     createdAt: string;
+    email?: string | null;
+    gender?: string | null;
+    geburtsdatum?: string | null;
     wohnort?: string | null;
     customerNumber: number | string;
     krankenkasse?: string | null;

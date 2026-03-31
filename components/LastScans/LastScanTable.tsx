@@ -21,6 +21,23 @@ interface LastScanTableProps {
     onCustomerDeleted?: () => void;
 }
 
+type ScanSubmissionData = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    gender: string;
+    acceptTerms: boolean;
+    acceptNewsletter: boolean;
+    birthDate: string | null;
+    categoryId: number;
+    categoryTitle: string;
+    categorySlug: string;
+    selectedSubCategory: string | null;
+    questions: string[];
+    redirectUri: string;
+};
+
 export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps) {
     const router = useRouter();
 
@@ -249,6 +266,27 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     };
 
     const handleScanDurchführen = (id: string) => {
+        const selectedCustomer = rows.find((row) => row.id === id);
+        if (selectedCustomer) {
+            const submissionData: ScanSubmissionData = {
+                id: selectedCustomer.id,
+                firstName: selectedCustomer.vorname || '',
+                lastName: selectedCustomer.nachname || '',
+                email: selectedCustomer.email || '',
+                gender: (selectedCustomer.gender || '').toLowerCase(),
+                acceptTerms: true,
+                acceptNewsletter: true,
+                birthDate: selectedCustomer.geburtsdatum || null,
+                categoryId: 1,
+                categoryTitle: 'Alltagseinlage',
+                categorySlug: 'alltagseinlage',
+                selectedSubCategory: null,
+                questions: [],
+                redirectUri: `/dashboard/scanning-data/${selectedCustomer.id}`,
+            };
+            sessionStorage.setItem('formSubmissionData', JSON.stringify(submissionData));
+        }
+
         router.push(`/dashboard/scanning-data/${id}?manageCustomer=true`);
     };
 

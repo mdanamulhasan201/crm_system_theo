@@ -45,6 +45,7 @@ export default function ScanningData() {
         sonstiges: 0,
     });
 
+
     const selectedProductType: 'insole' | 'shoes' | 'sonstiges' =
         selectedForm === 'einlagen' ? 'insole' : selectedForm === 'massschuhe' ? 'shoes' : 'sonstiges';
 
@@ -228,6 +229,7 @@ export default function ScanningData() {
                         Kunden verwalten
                     </button>
                 </div>
+
             </div>
 
 
