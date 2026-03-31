@@ -601,6 +601,16 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           </div>
                         </div>
                       )}
+                      {(shaftConfiguration.offenstandSchnuerungMm?.trim() || shaftConfiguration.anzahlOesen?.trim() || shaftConfiguration.anzahlHaken?.trim()) && (
+                        <div className="flex py-3 border-b border-gray-300 items-start">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                            Ösen / Haken
+                          </div>
+                          <div className="flex-1 text-xs text-slate-600 pt-1">
+                            Offenstand der Schnürung: {shaftConfiguration.offenstandSchnuerungMm?.trim() || '-'} mm | Anzahl Ösen: {shaftConfiguration.anzahlOesen?.trim() || '-'} Stk | Anzahl Haken: {shaftConfiguration.anzahlHaken?.trim() || '-'} Stk
+                          </div>
+                        </div>
+                      )}
                       {(shaftConfiguration.anzahlKlettstreifen?.trim() || shaftConfiguration.breiteKlettstreifenMm?.trim()) && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
@@ -720,17 +730,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </div>
                       <div className="flex-1 text-xs text-slate-600 pt-1">
                         {shaftConfiguration.verstarkungenText}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {(shaftConfiguration.offenstandSchnuerungMm?.trim() || shaftConfiguration.anzahlOesen?.trim() || shaftConfiguration.anzahlHaken?.trim()) && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Ösen / Haken
-                      </div>
-                      <div className="flex-1 text-xs text-slate-600 pt-1">
-                        Offenstand der Schnürung: {shaftConfiguration.offenstandSchnuerungMm?.trim() || '-'} mm | Anzahl Ösen: {shaftConfiguration.anzahlOesen?.trim() || '-'} Stk | Anzahl Haken: {shaftConfiguration.anzahlHaken?.trim() || '-'} Stk
                       </div>
                     </div>
                   )}
@@ -1009,6 +1008,16 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   </div>
                 )}
+                {(shaftConfiguration.offenstandSchnuerungMm?.trim() || shaftConfiguration.anzahlOesen?.trim() || shaftConfiguration.anzahlHaken?.trim()) && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Ösen / Haken
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      Offenstand der Schnürung: {shaftConfiguration.offenstandSchnuerungMm?.trim() || '-'} mm | Anzahl Ösen: {shaftConfiguration.anzahlOesen?.trim() || '-'} Stk | Anzahl Haken: {shaftConfiguration.anzahlHaken?.trim() || '-'} Stk
+                    </div>
+                  </div>
+                )}
                 {(shaftConfiguration.anzahlKlettstreifen?.trim() || shaftConfiguration.breiteKlettstreifenMm?.trim()) && (
                   <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
@@ -1138,17 +1147,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                     <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
                       {shaftConfiguration.verstarkungenText}
-                    </div>
-                  </div>
-                )}
-                
-                {(shaftConfiguration.offenstandSchnuerungMm?.trim() || shaftConfiguration.anzahlOesen?.trim() || shaftConfiguration.anzahlHaken?.trim()) && (
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Ösen / Haken
-                    </div>
-                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
-                      Offenstand der Schnürung: {shaftConfiguration.offenstandSchnuerungMm?.trim() || '-'} mm | Anzahl Ösen: {shaftConfiguration.anzahlOesen?.trim() || '-'} Stk | Anzahl Haken: {shaftConfiguration.anzahlHaken?.trim() || '-'} Stk
                     </div>
                   </div>
                 )}
