@@ -491,15 +491,6 @@ export default function BodenkonstruktionPage() {
             rahmen: {} as any,
             Rahmenfarbe: "",
 
-            Sohlenmaterial: "",
-            ohlenmaterial: "",
-            Bevorzugte_Farbe: "",
-            schlemmaterial_preferred_colour: "",
-            Sohlenerhöhung: "nein",
-            Seite_der_Sohlenerhöhung: "",
-            Höhe_der_Sohlenerhöhung_mm: "",
-            sole_elevation: {},
-
             // === 9. Absatz Form ===
             absatz_form: getSelectedValue(selected.absatzform) || "",
             absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
@@ -526,13 +517,6 @@ export default function BodenkonstruktionPage() {
             // === 17. Besondere Hinweise ===
             besondere_hinweise: textAreas.besondere_hinweise || "",
             Besondere_Hinweise: textAreas.besondere_hinweise || "",
-
-            // Legacy / extra
-            farbauswahl: getSelectedValue(selected.farbauswahl) || "",
-            laufkohle: getSelectedValue(selected.laufkohle) || "",
-            schlenstaerke: getSelectedValue(selected.schlenstaerke) || "",
-            linker_schuh_left_Shoe: "",
-            rechter_schuh_right_Shoe: "",
         }
 
         // Get Konstruktionsart price
@@ -695,6 +679,21 @@ export default function BodenkonstruktionPage() {
             basePrice,
             grandTotal,
             currency: "EUR",
+        })
+        bodenkonstruktionJson.form_data_v2 = removeNulls({
+            absatz_abrollhilfe: {
+                absatzform: getSelectedValue(selected.absatzform) || "",
+                abrollhilfe: selected.abrollhilfe ?? null,
+                absatzhoehe: getSelectedValue(selected.absatzhoehe) || "",
+                heel_width_adjustment: heelWidthAdjustment || null,
+            },
+            sohlenaufbau: sohlenaufbau,
+            sohlenversteifung: sohlenversteifung,
+            rahmen: rahmen || null,
+            vorderkappe: vorderkappeSide || null,
+            hinterkappe_muster: hinterkappeMusterSide || null,
+            hinterkappe: hinterkappeSide || null,
+            brandsohle: brandsohleSide || null,
         })
         bodenkonstruktionJson.delivery_date_display = deliveryDate
         bodenkonstruktionJson.product_name = shoe2.name || ""

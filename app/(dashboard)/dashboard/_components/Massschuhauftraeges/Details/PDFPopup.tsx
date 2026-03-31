@@ -121,10 +121,13 @@ function rahmenTypPdfLabel(t: string): string {
 function buildRahmenPdfLines(rahmen: RahmenData): string[] {
   if (!rahmen.type) return []
   const parts: string[] = [`Typ: ${rahmenTypPdfLabel(rahmen.type)}`]
-  if (rahmen.type === "gummi" && rahmen.color) {
+  if ((rahmen.type === "eva" || rahmen.type === "gummi" || rahmen.type === "leder") && rahmen.color) {
     parts.push(`Farbe: ${rahmen.color}`)
   }
   if (rahmen.type === "verschalung") {
+    if (rahmen.color) {
+      parts.push(`Farbe: ${rahmen.color}`)
+    }
     if (rahmen.verschalungHoehe) {
       parts.push(`Höhe der Verschalung: ${rahmen.verschalungHoehe} mm`)
     }
@@ -168,10 +171,15 @@ function pdfParseMm(v: string): number {
 function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): string[] {
   const v = d ?? defaultSohlenaufbauData()
   const parts: string[] = []
-  const has =
+  const hasLeft =
     pdfParseMm(v.links.ferse) > 0 ||
     pdfParseMm(v.links.ballen) > 0 ||
     pdfParseMm(v.links.spitze) > 0
+  const hasRight =
+    pdfParseMm(v.rechts.ferse) > 0 ||
+    pdfParseMm(v.rechts.ballen) > 0 ||
+    pdfParseMm(v.rechts.spitze) > 0
+  const has = v.mode === "unterschiedlich" ? hasLeft || hasRight : hasLeft
   if (!has) {
     parts.push("Noch keine Höhenangaben")
     return parts
@@ -185,16 +193,35 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
       `Rechts – Ferse/Absatz: ${v.rechts.ferse || "–"} mm, Ballen: ${v.rechts.ballen || "–"} mm, Spitze: ${v.rechts.spitze || "–"} mm`
     )
   }
-  const ferse = pdfParseMm(v.links.ferse)
-  const ballen = pdfParseMm(v.links.ballen)
-  const zw = ballen
-  const ab = Math.max(0, ferse - ballen)
-  if (ferse >= ballen) {
-    parts.push(`Berechnung – Zwischensohle: ${zw} mm, Absatz: ${ab} mm`)
+  const leftFerse = pdfParseMm(v.links.ferse)
+  const leftBallen = pdfParseMm(v.links.ballen)
+  const leftZw = leftBallen
+  const leftAb = Math.max(0, leftFerse - leftBallen)
+  if (v.mode === "gleich") {
+    if (leftFerse >= leftBallen) {
+      parts.push(`Berechnung – Zwischensohle: ${leftZw} mm, Absatz: ${leftAb} mm`)
+    } else {
+      parts.push("Hinweis: Fersenhöhe kleiner als Ballenhöhe (ungültige Kombination)")
+    }
   } else {
-    parts.push("Hinweis: Fersenhöhe kleiner als Ballenhöhe (ungültige Kombination)")
+    const rightFerse = pdfParseMm(v.rechts.ferse)
+    const rightBallen = pdfParseMm(v.rechts.ballen)
+    const rightZw = rightBallen
+    const rightAb = Math.max(0, rightFerse - rightBallen)
+    parts.push(
+      leftFerse >= leftBallen
+        ? `Berechnung Links – Zwischensohle: ${leftZw} mm, Absatz: ${leftAb} mm`
+        : "Hinweis Links: Fersenhöhe kleiner als Ballenhöhe"
+    )
+    parts.push(
+      rightFerse >= rightBallen
+        ? `Berechnung Rechts – Zwischensohle: ${rightZw} mm, Absatz: ${rightAb} mm`
+        : "Hinweis Rechts: Fersenhöhe kleiner als Ballenhöhe"
+    )
   }
   parts.push(`Farbkonzept: ${v.farbModus === "einheitlich" ? "Eine Farbe pro Bereich" : "Individuell pro Lage"}`)
+  const zw = leftZw
+  const ab = leftAb
   if (v.farbModus === "einheitlich") {
     if (zw > 0) parts.push(`Zwischensohle – Farbe: ${v.zwFarbe}`)
     if (ab > 0) parts.push(`Absatz – Farbe: ${v.abFarbe}`)
