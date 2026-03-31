@@ -228,3 +228,53 @@ export const getAllBookingRules = async (): Promise<BookingRulesResponse> => {
         throw error;
     }
 };
+
+
+
+// //v2/appointment?allowOverlap=true
+
+export const getAppointmentsWithOverlap = async (allowOverlap: boolean) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment?allowOverlap=${allowOverlap}`);
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.data) {
+            return error.response.data;
+        }
+        throw error;
+    }
+}
+
+export const createAppointmentWithOverlap = async (
+    appointmentData: {
+        customer_name: string;
+        time: string;
+        date: string;
+        reason: string;
+        assignedTo: Array<{
+            employeId: string;
+            assignedTo: string;
+        }>;
+        details: string;
+        isClient: boolean;
+        userId?: string;
+        customerId?: string;
+        duration?: number;
+        reminder?: number | null;
+        appomnentRoom?: string;
+    },
+    allowOverlap: boolean
+) => {
+    try {
+        const response = await axiosClient.post(
+            `/v2/appointment?allowOverlap=${allowOverlap}`,
+            appointmentData
+        );
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.data) {
+            return error.response.data;
+        }
+        throw error;
+    }
+}

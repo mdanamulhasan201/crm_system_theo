@@ -164,13 +164,22 @@ interface SubmittedAppointmentData {
     employees?: Employee[];
     reminder?: number | null;
     appomnentRoom?: string;
+    allowOverlap?: boolean;
+}
+
+type AppointmentSubmitResult = {
+    success?: boolean;
+    message?: string;
+    employeeOverlap?: boolean;
+    roomOverlap?: boolean;
+    data?: any;
 }
 
 interface AppointmentModalProps {
     isOpen: boolean;
     onClose: () => void;
     form: UseFormReturn<AppointmentFormData>;
-    onSubmit: (data: SubmittedAppointmentData) => Promise<any> | void;
+    onSubmit: (data: SubmittedAppointmentData) => Promise<AppointmentSubmitResult | boolean | void> | AppointmentSubmitResult | boolean | void;
     title: string;
     buttonText: string;
     onDelete?: () => void;
@@ -194,6 +203,10 @@ export default function AppointmentModal({
     minAppointmentDurationMinutes = null,
 }: AppointmentModalProps) {
     const [submitting, setSubmitting] = React.useState(false);
+    const [overlapConfirmOpen, setOverlapConfirmOpen] = React.useState(false);
+    const [overlapMessage, setOverlapMessage] = React.useState('');
+    const [pendingOverlapData, setPendingOverlapData] = React.useState<SubmittedAppointmentData | null>(null);
+    const [confirmingOverlap, setConfirmingOverlap] = React.useState(false);
     const isClientEvent = form.watch('isClientEvent');
     const kundeContainerRef = React.useRef<HTMLDivElement | null>(null);
     const employeeContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -420,6 +433,12 @@ export default function AppointmentModal({
 
     if (!isOpen) return null;
 
+    const isOverlapResponse = (result: unknown): result is AppointmentSubmitResult => {
+        if (!result || typeof result !== 'object') return false;
+        const r = result as AppointmentSubmitResult;
+        return r.success === false && (r.employeeOverlap === true || r.roomOverlap === true);
+    };
+
     const handleFormSubmit = async (data: AppointmentFormData) => {
         const formattedData: SubmittedAppointmentData = {
             ...data,
@@ -429,9 +448,26 @@ export default function AppointmentModal({
         };
         try {
             setSubmitting(true);
-            await Promise.resolve(onSubmit(formattedData));
+            const result = await Promise.resolve(onSubmit(formattedData));
+            if (isOverlapResponse(result)) {
+                setPendingOverlapData(formattedData);
+                setOverlapMessage(result.message || 'Es gibt eine Überschneidung. Termin trotzdem erstellen?');
+                setOverlapConfirmOpen(true);
+            }
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleConfirmCreateWithOverlap = async () => {
+        if (!pendingOverlapData) return;
+        try {
+            setConfirmingOverlap(true);
+            setOverlapConfirmOpen(false);
+            await Promise.resolve(onSubmit({ ...pendingOverlapData, allowOverlap: true }));
+        } finally {
+            setConfirmingOverlap(false);
+            setPendingOverlapData(null);
         }
     };
 
@@ -1043,6 +1079,36 @@ export default function AppointmentModal({
                     </form>
                 </Form>
             </div>
+            {overlapConfirmOpen && (
+                <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 p-5">
+                        <h4 className="text-base font-semibold text-gray-900 mb-2">Überschneidung erkannt</h4>
+                        <p className="text-sm text-gray-600 mb-5">{overlapMessage}</p>
+                        <p className="text-sm font-medium text-gray-800 mb-5">Trotzdem mit Überschneidung erstellen?</p>
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setOverlapConfirmOpen(false);
+                                    setPendingOverlapData(null);
+                                }}
+                                disabled={confirmingOverlap}
+                            >
+                                Nein
+                            </Button>
+                            <Button
+                                type="button"
+                                className="bg-[#61A07B] hover:bg-[#4f8a69] text-white"
+                                onClick={handleConfirmCreateWithOverlap}
+                                disabled={confirmingOverlap}
+                            >
+                                {confirmingOverlap ? 'Erstelle…' : 'Ja, erstellen'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 } 

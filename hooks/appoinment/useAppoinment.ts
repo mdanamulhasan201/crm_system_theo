@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createAppoinment, deleteAppointment, getMyAppointments, getSingleAppointment, updateAppointment } from '@/apis/appoinmentApis';
+import { createAppoinment, createAppointmentWithOverlap, deleteAppointment, getMyAppointments, getSingleAppointment, updateAppointment } from '@/apis/appoinmentApis';
 import toast from 'react-hot-toast';
 import { safeToastMessage } from '@/lib/toastUtils';
 
@@ -66,6 +66,15 @@ interface SubmittedAppointmentData {
     employees?: Employee[];
     reminder?: number | null;
     appomnentRoom?: string;
+    allowOverlap?: boolean;
+}
+
+interface AppointmentCreateResponse {
+    success: boolean;
+    message?: string;
+    employeeOverlap?: boolean;
+    roomOverlap?: boolean;
+    data?: any;
 }
 
 export const useAppoinment = () => {
@@ -122,63 +131,70 @@ export const useAppoinment = () => {
         }
     }, []);
 
-    // Create new appointment
-    const createNewAppointment = useCallback(async (data: SubmittedAppointmentData) => {
+    const buildAppointmentPayload = (data: SubmittedAppointmentData) => {
+        const isCustomerAppointment = Boolean(data.isClientEvent);
+        const formattedTime = data.uhrzeit;
+        const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
+
+        const appointmentData: any = {
+            customer_name: isCustomerAppointment ? data.kunde : (data.kunde || ''),
+            time: formattedTime,
+            date: selectedDateStr,
+            reason: data.termin,
+            details: data.bemerk || '',
+            isClient: isCustomerAppointment,
+            duration: data.duration
+        };
+
+        if (isCustomerAppointment && data.customerId) {
+            appointmentData.customerId = data.customerId;
+        }
+
+        if (data.reminder !== null && data.reminder !== undefined) {
+            appointmentData.reminder = data.reminder;
+        }
+
+        if (data.appomnentRoom) {
+            appointmentData.appomnentRoom = data.appomnentRoom;
+        }
+
+        if (data.employees && data.employees.length > 0) {
+            appointmentData.assignedTo = data.employees.map(emp => ({
+                employeId: emp.employeeId,
+                assignedTo: emp.assignedTo
+            }));
+        } else {
+            appointmentData.assignedTo = [];
+        }
+
+        return appointmentData;
+    };
+
+    const createNewAppointmentWithResult = useCallback(async (
+        data: SubmittedAppointmentData,
+        allowOverlap: boolean = false
+    ): Promise<AppointmentCreateResponse> => {
         const loadingToastId = toast.loading('Termin wird erstellt…');
         try {
             const isCustomerAppointment = Boolean(data.isClientEvent);
             if ((isCustomerAppointment && !data.kunde) || !data.uhrzeit || !data.selectedEventDate || !data.termin) {
                 toast.dismiss(loadingToastId);
                 toast.error('Please fill in all required fields');
-                return false;
+                return { success: false, message: 'Please fill in all required fields' };
             }
 
             // Validate employees
             if (!data.employees || data.employees.length === 0) {
                 toast.dismiss(loadingToastId);
                 toast.error('Please select at least one employee');
-                return false;
+                return { success: false, message: 'Please select at least one employee' };
             }
 
-            // Use raw HH:MM time and plain date string (YYYY-MM-DD)
-            const formattedTime = data.uhrzeit;
-            const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
+            const appointmentData = buildAppointmentPayload(data);
 
-            const appointmentData: any = {
-                customer_name: isCustomerAppointment ? data.kunde : (data.kunde || ''),
-                time: formattedTime,
-                date: selectedDateStr,
-                reason: data.termin,
-                details: data.bemerk || '',
-                isClient: isCustomerAppointment,
-                duration: data.duration
-            };
-
-            if (isCustomerAppointment && data.customerId) {
-                appointmentData.customerId = data.customerId;
-            }
-
-            // Add reminder if provided (already in minutes)
-            if (data.reminder !== null && data.reminder !== undefined) {
-                appointmentData.reminder = data.reminder;
-            }
-
-            // Add room if provided
-            if (data.appomnentRoom) {
-                appointmentData.appomnentRoom = data.appomnentRoom;
-            }
-
-            // Add employees array as assignedTo
-            if (data.employees && data.employees.length > 0) {
-                appointmentData.assignedTo = data.employees.map(emp => ({
-                    employeId: emp.employeeId,
-                    assignedTo: emp.assignedTo
-                }));
-            } else {
-                appointmentData.assignedTo = [];
-            }
-
-            const response = await createAppoinment(appointmentData);
+            const response: AppointmentCreateResponse = allowOverlap
+                ? await createAppointmentWithOverlap(appointmentData, true)
+                : await createAppoinment(appointmentData);
 
             if (response.success) {
                 await fetchAppointments();
@@ -187,21 +203,31 @@ export const useAppoinment = () => {
                 toast.success(safeToastMessage(response.message) || 'Termin erfolgreich erstellt', {
                     duration: 3000,
                 });
-                return true;
+                return response;
             } else {
                 toast.dismiss(loadingToastId);
+                if (response.employeeOverlap || response.roomOverlap) {
+                    // Let UI decide whether to create with allowOverlap=true
+                    return response;
+                }
                 toast.error(safeToastMessage(response.message) || 'Failed to create appointment', {
                     duration: 5000,
                 });
-                return false;
+                return response;
             }
         } catch (error: unknown) {
             toast.dismiss(loadingToastId);
             const errorMessage = error instanceof Error ? error.message : 'Failed to create appointment';
             toast.error(errorMessage);
-            return false;
+            return { success: false, message: errorMessage };
         }
     }, [fetchAppointments]);
+
+    // Backward-compatible boolean variant
+    const createNewAppointment = useCallback(async (data: SubmittedAppointmentData) => {
+        const response = await createNewAppointmentWithResult(data, Boolean(data.allowOverlap));
+        return Boolean(response?.success);
+    }, [createNewAppointmentWithResult]);
 
     // Delete appointment
     const deleteAppointmentById = useCallback(async (appointmentId: string) => {
@@ -380,6 +406,7 @@ export const useAppoinment = () => {
         // Functions
         fetchAppointments,
         createNewAppointment,
+        createNewAppointmentWithResult,
         deleteAppointmentById,
         getAppointmentById,
         updateAppointmentById,

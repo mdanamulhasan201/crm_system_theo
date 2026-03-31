@@ -50,6 +50,7 @@ interface AppointmentFormData {
   employees?: Employee[]
   reminder?: number | null
   appomnentRoom?: string
+  allowOverlap?: boolean
 }
 
 const appointmentSchema = z.object({
@@ -198,7 +199,7 @@ export default function Calendar() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [bookingRules, setBookingRules] = useState<BookingRulesData | null>(null)
 
-  const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
+  const { createNewAppointmentWithResult, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
   const appointmentForm = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema) as Resolver<AppointmentFormData>,
@@ -447,12 +448,13 @@ export default function Calendar() {
   }
 
   const handleAppointmentSubmit = async (data: AppointmentFormData) => {
-    const success = await createNewAppointment(data)
-    if (success) {
+    const result = await createNewAppointmentWithResult(data, Boolean(data.allowOverlap))
+    if (result?.success) {
       appointmentForm.reset()
       setIsAddModalOpen(false)
       fetchAppointments()
     }
+    return result
   }
 
   const handleAppointmentClick = async (appointmentId: string) => {

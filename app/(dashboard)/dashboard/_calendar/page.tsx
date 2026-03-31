@@ -75,6 +75,7 @@ interface AppointmentFormData {
     employeeId?: string;
     employees?: Employee[];
     reminder?: number | null;
+    allowOverlap?: boolean;
 }
 
 
@@ -123,7 +124,7 @@ const WeeklyCalendar = () => {
         isLoading,
         refreshKey,
         fetchAppointments,
-        createNewAppointment,
+        createNewAppointmentWithResult,
         deleteAppointmentById,
         getAppointmentById,
         updateAppointmentById,
@@ -293,12 +294,13 @@ const WeeklyCalendar = () => {
     };
 
 
-    const onSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
-        const success = await createNewAppointment(data);
-        if (success) {
+    const onSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string; allowOverlap?: boolean }) => {
+        const result = await createNewAppointmentWithResult(data as any, Boolean(data.allowOverlap));
+        if (result?.success) {
             form.reset();
             setShowAddForm(false);
         }
+        return result;
     };
 
 
@@ -454,7 +456,7 @@ const WeeklyCalendar = () => {
                     </div>
 
                     {/* MiniCalendar - Right side, smaller */}
-                    <div className="w-full lg:w-80 xl:w-96 2xl:w-[400px] flex-shrink-0">
+                    <div className="w-full lg:w-80 xl:w-96 2xl:w-[400px] shrink-0">
                         <MiniCalendar
                             isMobile={isMobile}
                             miniCalendarDate={miniCalendarDate}
@@ -732,7 +734,7 @@ const WeeklyCalendar = () => {
 
             {/* Delete Confirmation Modal */}
             {deleteConfirmation.show && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100 p-4">
                     <div className="bg-white rounded-lg w-full max-w-sm p-6">
                         <h3 className="text-lg font-semibold mb-4">Bestätigen Sie das Löschen</h3>
                         <p className="text-gray-600 mb-6">Sind Sie sicher, dass Sie diesen Termin löschen möchten?</p>
