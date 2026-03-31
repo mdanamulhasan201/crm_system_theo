@@ -24,8 +24,8 @@ const HOEHEN: { id: NonNullable<Exclude<RahmenVerschalungHoehe, null | undefined
   { id: "30", label: "30 mm" },
 ]
 const VERSCHALUNG_COLOR_OPTIONS = [
-  { id: "brown", label: "Brown" },
-  { id: "black", label: "Black" },
+  { id: "brown", label: "Braun" },
+  { id: "black", label: "Schwarz" },
 ] as const
 
 export function RahmenOptionsContent({
