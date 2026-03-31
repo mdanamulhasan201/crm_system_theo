@@ -74,6 +74,40 @@ export const getMassschuheOrderStepMassschafterstellung = async (orderId: string
 }
 
 
+
+
+// v2/shoe-orders/track/active-button/cmmfxmk4o0001kuovio6a7z8z
+
+// schafttyp v2/shoe-orders/track/active-button/cmmfxmk4o0001kuovio6a7z8z?schafttyp=intern | extern
+export const getMassschuheOrderTrackActiveButtonSchafttyp = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// Schafttyp  and Bodenkonstruktion  v2/shoe-orders/track/active-button/cmmfxmk4o0001kuovio6a7z8z?bodenkonstruktion=extern | extern?bodenkonstruktion= extern | extern
+// v2/shoe-orders/track/active-button/cmmfxmk4o0001kuovio6a7z8z
+export const getMassschuheOrderTrackActiveButton = async (orderId: string, bodenkonstruktion: 'extern' | 'intern') => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}?bodenkonstruktion=${bodenkonstruktion}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
+
+
+
+
+
+
+
 // v2/shoe-orders/order-step/bodenkonstruktion/cmmfxmk4o0001kuovio6a7z8z
 export const updateMassschuheOrderStepBodenkonstruktion = async (orderId: string, data: any) => {
     try {

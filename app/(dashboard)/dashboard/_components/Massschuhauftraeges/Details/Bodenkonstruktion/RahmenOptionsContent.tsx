@@ -37,10 +37,11 @@ export function RahmenOptionsContent({
   const color = value?.color ?? ""
   const hoehe = value?.verschalungHoehe ?? null
   const ausfuehrung = value?.verschalungAusfuehrung ?? null
+  const showColorField = typ === "eva" || typ === "gummi" || typ === "leder"
 
   const setTyp = (t: NonNullable<RahmenData["type"]>) => {
     const next: RahmenData = { type: t }
-    if (t === "eva") {
+    if (t === "eva" || t === "gummi" || t === "leder") {
       next.color = value?.color ?? ""
     }
     if (t === "verschalung") {
@@ -84,13 +85,19 @@ export function RahmenOptionsContent({
         </div>
       </div>
 
-      {typ === "eva" ? (
+      {showColorField ? (
         <div className="mt-4 border-t border-gray-200 pt-4">
           <label className="mb-1 block text-sm font-medium text-gray-800">Farbe</label>
           <Input
             type="text"
             value={color}
-            onChange={(e) => onChange({ ...(value ?? { type: "eva" }), type: "eva", color: e.target.value })}
+            onChange={(e) =>
+              onChange({
+                ...(value ?? { type: "eva" }),
+                type: (typ ?? "eva"),
+                color: e.target.value,
+              })
+            }
             className="max-w-[420px]"
           />
         </div>

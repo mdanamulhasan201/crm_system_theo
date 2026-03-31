@@ -57,6 +57,11 @@ export default function BodenkonstruktionFiledText({
     const [externNoteLocal, setExternNoteLocal] = useState('');
     const [hasBodenkonstruktionData, setHasBodenkonstruktionData] = useState(false);
     const [bodenLoading, setBodenLoading] = useState(false);
+    const [activeButtons, setActiveButtons] = useState<{ intern: boolean; extern: boolean }>({
+        intern: false,
+        extern: false,
+    });
+    const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [internPopupOpen, setInternPopupOpen] = useState(false);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
@@ -82,9 +87,28 @@ export default function BodenkonstruktionFiledText({
         }
     }, [orderId, stepStatus]);
 
+    const fetchActiveButtons = useCallback(async () => {
+        if (!orderId) return;
+        setActiveButtonsLoading(true);
+        try {
+            const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp(orderId);
+            setActiveButtons({
+                intern: Boolean(res?.data?.bodenkonstruktion?.intern),
+                extern: Boolean(res?.data?.bodenkonstruktion?.extern),
+            });
+        } catch {
+            setActiveButtons({ intern: false, extern: false });
+        } finally {
+            setActiveButtonsLoading(false);
+        }
+    }, [orderId]);
+
     useEffect(() => {
-        if (isStep5) fetchBodenkonstruktion();
-    }, [isStep5, fetchBodenkonstruktion]);
+        if (isStep5) {
+            fetchBodenkonstruktion();
+            fetchActiveButtons();
+        }
+    }, [isStep5, fetchBodenkonstruktion, fetchActiveButtons]);
 
     const handleErweitertClick = () => {
         setInternPopupOpen(true);
@@ -98,6 +122,14 @@ export default function BodenkonstruktionFiledText({
         if (redirectCustomerName) params.set('customerName', redirectCustomerName);
         const query = params.toString();
         router.push(query ? `/dashboard/bodenkonstruktion?${query}` : '/dashboard/bodenkonstruktion');
+    };
+
+    const handleExternErweitertClick = () => {
+        if (isStep5 && activeButtons.extern) {
+            router.push('/dashboard/balance-dashboard');
+            return;
+        }
+        setExternOrderDialogOpen(true);
     };
 
     return (
@@ -169,9 +201,16 @@ export default function BodenkonstruktionFiledText({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                            onClick={() => setExternOrderDialogOpen(true)}
+                            className={cn(
+                                'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            )}
+                            onClick={handleExternErweitertClick}
+                            disabled={activeButtonsLoading}
                         >
+                            {isStep5 && activeButtons.extern ? (
+                                <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                            ) : null}
                             erweitert
                         </Button>
                     </div>

@@ -59,6 +59,11 @@ export default function SchafttypFieldText({
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const [internCustomModalOpen, setInternCustomModalOpen] = useState(false);
+    const [activeButtons, setActiveButtons] = useState<{ intern: boolean; extern: boolean }>({
+        intern: false,
+        extern: false,
+    });
+    const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [massschafterstellungData, setMassschafterstellungData] = useState<{
         json?: MassschafterstellungJson;
         imageUrl?: string;
@@ -92,6 +97,22 @@ export default function SchafttypFieldText({
         }
     }, [orderId, stepStatus]);
 
+    const fetchActiveButtons = useCallback(async () => {
+        if (!orderId) return;
+        setActiveButtonsLoading(true);
+        try {
+            const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp(orderId);
+            setActiveButtons({
+                intern: Boolean(res?.data?.schafttyp?.intern),
+                extern: Boolean(res?.data?.schafttyp?.extern),
+            });
+        } catch {
+            setActiveButtons({ intern: false, extern: false });
+        } finally {
+            setActiveButtonsLoading(false);
+        }
+    }, [orderId]);
+
     const handleErweitertClick = async () => {
         if (isStep5) {
             await fetchMassschafterstellung();
@@ -99,6 +120,14 @@ export default function SchafttypFieldText({
         } else {
             setInternCustomModalOpen(true);
         }
+    };
+
+    const handleExternErweitertClick = () => {
+        if (isStep5 && activeButtons.extern) {
+            router.push('/dashboard/balance-dashboard');
+            return;
+        }
+        setExternOrderDialogOpen(true);
     };
 
     const handleMassschafterstellungSubmit = async (payload: {
@@ -121,8 +150,11 @@ export default function SchafttypFieldText({
     };
 
     useEffect(() => {
-        if (isStep5) fetchMassschafterstellung();
-    }, [isStep5, fetchMassschafterstellung]);
+        if (isStep5) {
+            fetchMassschafterstellung();
+            fetchActiveButtons();
+        }
+    }, [isStep5, fetchMassschafterstellung, fetchActiveButtons]);
 
     return (
         <>
@@ -162,14 +194,14 @@ export default function SchafttypFieldText({
                                 size="sm"
                                 className={cn(
                                     'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                    isStep5 && massschafterstellungData && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                    isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                                 )}
                                 onClick={handleErweitertClick}
-                                disabled={massschafterstellungLoading}
+                                disabled={massschafterstellungLoading || activeButtonsLoading}
                             >
                                 {massschafterstellungLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                                ) : isStep5 && massschafterstellungData ? (
+                                ) : isStep5 && activeButtons.intern ? (
                                     <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
                                 ) : null}
                                 erweitert
@@ -194,9 +226,16 @@ export default function SchafttypFieldText({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                                onClick={() => setExternOrderDialogOpen(true)}
+                                className={cn(
+                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                    isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                )}
+                                onClick={handleExternErweitertClick}
+                                disabled={activeButtonsLoading}
                             >
+                                {isStep5 && activeButtons.extern ? (
+                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                ) : null}
                                 erweitert
                             </Button>
                         </div>
