@@ -469,7 +469,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                         setProductNameDropdownOpen(true)
                                                     }
                                                 }}
-                                                placeholder="z. B."
+                                                placeholder=""
                                                 required
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
@@ -521,7 +521,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                     setSelectedModelId(null)
                                                 }}
                                                 onFocus={() => setHerstellerDropdownOpen(true)}
-                                                placeholder="z. B."
+                                                placeholder=""
                                                 required
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
@@ -578,7 +578,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                 type="text"
                                                 value={formData.Produktkürzel}
                                                 onChange={(e) => handleInputChange('Produktkürzel', e.target.value)}
-                                                placeholder="z. B."
+                                                placeholder=""
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
                                             />
@@ -592,7 +592,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                 type="text"
                                                 value={formData.Lagerort}
                                                 onChange={(e) => handleInputChange('Lagerort', e.target.value)}
-                                                placeholder="z. B."
+                                                placeholder=""
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
                                             />

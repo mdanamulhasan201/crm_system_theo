@@ -361,8 +361,20 @@ export default function ProductManagementTable({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            visibleProducts.map((product) => (
-                                <TableRow key={product.id} className="border-b bg-white">
+                            visibleProducts.map((product) => {
+                                const isLowStockRow =
+                                    hasLowStock(product) ||
+                                    String(product.Status ?? '').toLowerCase().includes('niedrig')
+
+                                return (
+                                <TableRow
+                                    key={product.id}
+                                    className={`${
+                                        isLowStockRow
+                                            ? 'bg-red-100 border-b-4 border-white'
+                                            : 'bg-white border-b border-gray-100'
+                                    }`}
+                                >
                                     <TableCell className="p-3 w-[120px] min-w-[120px]">
                                         {/* BILD / Lagerort – clickable image or placeholder */}
                                         <div
@@ -558,7 +570,8 @@ export default function ProductManagementTable({
                                         )
                                     })}
                                 </TableRow>
-                            ))
+                                )
+                            })
                         )}
                     </TableBody>
                 </Table>
