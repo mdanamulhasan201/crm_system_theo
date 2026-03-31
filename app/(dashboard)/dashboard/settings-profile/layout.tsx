@@ -66,6 +66,11 @@ export default function SettingsProfileLayout({
             return Settings;
         };
 
+        const labelForPath = (path: string, apiTitle: string) => {
+            if (path.endsWith("/automatische-orders")) return "Automatische Bestellungen";
+            return apiTitle;
+        };
+
         const items = allNested
             .filter((item) =>
                 item.action &&
@@ -81,7 +86,7 @@ export default function SettingsProfileLayout({
             .map((item) => ({
                 id: mapIdFromPath(item.path),
                 icon: iconForPath(item.path),
-                label: item.title,
+                label: labelForPath(item.path, item.title),
                 href: item.path,
             }));
 
