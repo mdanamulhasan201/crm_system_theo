@@ -410,7 +410,7 @@ export default function ZoomMode({
             {/* Modern Drawing Toolbar */}
             <div className="sticky z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
 
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+                <div className="max-w-7xl mx-auto px-2">
                     <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 py-2 sm:py-2.5 lg:py-3 overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                         {/* Drawing Toolbar - All in one line */}
                         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
