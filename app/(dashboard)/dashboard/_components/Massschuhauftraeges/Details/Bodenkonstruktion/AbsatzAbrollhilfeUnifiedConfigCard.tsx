@@ -197,30 +197,26 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
     key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral",
     value: string
   ) => {
-    setHeelDrafts((prev) => {
-      const next = sanitizeSignedMmInput(value, prev[key])
-      if (!next) {
-        patchHeel(key, "")
-      } else if (/^[+-]\d+$/.test(next)) {
-        patchHeel(key, next)
-      }
-      return { ...prev, [key]: next }
-    })
+    const next = sanitizeSignedMmInput(value, heelDrafts[key])
+    setHeelDrafts((prev) => ({ ...prev, [key]: next }))
+    if (!next) {
+      patchHeel(key, "")
+    } else if (/^[+-]\d+$/.test(next)) {
+      patchHeel(key, next)
+    }
   }
 
   const setHeelSign = (
     key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral",
     sign: "+" | "-"
   ) => {
-    setHeelDrafts((prev) => {
-      const current = prev[key] || ""
-      const digits = current.replace(/^[+-]/, "").replace(/\D/g, "").slice(0, 2)
-      const next = `${sign}${digits}`
-      if (digits) {
-        patchHeel(key, next)
-      }
-      return { ...prev, [key]: next }
-    })
+    const current = heelDrafts[key] || ""
+    const digits = current.replace(/^[+-]/, "").replace(/\D/g, "").slice(0, 2)
+    const next = `${sign}${digits}`
+    setHeelDrafts((prev) => ({ ...prev, [key]: next }))
+    if (digits) {
+      patchHeel(key, next)
+    }
   }
 
   const clearHeelField = (key: "leftMedial" | "rightMedial" | "leftLateral" | "rightLateral") => {
