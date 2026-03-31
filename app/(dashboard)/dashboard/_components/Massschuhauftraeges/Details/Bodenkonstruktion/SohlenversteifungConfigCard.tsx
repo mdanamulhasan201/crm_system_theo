@@ -4,6 +4,7 @@ import { Shield } from "lucide-react"
 import ConfigCard from "./shared/ConfigCard"
 import { RadioOption } from "./shared/RadioOption"
 import SideSelector from "./shared/SideSelector"
+import { Textarea } from "@/components/ui/textarea"
 import type { SohlenversteifungData } from "./FormFields"
 
 const SUBTITLE = "Optionale Versteifung der Sohle"
@@ -17,6 +18,23 @@ export default function SohlenversteifungConfigCard({
 }) {
   const patch = (partial: Partial<SohlenversteifungData>) => {
     onChange({ ...value, ...partial })
+  }
+
+  const handleModeChange = (mode: SohlenversteifungData["mode"]) => {
+    if (mode === "unterschiedlich") {
+      const fallback = value.gleichMm || ""
+      patch({
+        mode: "unterschiedlich",
+        linksMm: value.linksMm || fallback,
+        rechtsMm: value.rechtsMm || fallback,
+      })
+      return
+    }
+
+    patch({
+      mode: "gleich",
+      gleichMm: value.gleichMm || value.linksMm || value.rechtsMm || "",
+    })
   }
 
   return (
@@ -49,42 +67,36 @@ export default function SohlenversteifungConfigCard({
 
           <SideSelector
             value={value.mode}
-            onChange={(mode) => patch({ mode })}
+            onChange={handleModeChange}
           />
 
           {value.mode === "gleich" ? (
-            <div className="max-w-[200px]">
-              <label className="mb-1 block text-sm font-medium text-gray-800">Versteifung</label>
-              <input
-                type="text"
+            <div className="max-w-[520px]">
+              <label className="mb-1 block text-sm font-medium text-gray-800">Notiz zur Versteifung</label>
+              <Textarea
                 value={value.gleichMm}
                 onChange={(e) => patch({ gleichMm: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
+                className="min-h-[88px] resize-y"
               />
             </div>
           ) : (
-            <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-2 items-end max-w-xl">
-              <div />
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 text-center">
-                Links
-              </p>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 text-center">
-                Rechts
-              </p>
-
-              <p className="text-sm font-medium text-gray-800">Versteifung</p>
-              <input
-                type="text"
-                value={value.linksMm}
-                onChange={(e) => patch({ linksMm: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
-              />
-              <input
-                type="text"
-                value={value.rechtsMm}
-                onChange={(e) => patch({ rechtsMm: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-[#61A175]/60 focus:ring-2 focus:ring-[#61A175]/20"
-              />
+            <div className="grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-800">Links</label>
+                <Textarea
+                  value={value.linksMm}
+                  onChange={(e) => patch({ linksMm: e.target.value })}
+                  className="min-h-[88px] resize-y"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-800">Rechts</label>
+                <Textarea
+                  value={value.rechtsMm}
+                  onChange={(e) => patch({ rechtsMm: e.target.value })}
+                  className="min-h-[88px] resize-y"
+                />
+              </div>
             </div>
           )}
         </div>

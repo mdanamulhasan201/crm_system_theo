@@ -67,6 +67,7 @@ export default function BodenkonstruktionPage() {
         hinterkappe: "kunststoff",
         sohlenversteifung: "nein",
         verbindungsleder: "ja",
+        Konstruktionsart: "geldakt",
     })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
@@ -78,7 +79,7 @@ export default function BodenkonstruktionPage() {
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
-    const [rahmen, setRahmen] = useState<RahmenData | null>({ type: "eva" })
+    const [rahmen, setRahmen] = useState<RahmenData | null>(null)
 
     // Left/Right selection fields
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)

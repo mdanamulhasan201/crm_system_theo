@@ -59,7 +59,11 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     const { customShaftData: contextData, clearCustomShaftData } = useCustomShaftData()
     
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
+    const [selected, setSelected] = useState<SelectedState>({
+        hinterkappe: "kunststoff",
+        sohlenversteifung: "nein",
+        Konstruktionsart: "geldakt",
+    })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",

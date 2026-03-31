@@ -52,7 +52,11 @@ export function BodenkonstruktionCustomerOrderView({
     const [customerName, setCustomerName] = useState<string>("")
 
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
+    const [selected, setSelected] = useState<SelectedState>({
+        hinterkappe: "kunststoff",
+        sohlenversteifung: "nein",
+        Konstruktionsart: "geldakt",
+    })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",

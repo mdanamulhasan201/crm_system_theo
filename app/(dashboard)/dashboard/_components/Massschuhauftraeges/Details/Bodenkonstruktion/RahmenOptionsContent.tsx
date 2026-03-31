@@ -3,6 +3,7 @@
 import { RadioOption } from "./shared/RadioOption"
 import OptionCard from "./shared/OptionCard"
 import InfoTooltip from "./shared/InfoTooltip"
+import { Input } from "@/components/ui/input"
 import type { RahmenData, RahmenVerschalungAusfuehrung, RahmenVerschalungHoehe } from "./rahmenTypes"
 
 function stripPriceFromOptionLabel(label: string): string {
@@ -33,11 +34,15 @@ export function RahmenOptionsContent({
   hidePrice?: boolean
 }) {
   const typ = value?.type ?? null
+  const color = value?.color ?? ""
   const hoehe = value?.verschalungHoehe ?? null
   const ausfuehrung = value?.verschalungAusfuehrung ?? null
 
   const setTyp = (t: NonNullable<RahmenData["type"]>) => {
     const next: RahmenData = { type: t }
+    if (t === "eva") {
+      next.color = value?.color ?? ""
+    }
     if (t === "verschalung") {
       next.verschalungHoehe = value?.verschalungHoehe ?? null
       next.verschalungAusfuehrung = value?.verschalungAusfuehrung ?? null
@@ -78,6 +83,18 @@ export function RahmenOptionsContent({
           ))}
         </div>
       </div>
+
+      {typ === "eva" ? (
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <label className="mb-1 block text-sm font-medium text-gray-800">Farbe</label>
+          <Input
+            type="text"
+            value={color}
+            onChange={(e) => onChange({ ...(value ?? { type: "eva" }), type: "eva", color: e.target.value })}
+            className="max-w-[420px]"
+          />
+        </div>
+      ) : null}
 
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
