@@ -343,6 +343,53 @@ export default function CollectionShaftDetailsPage() {
     polsterungMm,
     polsterung.includes('Erweitert')
   );
+  const isSingleLeatherMode = numberOfLeatherColors === '1';
+  const normalizedLeatherType = isSingleLeatherMode ? lederType : '';
+  const normalizedLeatherColor = isSingleLeatherMode ? lederfarbe : '';
+  const normalizedLeatherColors = !isSingleLeatherMode ? leatherColors.filter(Boolean) : [];
+  const normalizedLeatherColorAssignments =
+    !isSingleLeatherMode ? leatherColorAssignments : [];
+  const shaftConfigurationForOutput: ShaftConfiguration = {
+    customCategory,
+    cadModeling,
+    lederType: normalizedLeatherType,
+    lederfarbe: normalizedLeatherColor,
+    numberOfLeatherColors,
+    leatherColors: normalizedLeatherColors,
+    leatherColorAssignments:
+      numberOfLeatherColors === '2' || numberOfLeatherColors === '3'
+        ? normalizedLeatherColorAssignments
+        : undefined,
+    innenfutter,
+    schafthohe,
+    schafthoheLinks,
+    schafthoheRechts,
+    umfangmasseLinks: umfangmasseLinksDisplay,
+    umfangmasseRechts: umfangmasseRechtsDisplay,
+    umfangmasseLinksDetailed: umfangmasseLinksDetailed.length > 0 ? umfangmasseLinksDetailed : undefined,
+    umfangmasseRechtsDetailed: umfangmasseRechtsDetailed.length > 0 ? umfangmasseRechtsDetailed : undefined,
+    versendenAddress: versendenData ?? undefined,
+    courierPickupSummary,
+    polsterung,
+    verstarkungen,
+    polsterungText: polsterungTextForPdf,
+    verstarkungenText,
+    nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+    nahtfarbeOption,
+    ziernahtVorhanden,
+    closureType,
+    offenstandSchnuerungMm,
+    anzahlOesen,
+    anzahlHaken,
+    anzahlKlettstreifen,
+    breiteKlettstreifenMm,
+    passendenSchnursenkel,
+    osenEinsetzen,
+    zipperExtra,
+    zipperPosition,
+    additionalNotes,
+    deliveryMethod,
+  };
 
   // Prepare order data for PDF
   const orderDataForPDF: ShaftOrderDataForPDF = {
@@ -392,11 +439,11 @@ export default function CollectionShaftDetailsPage() {
       cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
 
       // Leather configuration
-      lederType,
-      lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : '',
+      lederType: normalizedLeatherType,
+      lederfarbe: normalizedLeatherColor,
       numberOfLeatherColors,
-      leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
-      leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
+      leatherColors: normalizedLeatherColors,
+      leatherColorAssignments: normalizedLeatherColorAssignments,
 
       // Shaft configuration
       innenfutter,
@@ -873,51 +920,7 @@ export default function CollectionShaftDetailsPage() {
           orderData={orderDataForPDF}
           shaftImage={shaft?.image || null}
           deliveryCategory={pendingAction === 'boden' ? 'Komplettfertigung' : pendingAction === 'ohne-boden' ? 'Massschafterstellung' : undefined}
-          shaftConfiguration={
-            {
-              customCategory,
-              cadModeling,
-              lederType,
-              lederfarbe,
-              numberOfLeatherColors,
-              leatherColors,
-              innenfutter,
-              schafthohe,
-              schafthoheLinks,
-              schafthoheRechts,
-              umfangmasseLinks: umfangmasseLinksDisplay,
-              umfangmasseRechts: umfangmasseRechtsDisplay,
-              umfangmasseLinksDetailed:
-                umfangmasseLinksDetailed.length > 0 ? umfangmasseLinksDetailed : undefined,
-              umfangmasseRechtsDetailed:
-                umfangmasseRechtsDetailed.length > 0 ? umfangmasseRechtsDetailed : undefined,
-              leatherColorAssignments:
-                numberOfLeatherColors === '2' || numberOfLeatherColors === '3'
-                  ? leatherColorAssignments
-                  : undefined,
-              versendenAddress: versendenData ?? undefined,
-              courierPickupSummary,
-            polsterung,
-            verstarkungen,
-            polsterungText: polsterungTextForPdf,
-            verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-            nahtfarbeOption: nahtfarbeOption,
-            ziernahtVorhanden,
-            closureType,
-            offenstandSchnuerungMm,
-            anzahlOesen,
-            anzahlHaken,
-            anzahlKlettstreifen,
-            breiteKlettstreifenMm,
-            passendenSchnursenkel,
-            osenEinsetzen,
-            zipperExtra,
-            zipperPosition,
-            additionalNotes,
-            deliveryMethod,
-            } satisfies ShaftConfiguration
-          }
+          shaftConfiguration={shaftConfigurationForOutput}
         />
       )}
 
@@ -962,51 +965,7 @@ export default function CollectionShaftDetailsPage() {
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
           deliveryCategory="Massschafterstellung"
-          shaftConfiguration={
-            {
-              customCategory,
-              cadModeling,
-              lederType,
-              lederfarbe,
-              numberOfLeatherColors,
-              leatherColors,
-              innenfutter,
-              schafthohe,
-              schafthoheLinks,
-              schafthoheRechts,
-              umfangmasseLinks: umfangmasseLinksDisplay,
-              umfangmasseRechts: umfangmasseRechtsDisplay,
-              umfangmasseLinksDetailed:
-                umfangmasseLinksDetailed.length > 0 ? umfangmasseLinksDetailed : undefined,
-              umfangmasseRechtsDetailed:
-                umfangmasseRechtsDetailed.length > 0 ? umfangmasseRechtsDetailed : undefined,
-              leatherColorAssignments:
-                numberOfLeatherColors === '2' || numberOfLeatherColors === '3'
-                  ? leatherColorAssignments
-                  : undefined,
-              versendenAddress: versendenData ?? undefined,
-              courierPickupSummary,
-            polsterung,
-            verstarkungen,
-            polsterungText: polsterungTextForPdf,
-            verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-            nahtfarbeOption: nahtfarbeOption,
-            ziernahtVorhanden,
-            closureType,
-            offenstandSchnuerungMm,
-            anzahlOesen,
-            anzahlHaken,
-            anzahlKlettstreifen,
-            breiteKlettstreifenMm,
-            passendenSchnursenkel,
-            osenEinsetzen,
-            zipperExtra,
-            zipperPosition,
-            additionalNotes,
-            deliveryMethod,
-            } satisfies ShaftConfiguration
-          }
+          shaftConfiguration={shaftConfigurationForOutput}
           onConfirm={(deliveryDate) => {
             // Only "ohne-boden" flow uses completion popup now
             // Call function directly (no await - function handles async internally)
