@@ -252,6 +252,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
     const filteredModelOptions = modelOptions.filter((model) =>
         model.productName.toLowerCase().includes(debouncedProduktnameSearch.trim().toLowerCase())
     )
+    const isApiModelSelected = Boolean(selectedModelId)
 
     const handleSizeChange = (size: string, field: keyof SizeData, value: string | number | undefined) => {
         setSizeQuantities(prev => {
@@ -429,7 +430,10 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
     return (
         <>
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-5xl max-h-[92vh] overflow-visible p-0 gap-0">
+            <DialogContent
+                className="sm:max-w-5xl max-h-[92vh] overflow-visible p-0 gap-0"
+                onInteractOutside={(e) => e.preventDefault()}
+            >
                 <DialogHeader className="border-b border-gray-200 px-6 py-5">
                     <DialogTitle className="text-2xl font-semibold text-gray-900">
                         Produkt manuell hinzufügen
@@ -512,7 +516,10 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                             <Input
                                                 type="text"
                                                 value={formData.Hersteller}
-                                                onChange={(e) => handleInputChange('Hersteller', e.target.value)}
+                                                onChange={(e) => {
+                                                    handleInputChange('Hersteller', e.target.value)
+                                                    setSelectedModelId(null)
+                                                }}
                                                 onFocus={() => setHerstellerDropdownOpen(true)}
                                                 placeholder="z. B."
                                                 required
@@ -754,7 +761,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                 {type === 'rady_insole' && (
                                                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Länge (cm)</TableHead>
                                                 )}
-                                                <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Min. Bestellung</TableHead>
+                                                <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">MIN. BESTAND</TableHead>
                                                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Auto-Bestellgrenze</TableHead>
                                                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bestellmenge</TableHead>
                                             </TableRow>
@@ -807,22 +814,22 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                         <Input
                                                             type="number"
                                                             min={0}
-                                                            placeholder="3"
+                                                            placeholder="0"
                                                             value={sizeQuantities[size]?.autoOrderLimit !== undefined ? sizeQuantities[size]?.autoOrderLimit : ''}
                                                             onChange={(e) => handleSizeChange(size, 'autoOrderLimit', e.target.value === '' ? undefined : parseInt(e.target.value))}
                                                             className="h-9 border-gray-200 bg-[#fcfcfc]"
-                                                            disabled={isLoading}
+                                                            disabled={isLoading || !isApiModelSelected}
                                                         />
                                                     </TableCell>
                                                     <TableCell>
                                                         <Input
                                                             type="number"
                                                             min={0}
-                                                            placeholder="10"
+                                                            placeholder="0"
                                                             value={sizeQuantities[size]?.orderQuantity !== undefined ? sizeQuantities[size]?.orderQuantity : ''}
                                                             onChange={(e) => handleSizeChange(size, 'orderQuantity', e.target.value === '' ? undefined : parseInt(e.target.value))}
                                                             className="h-9 border-gray-200 bg-[#fcfcfc]"
-                                                            disabled={isLoading}
+                                                            disabled={isLoading || !isApiModelSelected}
                                                         />
                                                     </TableCell>
                                                 </TableRow>
