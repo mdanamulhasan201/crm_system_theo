@@ -145,20 +145,18 @@ function buildSohlenversteifungPdfLines(d: SohlenversteifungData | null | undefi
   const parts: string[] = []
   const v = d ?? defaultSohlenversteifungData()
   if (!v.enabled) {
-    parts.push("Sohlenversteifung gewünscht: Nein")
+    parts.push("Nein")
     return parts
   }
-  parts.push("Sohlenversteifung gewünscht: Ja")
-  parts.push(
-    v.mode === "gleich"
-      ? "Ausführung: Beidseitig identisch"
-      : "Ausführung: Links und rechts unterschiedlich"
-  )
+  parts.push("Ja")
   if (v.mode === "gleich") {
-    if (v.gleichMm.trim()) parts.push(`Versteifung: ${v.gleichMm.trim()} mm`)
+    const note = v.gleichMm.trim()
+    if (note) parts.push(`Notiz: ${note}`)
   } else {
-    if (v.linksMm.trim()) parts.push(`Versteifung links: ${v.linksMm.trim()} mm`)
-    if (v.rechtsMm.trim()) parts.push(`Versteifung rechts: ${v.rechtsMm.trim()} mm`)
+    const leftNote = v.linksMm.trim()
+    const rightNote = v.rechtsMm.trim()
+    if (leftNote) parts.push(`Notiz links: ${leftNote}`)
+    if (rightNote) parts.push(`Notiz rechts: ${rightNote}`)
   }
   return parts
 }
@@ -1098,7 +1096,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           <div className="flex-1 leading-loose">
                             {parts.map((part, idx) => (
                               <div key={idx} className="mb-1">
-                                <ModalCheckbox isSelected={true} label={part} />
+                                {part.startsWith("Notiz") ? (
+                                  <span className="text-sm text-slate-700">{part}</span>
+                                ) : (
+                                  <ModalCheckbox isSelected={true} label={part} />
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1529,7 +1531,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       <div style={{ flex: 1, lineHeight: 1.8 }}>
                         {parts.map((part, idx) => (
                           <div key={idx} style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={part} />
+                            {part.startsWith("Notiz") ? (
+                              <span style={{ fontSize: '13px', color: '#334155' }}>{part}</span>
+                            ) : (
+                              <PDFCheckbox isSelected={true} label={part} />
+                            )}
                           </div>
                         ))}
                       </div>
