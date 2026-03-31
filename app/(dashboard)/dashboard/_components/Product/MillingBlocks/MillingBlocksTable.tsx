@@ -30,7 +30,12 @@ import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import { normalizeFeatures } from '../featureUtils'
 import AutoOrderConfirmDialog from '../AutoOrderConfirmDialog'
-import { downloadBestellscheinPdf, shouldShowBestellscheinDownload } from '@/lib/bestellscheinPdf'
+import {
+    downloadBestellscheinPdf,
+    ReorderRow,
+    shouldShowBestellscheinDownload,
+} from '@/lib/bestellscheinPdf'
+import BestellscheinPdfModal from '../BestellscheinPdfModal'
 
 interface MillingBlock {
     id: string
@@ -104,6 +109,9 @@ export default function MillingBlocksTable({
     const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
     const [autoOrderConfirmProduct, setAutoOrderConfirmProduct] = useState<MillingBlock | null>(null)
     const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
+    const [pdfModalOpen, setPdfModalOpen] = useState(false)
+    const [pdfModalProduct, setPdfModalProduct] = useState<any | null>(null)
+    const [isPdfSubmitting, setIsPdfSubmitting] = useState(false)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
@@ -243,7 +251,7 @@ export default function MillingBlocksTable({
         }
     }
 
-    const handleBestellscheinPdf = async (product: MillingBlock) => {
+    const handleOpenBestellscheinPdf = async (product: MillingBlock) => {
         setPdfLoadingId(product.id)
         try {
             const response: any = await getSingleStorage(product.id)
@@ -251,16 +259,31 @@ export default function MillingBlocksTable({
                 toast.error('Produktdaten konnten nicht geladen werden.')
                 return
             }
-            const result = await downloadBestellscheinPdf(response.data)
+            setPdfModalProduct(response.data)
+            setPdfModalOpen(true)
+        } catch (e: any) {
+            toast.error(e?.message || 'Produktdaten konnten nicht geladen werden.')
+        } finally {
+            setPdfLoadingId(null)
+        }
+    }
+
+    const handleSubmitBestellscheinPdf = async (rows: ReorderRow[]) => {
+        if (!pdfModalProduct) return
+        setIsPdfSubmitting(true)
+        try {
+            const result = await downloadBestellscheinPdf(pdfModalProduct, { rows })
             if (!result.ok) {
                 toast.error('Keine Nachbestellzeilen für den PDF-Export.')
                 return
             }
             toast.success('Bestellschein heruntergeladen')
+            setPdfModalOpen(false)
+            setPdfModalProduct(null)
         } catch (e: any) {
             toast.error(e?.message || 'PDF konnte nicht erstellt werden.')
         } finally {
-            setPdfLoadingId(null)
+            setIsPdfSubmitting(false)
         }
     }
 
@@ -413,7 +436,7 @@ export default function MillingBlocksTable({
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    onClick={() => void handleBestellscheinPdf(product)}
+                                                    onClick={() => void handleOpenBestellscheinPdf(product)}
                                                     disabled={pdfLoadingId === product.id}
                                                     className="h-8 w-8 p-0 text-[#1a2b4b] hover:text-[#1a2b4b] hover:bg-emerald-50"
                                                     title="Bestellschein (PDF)"
@@ -552,6 +575,19 @@ export default function MillingBlocksTable({
                 }}
                 product={selectedProductForDelete}
                 isLoading={isDeleting}
+            />
+
+            <BestellscheinPdfModal
+                isOpen={pdfModalOpen}
+                onClose={() => {
+                    if (isPdfSubmitting) return
+                    setPdfModalOpen(false)
+                    setPdfModalProduct(null)
+                }}
+                product={pdfModalProduct}
+                isPreparing={!!pdfLoadingId}
+                isSubmitting={isPdfSubmitting}
+                onSubmit={handleSubmitBestellscheinPdf}
             />
 
             <AutoOrderConfirmDialog

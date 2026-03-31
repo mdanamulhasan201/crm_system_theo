@@ -153,6 +153,52 @@ export function buildReorderRowsFromApiProduct(apiProduct: {
     return rows
 }
 
+/**
+ * Build editable rows for modal:
+ * - includes every available size from API
+ * - pre-fills recommended order only for low-stock rows
+ * - non-low-stock sizes start with 0 so user can still order manually
+ */
+export function buildEditableReorderRowsFromApiProduct(apiProduct: {
+    groessenMengen?: Record<string, unknown> | null
+    mindestbestand?: number | null
+}): ReorderRow[] {
+    const raw = apiProduct.groessenMengen
+    if (!raw || typeof raw !== 'object') return []
+
+    const productMin = apiProduct.mindestbestand
+    const keys = Object.keys(raw)
+
+    const sortKeys = (a: string, b: string) => {
+        const na = parseInt(String(a).replace(/\D/g, ''), 10)
+        const nb = parseInt(String(b).replace(/\D/g, ''), 10)
+        if (!Number.isNaN(na) && !Number.isNaN(nb) && na !== nb) return na - nb
+        return String(a).localeCompare(String(b), 'de')
+    }
+
+    return [...keys].sort(sortKeys).map((sizeKey) => {
+        const parsed = parseGroessenEntry(raw[sizeKey])
+        const target = targetStockForRow(
+            parsed.mindestmenge,
+            productMin,
+            parsed.auto_order_limit
+        )
+        const defaultRecommended = shouldIncludeRow(
+            parsed.quantity,
+            parsed.mindestmenge,
+            parsed.warningStatus
+        )
+            ? Math.max(0, Math.round(target - parsed.quantity))
+            : 0
+
+        return {
+            sizeLabel: sizeKey,
+            currentStock: parsed.quantity,
+            recommendedOrder: defaultRecommended,
+        }
+    })
+}
+
 async function loadImageDataUrl(url: string): Promise<string | null> {
     try {
         const res = await fetch(url, { mode: 'cors' })
@@ -424,8 +470,21 @@ export async function downloadBestellscheinPdf(apiProduct: {
     image?: string | null
     groessenMengen?: Record<string, unknown> | null
     mindestbestand?: number | null
+}, options?: {
+    rows?: ReorderRow[]
 }): Promise<{ ok: true } | { ok: false; reason: 'no_rows' }> {
-    const rows = buildReorderRowsFromApiProduct(apiProduct)
+    const rowsFromApi = buildReorderRowsFromApiProduct(apiProduct)
+    const candidateRows = options?.rows ?? rowsFromApi
+    const rows = candidateRows
+        .map((row) => ({
+            sizeLabel: String(row.sizeLabel ?? '').trim(),
+            currentStock: Number.isFinite(Number(row.currentStock)) ? Number(row.currentStock) : 0,
+            recommendedOrder: Number.isFinite(Number(row.recommendedOrder))
+                ? Math.max(0, Math.round(Number(row.recommendedOrder)))
+                : 0,
+        }))
+        .filter((row) => row.sizeLabel.length > 0 && row.recommendedOrder > 0)
+
     if (rows.length === 0) return { ok: false, reason: 'no_rows' }
 
     const doc = new jsPDF({
