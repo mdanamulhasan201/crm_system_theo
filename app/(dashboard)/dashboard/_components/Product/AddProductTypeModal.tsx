@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
+import { Switch } from '@/components/ui/switch'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import { getAllManufacturers, getAllModelName } from '@/apis/storeManagement'
 import useDebounce from '@/hooks/useDebounce'
@@ -88,6 +89,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
 
     const [increaseAllSizesInput, setIncreaseAllSizesInput] = useState<string>('')
     const [cumulativeIncreaseValue, setCumulativeIncreaseValue] = useState<number>(0)
+    const [linkAutoOrderLimitWithMin, setLinkAutoOrderLimitWithMin] = useState(true)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [imageFile, setImageFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -217,6 +219,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
             setVisibleSizeColumns(sizeColumns.slice(0, initialVisibleSizeCount))
             setIncreaseAllSizesInput('')
             setCumulativeIncreaseValue(0)
+            setLinkAutoOrderLimitWithMin(true)
             setImagePreview(null)
             setImageFile(null)
             if (fileInputRef.current) {
@@ -287,11 +290,29 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 ...prev,
                 [size]: {
                     ...prev[size],
-                    [field]: processedValue
+                    [field]: processedValue,
+                    ...(field === 'mindestmenge' && linkAutoOrderLimitWithMin
+                        ? { autoOrderLimit: processedValue as number | undefined }
+                        : {})
                 }
             }
         })
     }
+
+    useEffect(() => {
+        if (!linkAutoOrderLimitWithMin) return
+
+        setSizeQuantities(prev => {
+            const next: { [key: string]: SizeData } = { ...prev }
+            Object.keys(next).forEach((size) => {
+                next[size] = {
+                    ...next[size],
+                    autoOrderLimit: next[size]?.mindestmenge
+                }
+            })
+            return next
+        })
+    }, [linkAutoOrderLimitWithMin])
 
     const handleIncreaseAllSizes = () => {
         if (!increaseAllSizesInput || increaseAllSizesInput.trim() === '') {
@@ -750,6 +771,18 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                             </Button>
                                         </div>
                                     </div>
+                                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                        <div className="text-right">
+                                            <p className="text-sm font-medium text-gray-800">Auto-Grenze an Mindestbestand koppeln</p>
+                                            <p className="text-xs text-gray-500">Aus = separat bearbeitbar.</p>
+                                        </div>
+                                        <Switch
+                                            checked={linkAutoOrderLimitWithMin}
+                                            onCheckedChange={setLinkAutoOrderLimitWithMin}
+                                            disabled={isLoading}
+                                            className="data-[state=checked]:bg-[#61A178] cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -816,9 +849,9 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                             min={0}
                                                             placeholder="0"
                                                             value={sizeQuantities[size]?.autoOrderLimit !== undefined ? sizeQuantities[size]?.autoOrderLimit : ''}
-                                                            onChange={(e) => handleSizeChange(size, 'autoOrderLimit', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                                                            onChange={(e) => handleSizeChange(size, 'autoOrderLimit', e.target.value)}
                                                             className="h-9 border-gray-200 bg-[#fcfcfc]"
-                                                            disabled={isLoading || !isApiModelSelected}
+                                                            disabled={isLoading || !isApiModelSelected || linkAutoOrderLimitWithMin}
                                                         />
                                                     </TableCell>
                                                     <TableCell>
