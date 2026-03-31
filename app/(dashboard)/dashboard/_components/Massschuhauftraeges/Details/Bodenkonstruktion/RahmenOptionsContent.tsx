@@ -23,6 +23,10 @@ const HOEHEN: { id: NonNullable<Exclude<RahmenVerschalungHoehe, null | undefined
   { id: "25", label: "25 mm" },
   { id: "30", label: "30 mm" },
 ]
+const VERSCHALUNG_COLOR_OPTIONS = [
+  { id: "brown", label: "Brown" },
+  { id: "black", label: "Black" },
+] as const
 
 export function RahmenOptionsContent({
   value,
@@ -42,9 +46,14 @@ export function RahmenOptionsContent({
   const setTyp = (t: NonNullable<RahmenData["type"]>) => {
     const next: RahmenData = { type: t }
     if (t === "eva" || t === "gummi" || t === "leder") {
-      next.color = value?.color ?? ""
+      // Do not carry color across EVA/Gummi/Leder; each selection starts fresh.
+      // Keep current value only when re-selecting the same type.
+      next.color = typ === t ? (value?.color ?? "") : ""
     }
     if (t === "verschalung") {
+      // Keep brown/black only within verschalung.
+      // If coming from non-verschalung types, start empty.
+      next.color = typ === "verschalung" ? (value?.color ?? "") : ""
       next.verschalungHoehe = value?.verschalungHoehe ?? null
       next.verschalungAusfuehrung = value?.verschalungAusfuehrung ?? null
     }
@@ -55,6 +64,7 @@ export function RahmenOptionsContent({
     if (typ !== "verschalung") return
     onChange({
       type: "verschalung",
+      color: value?.color ?? "",
       verschalungHoehe: h,
       verschalungAusfuehrung: value?.verschalungAusfuehrung ?? null,
     })
@@ -64,6 +74,7 @@ export function RahmenOptionsContent({
     if (typ !== "verschalung") return
     onChange({
       type: "verschalung",
+      color: value?.color ?? "",
       verschalungHoehe: value?.verschalungHoehe ?? null,
       verschalungAusfuehrung: a,
     })
@@ -110,6 +121,28 @@ export function RahmenOptionsContent({
       >
         <div className="min-h-0 overflow-hidden">
           <div className="mt-4 space-y-5 border-t border-gray-200 pt-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Farbe</p>
+              <div className="flex flex-wrap gap-2">
+                {VERSCHALUNG_COLOR_OPTIONS.map((opt) => (
+                  <OptionCard
+                    key={opt.id}
+                    label={opt.label}
+                    selected={(color || "").toLowerCase() === opt.id}
+                    onClick={() =>
+                      onChange({
+                        ...(value ?? { type: "verschalung" }),
+                        type: "verschalung",
+                        color: opt.id,
+                        verschalungHoehe: value?.verschalungHoehe ?? null,
+                        verschalungAusfuehrung: value?.verschalungAusfuehrung ?? null,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Höhe der Verschalung</p>
               <div className="flex flex-wrap gap-2">
