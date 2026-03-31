@@ -119,7 +119,7 @@ export default function VersorgungModal({
     const fetchStorageProducts = useCallback(async (type?: 'milling_block' | 'rady_insole') => {
         try {
             setIsLoadingProducts(true)
-            const response = await getAllStorages(1, 100, '', type)
+            const response = await getAllStorages('1', 100, '', type)
             if (response.success && response.data) {
                 setStorageProducts(response.data)
             }

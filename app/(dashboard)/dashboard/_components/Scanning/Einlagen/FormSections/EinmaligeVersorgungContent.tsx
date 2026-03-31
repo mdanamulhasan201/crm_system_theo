@@ -76,7 +76,7 @@ export default function EinmaligeVersorgungContent({
     const fetchStorageProducts = useCallback(async () => {
         try {
             setIsLoadingProducts(true)
-            const response = await getAllStorages(1, 1000, '', undefined)
+            const response = await getAllStorages('1', 1000, '', undefined)
             if (response.success && response.data) {
                 setStorageProducts(response.data)
             }
