@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Download, Layers } from "lucide-react"
 import toast from "react-hot-toast"
 import ConfigCard from "../shared/ConfigCard"
@@ -120,15 +120,30 @@ export default function SohlenaufbauConfigCard({
     apply({ abLayerFarben: next })
   }
 
-  const isZwDualColorEnabled =
-    value.zwSplit.mode === "gleichmaessig" &&
-    value.farbModus === "individuell"
+  const [zwDualColorUi, setZwDualColorUi] = useState(
+    () => value.zwSplit.mode === "gleichmaessig" && value.farbModus === "individuell"
+  )
+  const [abDualColorUi, setAbDualColorUi] = useState(
+    () => value.abSplit.mode === "gleichmaessig" && value.farbModus === "individuell"
+  )
 
-  const isAbDualColorEnabled =
-    value.abSplit.mode === "gleichmaessig" &&
-    value.farbModus === "individuell"
+  useEffect(() => {
+    if (value.zwSplit.mode !== "gleichmaessig") {
+      setZwDualColorUi(false)
+    }
+  }, [value.zwSplit.mode])
+
+  useEffect(() => {
+    if (value.abSplit.mode !== "gleichmaessig") {
+      setAbDualColorUi(false)
+    }
+  }, [value.abSplit.mode])
+
+  const isZwDualColorEnabled = value.zwSplit.mode === "gleichmaessig" && zwDualColorUi
+  const isAbDualColorEnabled = value.abSplit.mode === "gleichmaessig" && abDualColorUi
 
   const setZwDualColorEnabled = (enabled: boolean) => {
+    setZwDualColorUi(enabled)
     if (enabled) {
       apply({
         farbModus: "individuell",
@@ -137,10 +152,14 @@ export default function SohlenaufbauConfigCard({
       return
     }
     const same = value.zwLayerFarben[0] || value.zwFarbe
-    apply({ farbModus: "einheitlich", zwLayerFarben: [same, same] })
+    apply({
+      farbModus: abDualColorUi ? "individuell" : "einheitlich",
+      zwLayerFarben: [same, same],
+    })
   }
 
   const setAbDualColorEnabled = (enabled: boolean) => {
+    setAbDualColorUi(enabled)
     if (enabled) {
       apply({
         farbModus: "individuell",
@@ -149,7 +168,10 @@ export default function SohlenaufbauConfigCard({
       return
     }
     const same = value.abLayerFarben[0] || value.abFarbe
-    apply({ farbModus: "einheitlich", abLayerFarben: [same, same] })
+    apply({
+      farbModus: zwDualColorUi ? "individuell" : "einheitlich",
+      abLayerFarben: [same, same],
+    })
   }
 
   const previewData: SohlenaufbauPreviewData = useMemo(
