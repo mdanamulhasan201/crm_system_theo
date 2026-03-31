@@ -299,11 +299,11 @@ export default function MillingBlocksTable({
                     <TableHeader>
                         <TableRow className="border-b bg-gray-100">
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase w-[120px] min-w-[120px]">BILD</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">STATUS</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase min-w-[120px]">AKTIONEN</TableHead>
+                            <TableHead className="p-3 pr-7 text-left font-medium text-gray-700 uppercase min-w-[150px]">HERSTELLER</TableHead>
+                            <TableHead className="p-3 pl-7 pr-8 text-left font-medium text-gray-700 uppercase min-w-[240px]">ARTIKELBEZEICHNUNG</TableHead>
+                            <TableHead className="p-3 px-7 text-left font-medium text-gray-700 uppercase min-w-[150px]">STATUS</TableHead>
+                            <TableHead className="p-3 pl-6 pr-10 text-left font-medium text-gray-700 uppercase min-w-[150px]">AUTO</TableHead>
+                            <TableHead className="p-3 pl-6 text-left font-medium text-gray-700 uppercase min-w-[140px]">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
                                 <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase min-w-[90px]">{size}</TableHead>
                             ))}
@@ -362,16 +362,16 @@ export default function MillingBlocksTable({
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="p-3 text-gray-900">
+                                    <TableCell className="p-3 pr-7 text-gray-900 min-w-[150px]">
                                         {product.Hersteller}
                                     </TableCell>
-                                    <TableCell className="p-3 text-gray-900">
+                                    <TableCell className="p-3 pl-7 pr-8 text-gray-900 min-w-[240px]">
                                         <div className="flex flex-col gap-0.5 uppercase">
                                             <span className="font-semibold text-gray-900 block">{product.Produktname}</span>
                                             <span className="text-sm text-gray-500">{product.Produktkürzel}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 px-7 min-w-[150px]">
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -408,7 +408,7 @@ export default function MillingBlocksTable({
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell className="p-3 min-w-[120px]">
+                                    <TableCell className="p-3 pl-6 pr-10 min-w-[150px]">
                                         <div className="flex items-center gap-2 whitespace-nowrap">
                                             <Switch
                                                 checked={hasAutoOrderOn(product)}
@@ -438,7 +438,7 @@ export default function MillingBlocksTable({
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 pl-6 min-w-[140px]">
                                         <div className="flex items-center gap-2">
                                             {shouldShowBestellscheinDownload(
                                                 product.create_status,
