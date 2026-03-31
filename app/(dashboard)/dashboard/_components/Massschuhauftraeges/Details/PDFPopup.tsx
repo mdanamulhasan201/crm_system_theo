@@ -179,18 +179,19 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
     pdfParseMm(v.rechts.spitze) > 0
   const has = v.mode === "unterschiedlich" ? hasLeft || hasRight : hasLeft
   if (!has) {
-    parts.push("Noch keine Höhenangaben")
+    parts.push("Keine Höhenangaben")
     return parts
   }
+
   parts.push(v.mode === "gleich" ? "Ausführung: Beidseitig identisch" : "Ausführung: Links und rechts unterschiedlich")
-  parts.push(
-    `Links – Ferse/Absatz: ${v.links.ferse || "–"} mm, Ballen: ${v.links.ballen || "–"} mm, Spitze: ${v.links.spitze || "–"} mm`
-  )
+  const leftHeights = `Ferse/Absatz ${v.links.ferse || "–"} mm, Ballen ${v.links.ballen || "–"} mm, Spitze ${v.links.spitze || "–"} mm`
+  parts.push(v.mode === "gleich" ? `Höhen: ${leftHeights}` : `Höhen Links: ${leftHeights}`)
   if (v.mode === "unterschiedlich") {
     parts.push(
-      `Rechts – Ferse/Absatz: ${v.rechts.ferse || "–"} mm, Ballen: ${v.rechts.ballen || "–"} mm, Spitze: ${v.rechts.spitze || "–"} mm`
+      `Höhen Rechts: Ferse/Absatz ${v.rechts.ferse || "–"} mm, Ballen ${v.rechts.ballen || "–"} mm, Spitze ${v.rechts.spitze || "–"} mm`
     )
   }
+
   const leftFerse = pdfParseMm(v.links.ferse)
   const leftBallen = pdfParseMm(v.links.ballen)
   const leftZw = leftBallen
@@ -208,57 +209,59 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
     const rightAb = Math.max(0, rightFerse - rightBallen)
     parts.push(
       leftFerse >= leftBallen
-        ? `Berechnung Links – Zwischensohle: ${leftZw} mm, Absatz: ${leftAb} mm`
+        ? `Berechnung Links: Zwischensohle ${leftZw} mm, Absatz ${leftAb} mm`
         : "Hinweis Links: Fersenhöhe kleiner als Ballenhöhe"
     )
     parts.push(
       rightFerse >= rightBallen
-        ? `Berechnung Rechts – Zwischensohle: ${rightZw} mm, Absatz: ${rightAb} mm`
+        ? `Berechnung Rechts: Zwischensohle ${rightZw} mm, Absatz ${rightAb} mm`
         : "Hinweis Rechts: Fersenhöhe kleiner als Ballenhöhe"
     )
   }
-  parts.push(`Farbkonzept: ${v.farbModus === "einheitlich" ? "Eine Farbe pro Bereich" : "Individuell pro Lage"}`)
+
   const zw = leftZw
   const ab = leftAb
   if (v.farbModus === "einheitlich") {
-    if (zw > 0) parts.push(`Zwischensohle – Farbe: ${v.zwFarbe}`)
-    if (ab > 0) parts.push(`Absatz – Farbe: ${v.abFarbe}`)
+    const colorParts: string[] = []
+    if (zw > 0) colorParts.push(`Zwischensohle ${v.zwFarbe}`)
+    if (ab > 0) colorParts.push(`Absatz ${v.abFarbe}`)
+    if (colorParts.length > 0) parts.push(`Farben: ${colorParts.join(" | ")}`)
   } else {
     if (zw > 0) {
       if (v.zwSplit.mode === "einteilig") {
-        parts.push(`Zwischensohle – Farbe: ${v.zwLayerFarben[0] ?? v.zwFarbe}`)
+        parts.push(`Farben Zwischensohle: ${v.zwLayerFarben[0] ?? v.zwFarbe}`)
       } else {
-        v.zwSplit.layers.forEach((_, i) => {
-          parts.push(`Zwischensohle Lage ${i + 1} – Farbe: ${v.zwLayerFarben[i] ?? "#1a1a1a"}`)
-        })
+        const zwColors = v.zwSplit.layers.map((_, i) => `L${i + 1} ${v.zwLayerFarben[i] ?? "#1a1a1a"}`)
+        parts.push(`Farben Zwischensohle: ${zwColors.join(" | ")}`)
       }
     }
     if (ab > 0) {
       if (v.abSplit.mode === "einteilig") {
-        parts.push(`Absatz – Farbe: ${v.abLayerFarben[0] ?? v.abFarbe}`)
+        parts.push(`Farben Absatz: ${v.abLayerFarben[0] ?? v.abFarbe}`)
       } else {
-        v.abSplit.layers.forEach((_, i) => {
-          parts.push(`Absatz Lage ${i + 1} – Farbe: ${v.abLayerFarben[i] ?? "#1a1a1a"}`)
-        })
+        const abColors = v.abSplit.layers.map((_, i) => `L${i + 1} ${v.abLayerFarben[i] ?? "#1a1a1a"}`)
+        parts.push(`Farben Absatz: ${abColors.join(" | ")}`)
       }
     }
   }
-  parts.push(`Zwischensohle – Aufteilung: ${v.zwSplit.mode}, Lagen: ${v.zwSplit.layers.join(" / ") || "–"}`)
-  parts.push(`Absatz – Aufteilung: ${v.abSplit.mode}, Lagen: ${v.abSplit.layers.join(" / ") || "–"}`)
-  const shoreMod = v.shoreModus === "individuell" ? "individuell" : "einheitlich"
   parts.push(
-    `Material / Shore-Härte: ${shoreMod === "individuell" ? "Individuell pro Bereich" : "Einheitlich für gesamten Aufbau"}`
+    `Aufteilung: Zwischensohle ${v.zwSplit.mode} (${v.zwSplit.layers.join(" / ") || "–"}), Absatz ${v.abSplit.mode} (${v.abSplit.layers.join(" / ") || "–"})`
   )
+
+  const shoreMod = v.shoreModus === "individuell" ? "individuell" : "einheitlich"
   const pdfEvaShore = (raw: string | undefined): string => {
     const x = raw === "30" || raw === "53" || raw === "58" ? raw : "53"
     return evaShoreLabel(x as SohlenaufbauShoreValue)
   }
   if (shoreMod === "einheitlich") {
-    parts.push(`Shore (gesamt): ${pdfEvaShore(v.globalShore)}`)
+    parts.push(`Shore: Gesamt ${pdfEvaShore(v.globalShore)}`)
   } else {
-    if (zw > 0) parts.push(`Shore Zwischensohle: ${pdfEvaShore(v.shorePerArea?.zwischensohle)}`)
-    if (ab > 0) parts.push(`Shore Absatz: ${pdfEvaShore(v.shorePerArea?.absatz)}`)
+    const shoreParts: string[] = []
+    if (zw > 0) shoreParts.push(`Zwischensohle ${pdfEvaShore(v.shorePerArea?.zwischensohle)}`)
+    if (ab > 0) shoreParts.push(`Absatz ${pdfEvaShore(v.shorePerArea?.absatz)}`)
+    if (shoreParts.length > 0) parts.push(`Shore: ${shoreParts.join(" | ")}`)
   }
+
   const layerSplitUi =
     v.farbModus === "individuell" && (v.zwSplit.mode !== "einteilig" || v.abSplit.mode !== "einteilig")
   if (layerSplitUi && shoreMod === "individuell" && v.shorePerLayer) {
@@ -266,21 +269,30 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
     const abN = v.abSplit.mode === "einteilig" ? 1 : v.abSplit.layers.length
     if (zw > 0 && zwN > 1 && v.shorePerLayer.zwLayers?.length) {
       parts.push(
-        `Shore pro Lage Zwischensohle: ${v.shorePerLayer.zwLayers.map((s, i) => `L${i + 1}=${pdfEvaShore(s)}`).join(", ")}`
+        `Shore pro Lage Zwischensohle: ${v.shorePerLayer.zwLayers.map((s, i) => `L${i + 1} ${pdfEvaShore(s)}`).join(" | ")}`
       )
     }
     if (ab > 0 && abN > 1 && v.shorePerLayer.abLayers?.length) {
       parts.push(
-        `Shore pro Lage Absatz: ${v.shorePerLayer.abLayers.map((s, i) => `L${i + 1}=${pdfEvaShore(s)}`).join(", ")}`
+        `Shore pro Lage Absatz: ${v.shorePerLayer.abLayers.map((s, i) => `L${i + 1} ${pdfEvaShore(s)}`).join(" | ")}`
       )
     }
   }
   if (v.verschalungHoehe) {
-    parts.push(`Verschalung / Gürtel – Höhe: ${v.verschalungHoehe} mm`)
-    if (v.verschalungAusfuehrung === "oberleder") parts.push("Verschalung: Am Oberleder geführt (klassisch)")
-    if (v.verschalungAusfuehrung === "gesamt") parts.push("Verschalung: Über gesamten Aufbau")
+    const verschalungParts = [`Höhe ${v.verschalungHoehe} mm`]
+    if (v.verschalungAusfuehrung === "oberleder") verschalungParts.push("am Oberleder geführt")
+    if (v.verschalungAusfuehrung === "gesamt") verschalungParts.push("über gesamten Aufbau")
+    parts.push(`Verschalung: ${verschalungParts.join(", ")}`)
   }
   return parts
+}
+
+function sohlenaufbauSectionKey(line: string): string {
+  if (line.startsWith("Höhen ")) return "Höhen"
+  if (line.startsWith("Berechnung ")) return "Berechnung"
+  if (line.startsWith("Farben ")) return "Farben"
+  if (line.startsWith("Shore ")) return "Shore"
+  return line.split(":")[0] ?? line
 }
 
 // Order data interface for dynamic PDF content
@@ -1110,15 +1122,24 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     if (g.fieldType === "sohlenaufbau") {
                       const parts = buildSohlenaufbauPdfLines(sohlenaufbau ?? undefined)
+                      const seenSections = new Set<string>()
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
                           <div className="flex-1 leading-loose">
-                            {parts.map((part, idx) => (
-                              <div key={idx} className="mb-1">
-                                <ModalCheckbox isSelected={true} label={part} />
-                              </div>
-                            ))}
+                            {parts.map((part, idx) => {
+                              const sectionKey = sohlenaufbauSectionKey(part)
+                              const withCheckbox = !seenSections.has(sectionKey)
+                              seenSections.add(sectionKey)
+                              return (
+                                <div
+                                  key={idx}
+                                  className={withCheckbox ? "mb-1" : "mb-1 ml-7 text-sm text-slate-700"}
+                                >
+                                  {withCheckbox ? <ModalCheckbox isSelected={true} label={part} /> : part}
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       )
@@ -1545,15 +1566,28 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 if (g.fieldType === "sohlenaufbau") {
                   const parts = buildSohlenaufbauPdfLines(sohlenaufbau ?? undefined)
+                  const seenSections = new Set<string>()
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
                       <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        {parts.map((part, idx) => (
-                          <div key={idx} style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={part} />
-                          </div>
-                        ))}
+                        {parts.map((part, idx) => {
+                          const sectionKey = sohlenaufbauSectionKey(part)
+                          const withCheckbox = !seenSections.has(sectionKey)
+                          seenSections.add(sectionKey)
+                          return (
+                            <div
+                              key={idx}
+                              style={
+                                withCheckbox
+                                  ? { marginBottom: '4px' }
+                                  : { marginBottom: '4px', marginLeft: '28px', fontSize: '13px', color: '#334155' }
+                              }
+                            >
+                              {withCheckbox ? <PDFCheckbox isSelected={true} label={part} /> : part}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )
