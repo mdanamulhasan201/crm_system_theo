@@ -168,12 +168,11 @@ const PRIORITY_OPTIONS: { value: string; label: string }[] = [
     { value: 'Dringend', label: 'Dringend' },
     { value: 'Normal', label: 'Normal' },
 ];
-// paymentType: only insurance | private | broth; when Alle selected → send blank (no param)
+// paymentType: only insurance | private; when Alle selected → send blank (no param)
 const PAYMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
     { value: '__all__', label: 'Alle' },
     { value: 'insurance', label: 'Krankenkassa' },
     { value: 'private', label: 'Privat' },
-    { value: 'broth', label: 'Brutto' },
 ];
 // Custom Checkbox Component with light green border
 function CustomCheckbox({

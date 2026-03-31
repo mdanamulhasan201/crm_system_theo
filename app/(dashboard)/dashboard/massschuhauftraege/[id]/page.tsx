@@ -328,6 +328,11 @@ export default function MassschuhauftraegePage() {
                     if (data.checkliste_halbprobe != null) {
                         const ch = data.checkliste_halbprobe;
                         setCheckliste_halbprobe(Array.isArray(ch) ? JSON.stringify(ch) : String(ch));
+                    } else if (data.Kleine_Nacharbeit != null) {
+                        const kn = data.Kleine_Nacharbeit;
+                        setCheckliste_halbprobe(Array.isArray(kn) ? JSON.stringify(kn) : String(kn));
+                    } else {
+                        setCheckliste_halbprobe('');
                     }
                     const hd = data.halbprobe_durchfuehrung;
                     const halfRequired = data.order?.half_sample_required;
@@ -539,6 +544,11 @@ export default function MassschuhauftraegePage() {
                     if (data.checkliste_halbprobe != null) {
                         const ch = data.checkliste_halbprobe;
                         setCheckliste_halbprobe(Array.isArray(ch) ? JSON.stringify(ch) : String(ch));
+                    } else if (data.Kleine_Nacharbeit != null) {
+                        const kn = data.Kleine_Nacharbeit;
+                        setCheckliste_halbprobe(Array.isArray(kn) ? JSON.stringify(kn) : String(kn));
+                    } else {
+                        setCheckliste_halbprobe('');
                     }
                     const hd = data.halbprobe_durchfuehrung;
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);

@@ -23,7 +23,11 @@ const CHECKLIST_QUESTIONS = [
     'Müssen Anpassungen vorgenommen werden?',
 ] as const;
 
-export type ChecklisteHalbprobeItem = { question: string; value: 'Ja' | 'Nein' };
+export type ChecklisteHalbprobeItem = {
+    question: string;
+    value: 'Ja' | 'Nein';
+    slipping_details?: string;
+};
 export type ChecklisteHalbprobeData = ChecklisteHalbprobeItem[];
 
 export interface ChecklisteHalbprobeModalProps {
@@ -50,13 +54,21 @@ export default function ChecklisteHalbprobeModal({
     onCompletelyNew,
 }: ChecklisteHalbprobeModalProps) {
     const [answers, setAnswers] = useState<('Ja' | 'Nein' | null)[]>(emptyAnswers);
+    const [ferseNeinDetails, setFerseNeinDetails] = useState('');
 
     useEffect(() => {
         if (open) {
-            if (initialData && initialData.length === CHECKLIST_QUESTIONS.length) {
-                setAnswers(initialData.map((item) => item.value));
+            if (initialData && initialData.length > 0) {
+                const mappedAnswers: ('Ja' | 'Nein' | null)[] = CHECKLIST_QUESTIONS.map((question) => {
+                    const found = initialData.find((item) => item.question === question);
+                    return found?.value ?? null;
+                });
+                setAnswers(mappedAnswers);
+                const firstQuestion = initialData.find((item) => item.question === CHECKLIST_QUESTIONS[0]);
+                setFerseNeinDetails(firstQuestion?.slipping_details ?? '');
             } else {
                 setAnswers([...emptyAnswers]);
+                setFerseNeinDetails('');
             }
         }
     }, [open, initialData]);
@@ -65,10 +77,17 @@ export default function ChecklisteHalbprobeModal({
 
     const handleWeiter = () => {
         if (!allAnswered) return;
-        const data: ChecklisteHalbprobeData = CHECKLIST_QUESTIONS.map((question, index) => ({
-            question,
-            value: answers[index] ?? 'Ja',
-        }));
+        const data: ChecklisteHalbprobeData = CHECKLIST_QUESTIONS.map((question, index) => {
+            const value = answers[index] ?? 'Ja';
+            if (index === 0) {
+                return {
+                    question,
+                    value,
+                    slipping_details: value === 'Nein' ? ferseNeinDetails : '',
+                };
+            }
+            return { question, value };
+        });
         onWeiter?.(data);
         onOpenChange(false);
     };
@@ -171,6 +190,17 @@ export default function ChecklisteHalbprobeModal({
                                     </span>
                                 </label>
                             </div>
+                            {index === 0 && answers[index] === 'Nein' && (
+                                <div className="mt-3">
+                                    <textarea
+                                        value={ferseNeinDetails}
+                                        onChange={(e) => setFerseNeinDetails(e.target.value)}
+                                        placeholder="Bitte Details zu Ferse/Stabilität eingeben..."
+                                        rows={3}
+                                        className="w-full rounded-lg border border-amber-300 bg-amber-50/60 p-3 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 resize-none"
+                                    />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
