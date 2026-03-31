@@ -120,6 +120,38 @@ export default function SohlenaufbauConfigCard({
     apply({ abLayerFarben: next })
   }
 
+  const isZwDualColorEnabled =
+    value.zwSplit.mode === "gleichmaessig" &&
+    value.farbModus === "individuell"
+
+  const isAbDualColorEnabled =
+    value.abSplit.mode === "gleichmaessig" &&
+    value.farbModus === "individuell"
+
+  const setZwDualColorEnabled = (enabled: boolean) => {
+    if (enabled) {
+      apply({
+        farbModus: "individuell",
+        zwLayerFarben: [value.zwLayerFarben[0] || value.zwFarbe, value.zwLayerFarben[1] || value.zwFarbe],
+      })
+      return
+    }
+    const same = value.zwLayerFarben[0] || value.zwFarbe
+    apply({ farbModus: "einheitlich", zwLayerFarben: [same, same] })
+  }
+
+  const setAbDualColorEnabled = (enabled: boolean) => {
+    if (enabled) {
+      apply({
+        farbModus: "individuell",
+        abLayerFarben: [value.abLayerFarben[0] || value.abFarbe, value.abLayerFarben[1] || value.abFarbe],
+      })
+      return
+    }
+    const same = value.abLayerFarben[0] || value.abFarbe
+    apply({ farbModus: "einheitlich", abLayerFarben: [same, same] })
+  }
+
   const previewData: SohlenaufbauPreviewData = useMemo(
     () => getSohlenaufbauPreviewDataFromForm(value),
     [value]
@@ -291,13 +323,42 @@ export default function SohlenaufbauConfigCard({
                   split={value.zwSplit}
                   onChange={(zwSplit) => apply({ zwSplit })}
                   sideContent={
-                    <div className="lg:w-[220px]">
-                      <SohlenaufbauColorPicker
-                        value={value.zwFarbe}
-                        onChange={(zwFarbe) => apply({ zwFarbe })}
-                        label="Zwischensohle"
-                        shore={getShore("zw")}
-                      />
+                    <div className="space-y-3 lg:w-[280px]">
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        <RadioOption
+                          selected={!isZwDualColorEnabled}
+                          onClick={() => setZwDualColorEnabled(false)}
+                          label="Eine Farbe"
+                        />
+                        <RadioOption
+                          selected={isZwDualColorEnabled}
+                          onClick={() => setZwDualColorEnabled(true)}
+                          label="2 unterschiedliche Farben"
+                        />
+                      </div>
+                      {isZwDualColorEnabled ? (
+                        <div className="space-y-2">
+                          <SohlenaufbauColorPicker
+                            value={value.zwLayerFarben[0] || value.zwFarbe}
+                            onChange={(c) => updateZwLayerFarbe(0, c)}
+                            label="Zwischensohle – Lage 1"
+                            shore={getShore("zw", 0)}
+                          />
+                          <SohlenaufbauColorPicker
+                            value={value.zwLayerFarben[1] || value.zwFarbe}
+                            onChange={(c) => updateZwLayerFarbe(1, c)}
+                            label="Zwischensohle – Lage 2"
+                            shore={getShore("zw", 1)}
+                          />
+                        </div>
+                      ) : (
+                        <SohlenaufbauColorPicker
+                          value={value.zwFarbe}
+                          onChange={(zwFarbe) => apply({ zwFarbe, zwLayerFarben: [zwFarbe, zwFarbe] })}
+                          label="Zwischensohle"
+                          shore={getShore("zw")}
+                        />
+                      )}
                     </div>
                   }
                 />
@@ -318,12 +379,52 @@ export default function SohlenaufbauConfigCard({
                   split={value.abSplit}
                   onChange={(abSplit) => apply({ abSplit })}
                 />
-                <SohlenaufbauColorPicker
-                  value={value.abFarbe}
-                  onChange={(abFarbe) => apply({ abFarbe })}
-                  label="Absatz"
-                  shore={getShore("ab")}
-                />
+                {value.abSplit.mode === "gleichmaessig" ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      <RadioOption
+                        selected={!isAbDualColorEnabled}
+                        onClick={() => setAbDualColorEnabled(false)}
+                        label="Eine Farbe"
+                      />
+                      <RadioOption
+                        selected={isAbDualColorEnabled}
+                        onClick={() => setAbDualColorEnabled(true)}
+                        label="2 unterschiedliche Farben"
+                      />
+                    </div>
+                    {isAbDualColorEnabled ? (
+                      <div className="space-y-2">
+                        <SohlenaufbauColorPicker
+                          value={value.abLayerFarben[0] || value.abFarbe}
+                          onChange={(c) => updateAbLayerFarbe(0, c)}
+                          label="Absatz – Lage 1"
+                          shore={getShore("ab", 0)}
+                        />
+                        <SohlenaufbauColorPicker
+                          value={value.abLayerFarben[1] || value.abFarbe}
+                          onChange={(c) => updateAbLayerFarbe(1, c)}
+                          label="Absatz – Lage 2"
+                          shore={getShore("ab", 1)}
+                        />
+                      </div>
+                    ) : (
+                      <SohlenaufbauColorPicker
+                        value={value.abFarbe}
+                        onChange={(abFarbe) => apply({ abFarbe, abLayerFarben: [abFarbe, abFarbe] })}
+                        label="Absatz"
+                        shore={getShore("ab")}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <SohlenaufbauColorPicker
+                    value={value.abFarbe}
+                    onChange={(abFarbe) => apply({ abFarbe })}
+                    label="Absatz"
+                    shore={getShore("ab")}
+                  />
+                )}
               </div>
             ) : null}
           </div>
