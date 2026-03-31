@@ -55,7 +55,6 @@ export default function BodenkonstruktionFiledText({
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
     const [internNoteLocal, setInternNoteLocal] = useState('');
     const [externNoteLocal, setExternNoteLocal] = useState('');
-    const [hasBodenkonstruktionData, setHasBodenkonstruktionData] = useState(false);
     const [bodenLoading, setBodenLoading] = useState(false);
     const [activeButtons, setActiveButtons] = useState<{ intern: boolean; extern: boolean }>({
         intern: false,
@@ -63,11 +62,6 @@ export default function BodenkonstruktionFiledText({
     });
     const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [internPopupOpen, setInternPopupOpen] = useState(false);
-    const [internPopupKey, setInternPopupKey] = useState(0);
-    const [internPrefill, setInternPrefill] = useState<{
-        json?: Record<string, any>;
-        imageUrl?: string;
-    } | null>(null);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -76,21 +70,6 @@ export default function BodenkonstruktionFiledText({
     const setInternNote = internControlled ? (v: string) => onBodenkonstruktionInternNoteChange?.(v) : setInternNoteLocal;
     const setExternNote = externControlled ? (v: string) => onBodenkonstruktionExternNoteChange?.(v) : setExternNoteLocal;
     const isStep5 = Boolean(orderId && stepStatus);
-
-    const fetchBodenkonstruktion = useCallback(async () => {
-        if (!orderId || !stepStatus) return;
-        setBodenLoading(true);
-        try {
-            const res: any = await MassschuheAddedApis.getMassschuheOrderStepBodenkonstruktion(orderId, stepStatus);
-            const data = res?.data ?? res;
-            const hasData = data && (data.bodenkonstruktion_json != null || data.bodenkonstruktion_image != null);
-            setHasBodenkonstruktionData(!!hasData);
-        } catch {
-            setHasBodenkonstruktionData(false);
-        } finally {
-            setBodenLoading(false);
-        }
-    }, [orderId, stepStatus]);
 
     const fetchActiveButtons = useCallback(async () => {
         if (!orderId) return;
@@ -110,10 +89,9 @@ export default function BodenkonstruktionFiledText({
 
     useEffect(() => {
         if (isStep5) {
-            fetchBodenkonstruktion();
             fetchActiveButtons();
         }
-    }, [isStep5, fetchBodenkonstruktion, fetchActiveButtons]);
+    }, [isStep5, fetchActiveButtons]);
 
     const handleErweitertClick = async () => {
         if (isStep5 && orderId && activeButtons.intern) {
@@ -127,23 +105,21 @@ export default function BodenkonstruktionFiledText({
                     : internData?.json;
 
                 if (hasData && (parsedJson || internData?.image)) {
-                    setInternPrefill({
-                        json: parsedJson ?? undefined,
-                        imageUrl: internData?.image ?? undefined,
-                    });
+                    sessionStorage.setItem(
+                        `bodenkonstruktion-embedded-prefill:${orderId}`,
+                        JSON.stringify({ json: parsedJson ?? null, image: internData?.image ?? null })
+                    );
                 } else {
-                    setInternPrefill(null);
+                    sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
                 }
             } catch {
-                setInternPrefill(null);
+                sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
             } finally {
                 setBodenLoading(false);
             }
         } else {
-            setInternPrefill(null);
+            if (orderId) sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
         }
-
-        setInternPopupKey((prev) => prev + 1);
         setInternPopupOpen(true);
     };
 
@@ -298,11 +274,7 @@ export default function BodenkonstruktionFiledText({
                     </DialogHeader>
                     <div className="h-full w-full bg-white overflow-y-auto p-2">
                         <BodenkonstruktionCustomerOrderView
-                            key={internPopupKey}
                             embeddedOrderId={orderId}
-                            skipOrderPrefill={isStep5}
-                            embeddedPrefillJson={internPrefill?.json}
-                            embeddedPrefillImage={internPrefill?.imageUrl}
                             onCloseEmbedded={() => setInternPopupOpen(false)}
                         />
                     </div>
