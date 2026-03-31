@@ -63,6 +63,11 @@ export default function BodenkonstruktionFiledText({
     });
     const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [internPopupOpen, setInternPopupOpen] = useState(false);
+    const [internPopupKey, setInternPopupKey] = useState(0);
+    const [internPrefill, setInternPrefill] = useState<{
+        json?: Record<string, any>;
+        imageUrl?: string;
+    } | null>(null);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -110,7 +115,35 @@ export default function BodenkonstruktionFiledText({
         }
     }, [isStep5, fetchBodenkonstruktion, fetchActiveButtons]);
 
-    const handleErweitertClick = () => {
+    const handleErweitertClick = async () => {
+        if (isStep5 && orderId && activeButtons.intern) {
+            setBodenLoading(true);
+            try {
+                const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktion(orderId, 'intern');
+                const internData = res?.data?.bodenkonstruktion?.intern;
+                const hasData = Boolean(internData?.hasData);
+                const parsedJson = typeof internData?.json === 'string'
+                    ? (() => { try { return JSON.parse(internData.json); } catch { return undefined; } })()
+                    : internData?.json;
+
+                if (hasData && (parsedJson || internData?.image)) {
+                    setInternPrefill({
+                        json: parsedJson ?? undefined,
+                        imageUrl: internData?.image ?? undefined,
+                    });
+                } else {
+                    setInternPrefill(null);
+                }
+            } catch {
+                setInternPrefill(null);
+            } finally {
+                setBodenLoading(false);
+            }
+        } else {
+            setInternPrefill(null);
+        }
+
+        setInternPopupKey((prev) => prev + 1);
         setInternPopupOpen(true);
     };
 
@@ -169,14 +202,15 @@ export default function BodenkonstruktionFiledText({
                             size="sm"
                             className={cn(
                                 'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                isStep5 && hasBodenkonstruktionData && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
                             )}
                             onClick={handleErweitertClick}
-                            disabled={bodenLoading}
+                            disabled={bodenLoading || activeButtonsLoading}
                         >
                             {bodenLoading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                            ) : isStep5 && hasBodenkonstruktionData ? (
+                            ) : isStep5 && activeButtons.intern ? (
                                 <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
                             ) : null}
                             erweitert
@@ -264,7 +298,11 @@ export default function BodenkonstruktionFiledText({
                     </DialogHeader>
                     <div className="h-full w-full bg-white overflow-y-auto p-2">
                         <BodenkonstruktionCustomerOrderView
+                            key={internPopupKey}
                             embeddedOrderId={orderId}
+                            skipOrderPrefill={isStep5}
+                            embeddedPrefillJson={internPrefill?.json}
+                            embeddedPrefillImage={internPrefill?.imageUrl}
                             onCloseEmbedded={() => setInternPopupOpen(false)}
                         />
                     </div>

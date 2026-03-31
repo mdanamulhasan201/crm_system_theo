@@ -35,11 +35,17 @@ const BODEN_STEP_STATUS = "Halbprobe_durchführen"
 
 type BodenkonstruktionCustomerOrderViewProps = {
     embeddedOrderId?: string | null
+    skipOrderPrefill?: boolean
+    embeddedPrefillJson?: Record<string, any>
+    embeddedPrefillImage?: string
     onCloseEmbedded?: () => void
 }
 
 export function BodenkonstruktionCustomerOrderView({
     embeddedOrderId,
+    skipOrderPrefill = false,
+    embeddedPrefillJson,
+    embeddedPrefillImage,
     onCloseEmbedded,
 }: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
@@ -133,8 +139,51 @@ export function BodenkonstruktionCustomerOrderView({
         }
     }, [customerName, deliveryDate, grandTotal])
 
+    // Prefill from provided payload when opened from step-5 intern active tracking API.
+    useEffect(() => {
+        if (!skipOrderPrefill || !embeddedPrefillJson || typeof embeddedPrefillJson !== "object") return
+        const json = embeddedPrefillJson
+        prefillDoneRef.current = true
+        if (json.selected && typeof json.selected === "object") setSelected(json.selected as SelectedState)
+        if (json.sohlenversteifung_detail != null) {
+            setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung_detail))
+        } else if (json.sohlenversteifung != null && typeof json.sohlenversteifung === "object" && !Array.isArray(json.sohlenversteifung)) {
+            setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung))
+        }
+        if (json.sohlenaufbau_detail != null) {
+            setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau_detail))
+        } else if (json.sohlenaufbau != null && typeof json.sohlenaufbau === "object" && !Array.isArray(json.sohlenaufbau)) {
+            setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau))
+        }
+        if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
+        if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
+        if (typeof json.customerName === "string") setCustomerName(json.customerName)
+        if (json.heelWidthAdjustment != null) setHeelWidthAdjustment(json.heelWidthAdjustment as HeelWidthAdjustmentData | null)
+        if (json.vorderkappeSide != null) setVorderkappeSide(json.vorderkappeSide as VorderkappeSideData | null)
+        if (json.rahmen != null) setRahmen(json.rahmen as RahmenData | null)
+        if (json.hinterkappeMusterSide != null) setHinterkappeMusterSide(json.hinterkappeMusterSide as HinterkappeMusterSideData | null)
+        if (json.hinterkappeSide != null) setHinterkappeSide(json.hinterkappeSide as HinterkappeSideData | null)
+        if (json.brandsohleSide != null) setBrandsohleSide(json.brandsohleSide as BrandsohleSideData | null)
+        if (json.selectedSoleId != null && Array.isArray(soleOptions)) {
+            const sole = soleOptions.find((s: SoleType) => s.id === json.selectedSoleId)
+            if (sole) setSelectedSole(sole)
+        }
+        if (json.sole4Thickness != null) setSole4Thickness(json.sole4Thickness)
+        if (json.sole4Color != null) setSole4Color(json.sole4Color)
+        if (json.sole5Thickness != null) setSole5Thickness(json.sole5Thickness)
+        if (json.sole5Color != null) setSole5Color(json.sole5Color)
+        if (json.sole6Thickness != null) setSole6Thickness(json.sole6Thickness)
+        if (json.sole6Color != null) setSole6Color(json.sole6Color)
+        if (embeddedPrefillImage) setBodenkonstruktionImagePreview(embeddedPrefillImage)
+        setPrefillLoading(false)
+    }, [skipOrderPrefill, embeddedPrefillJson, embeddedPrefillImage, soleOptions])
+
     // Prefill from GET when orderId present (step 5)
     useEffect(() => {
+        if (skipOrderPrefill) {
+            setPrefillLoading(false)
+            return
+        }
         if (!orderId || prefillDoneRef.current) return
         prefillDoneRef.current = true
         getMassschuheOrderStepBodenkonstruktion(orderId, BODEN_STEP_STATUS)
@@ -184,7 +233,7 @@ export function BodenkonstruktionCustomerOrderView({
             })
             .catch(() => {})
             .finally(() => setPrefillLoading(false))
-    }, [orderId, soleOptions])
+    }, [orderId, soleOptions, skipOrderPrefill])
 
     // Reset sole options when sole changes
     React.useEffect(() => {

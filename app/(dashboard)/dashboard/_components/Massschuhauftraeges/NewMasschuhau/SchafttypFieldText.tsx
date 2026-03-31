@@ -115,7 +115,32 @@ export default function SchafttypFieldText({
 
     const handleErweitertClick = async () => {
         if (isStep5) {
-            await fetchMassschafterstellung();
+            if (activeButtons.intern && orderId) {
+                setMassschafterstellungLoading(true);
+                try {
+                    const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp2(orderId, 'intern');
+                    const internData = res?.data?.schafttyp?.intern;
+                    const hasData = Boolean(internData?.hasData);
+                    const json = typeof internData?.json === 'string'
+                        ? (() => { try { return JSON.parse(internData.json); } catch { return undefined; } })()
+                        : internData?.json;
+
+                    if (hasData && (json || internData?.image)) {
+                        setMassschafterstellungData({
+                            json: json ?? undefined,
+                            imageUrl: internData?.image ?? undefined,
+                        });
+                    } else {
+                        setMassschafterstellungData(null);
+                    }
+                } catch {
+                    setMassschafterstellungData(null);
+                } finally {
+                    setMassschafterstellungLoading(false);
+                }
+            } else {
+                setMassschafterstellungData(null);
+            }
             setInternCustomModalOpen(true);
         } else {
             setInternCustomModalOpen(true);
@@ -151,10 +176,9 @@ export default function SchafttypFieldText({
 
     useEffect(() => {
         if (isStep5) {
-            fetchMassschafterstellung();
             fetchActiveButtons();
         }
-    }, [isStep5, fetchMassschafterstellung, fetchActiveButtons]);
+    }, [isStep5, fetchActiveButtons]);
 
     return (
         <>
@@ -194,7 +218,8 @@ export default function SchafttypFieldText({
                                 size="sm"
                                 className={cn(
                                     'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                    isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                    isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                    isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
                                 )}
                                 onClick={handleErweitertClick}
                                 disabled={massschafterstellungLoading || activeButtonsLoading}
