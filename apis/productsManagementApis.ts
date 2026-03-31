@@ -21,11 +21,12 @@ export const createProduct = async (productData: any, type: string) => {
     }
 };
 
-// get all storages /store/my/get?page=1&limit=10&search&type=milling_block or rady_insole
-export const getAllStorages = async (page: number, limit: number, search: string, type?: string) => {
+// get all storages /store/my/get?page=1&limit=10&search&type=milling_block or rady_insole&sort=z_a
+export const getAllStorages = async (cursor: string, limit: number, search: string, type?: string, sort?: string) => {
     try {
         const typeParam = type ? `&type=${type}` : '';
-        const response = await axiosClient.get(`/store/my/get?page=${page}&limit=${limit}&search=${search}${typeParam}`);
+        const sortParam = sort ? `&sort=${sort}` : '';
+        const response = await axiosClient.get(`/store/my/get?cursor=${cursor}&limit=${limit}&search=${search}${typeParam}${sortParam}`);
         return response.data;
     } catch (error) {
         throw error;

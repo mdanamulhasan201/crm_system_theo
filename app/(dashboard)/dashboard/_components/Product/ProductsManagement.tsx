@@ -13,11 +13,11 @@ import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from './InventoryHistory'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
-import { STORE_LIST_FETCH_LIMIT } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
 import { normalizeFeatures } from './featureUtils'
+import { SlidersHorizontal } from 'lucide-react'
 
 
 interface SizeData {
@@ -96,6 +96,7 @@ const sanitizeGroessenMengen = (raw: any): { [key: string]: number | SizeData } 
 const sizeColumns = [
     "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"
 ];
+const PAGE_SIZE = 5
 
 interface ProductsManagementProps {
     type?: 'rady_insole' | 'milling_block'
@@ -115,6 +116,10 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
     const setSearchQuery = onSearchChange ?? setInternalSearch
     const debouncedSearch = useDebounce(searchQuery, 500)
+    const [sortOrder, setSortOrder] = useState<'default' | 'z_a'>('default')
+    const [nextCursor, setNextCursor] = useState<string>('')
+    const [hasMore, setHasMore] = useState(false)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
 
     // Product data state - convert API products to local format
     const [productsData, setProductsData] = useState<Product[]>([])
@@ -134,7 +139,11 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
     // Report count to parent (e.g. lager page)
     useEffect(() => {
         if (setProductCount && pagination != null) setProductCount(pagination.totalItems ?? 0)
-    }, [pagination?.totalItems, setProductCount])
+        if (pagination) {
+            setHasMore(Boolean(pagination.hasNextPage))
+            setNextCursor(pagination.nextCursor ?? '')
+        }
+    }, [pagination, setProductCount])
 
     // Open add modal when parent requests (e.g. "Manuelles Lager" in lager page)
     useEffect(() => {
@@ -166,11 +175,18 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
         };
     };
 
-    // Fetch full list (API returns all rows; no server pagination)
+    // Fetch first cursor-page (5 items)
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type);
+                const apiProducts = await getAllProducts(
+                    '',
+                    PAGE_SIZE,
+                    debouncedSearch,
+                    type,
+                    sortOrder === 'z_a' ? 'z_a' : undefined,
+                    false
+                );
                 const convertedProducts = apiProducts.map(convertApiProductToLocal);
                 setProductsData(convertedProducts);
             } catch (err) {
@@ -180,7 +196,31 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
 
         fetchProducts();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearch, type]);
+    }, [debouncedSearch, type, sortOrder]);
+    const handleFilterClick = () => {
+        setSortOrder(prev => (prev === 'z_a' ? 'default' : 'z_a'))
+    }
+
+    const handleLoadMore = async () => {
+        if (!hasMore || !nextCursor || isLoadingMore) return
+        setIsLoadingMore(true)
+        try {
+            const apiProducts = await getAllProducts(
+                nextCursor,
+                PAGE_SIZE,
+                debouncedSearch,
+                type,
+                sortOrder === 'z_a' ? 'z_a' : undefined,
+                true
+            )
+            const convertedProducts = apiProducts.map(convertApiProductToLocal)
+            setProductsData((prev) => [...prev, ...convertedProducts])
+        } catch (err) {
+            console.error('Failed to load more products:', err)
+        } finally {
+            setIsLoadingMore(false)
+        }
+    }
 
 
 
@@ -319,6 +359,18 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             )}
 
             {/* Product Management Table */}
+            <div className="flex items-center justify-start mb-3">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleFilterClick}
+                    className={`h-9 gap-2 cursor-pointer ${sortOrder === 'z_a' ? 'border-[#61A178] text-[#2f7f4b]' : ''}`}
+                    title="Filter"
+                >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {sortOrder === 'z_a' ? 'Filter: Z-A' : 'Filter'}
+                </Button>
+            </div>
             {error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
                     <p className="font-medium">Fehler beim Laden der Produkte</p>
@@ -346,7 +398,14 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                                     return;
                                 }
                             }
-                            const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type);
+                            const apiProducts = await getAllProducts(
+                                '',
+                                PAGE_SIZE,
+                                debouncedSearch,
+                                type,
+                                sortOrder === 'z_a' ? 'z_a' : undefined,
+                                false
+                            );
                             const convertedProducts = apiProducts.map(convertApiProductToLocal);
                             setProductsData(convertedProducts);
                         } catch (err) {
@@ -354,6 +413,19 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                         }
                     }}
                 />
+            )}
+            {!error && productsData.length > 0 && hasMore && (
+                <div className="mt-4 flex justify-center">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void handleLoadMore()}
+                        disabled={isLoadingProducts || isLoadingMore}
+                        className="min-w-[160px] cursor-pointer"
+                    >
+                        {isLoadingProducts || isLoadingMore ? 'Lädt...' : 'Mehr Anzeigen'}
+                    </Button>
+                </div>
             )}
 
 

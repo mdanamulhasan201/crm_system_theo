@@ -118,7 +118,7 @@ export default function Lager() {
                                 onClick={() => setOpenAddModalFor(selectedProductType)}
                                 className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
                             >
-                                Manuelles Lager hinzufügen
+                                Manuell hinzufügen
                             </Button>
                             <Button
                                 onClick={handleFeetF1rst}

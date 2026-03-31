@@ -32,9 +32,10 @@ export const buySingleStore = async (body: { storeId: string, admin_store_id: st
 }
 
 // get mybuy stores /store/my/get?page=&limit=&search=&type=milling_block or rady_insole
-export const getMyBuyStores = async (page: number, limit: number, search: string, type: string) => {
+export const getMyBuyStores = async (cursor: string, limit: number, search: string, type: string, sort?: string) => {
     try {
-        const response = await axiosClient.get(`/store/my/get?page=${page}&limit=${limit}&search=${search}&type=${type}`);
+        const sortParam = sort ? `&sort=${sort}` : '';
+        const response = await axiosClient.get(`/store/my/get?cursor=${cursor}&limit=${limit}&search=${search}&type=${type}${sortParam}`);
         return response.data;
     } catch (error: any) {
         throw error;

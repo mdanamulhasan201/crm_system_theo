@@ -9,10 +9,10 @@ import MillingBlocksTable from './MillingBlocksTable'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import useDebounce from '@/hooks/useDebounce'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
-import { STORE_LIST_FETCH_LIMIT } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
 import { normalizeFeatures } from '../featureUtils'
+import { SlidersHorizontal } from 'lucide-react'
 
 // sizeQuantities values can be number or { quantity? } (matches MillingBlocksTable)
 interface MillingBlock {
@@ -48,6 +48,7 @@ function getQuantity(val: number | { quantity?: number } | undefined): number {
 
 // Size columns - only 3 sizes
 const sizeColumns = ['Size 1', 'Size 2', 'Size 3']
+const PAGE_SIZE = 5
 
 interface MillingBlocksProps {
     type?: 'rady_insole' | 'milling_block'
@@ -60,17 +61,25 @@ interface MillingBlocksProps {
 
 export default function MillingBlocks({ type = 'milling_block', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: MillingBlocksProps) {
     const router = useRouter()
-    const { getAllProducts, isLoadingProducts } = useStockManagementSlice()
+    const { getAllProducts, isLoadingProducts, pagination } = useStockManagementSlice()
     const [products, setProducts] = useState<MillingBlock[]>([])
     const [internalSearch, setInternalSearch] = useState('')
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
     const setSearchQuery = onSearchChange ?? setInternalSearch
     const debouncedSearch = useDebounce(searchQuery, 500)
     const [addProductModalOpen, setAddProductModalOpen] = useState(false)
+    const [sortOrder, setSortOrder] = useState<'default' | 'z_a'>('default')
+    const [nextCursor, setNextCursor] = useState<string>('')
+    const [hasMore, setHasMore] = useState(false)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
 
     useEffect(() => {
-        if (setProductCount) setProductCount(products.length)
-    }, [products.length, setProductCount])
+        if (setProductCount && pagination != null) setProductCount(pagination.totalItems ?? products.length)
+        if (pagination) {
+            setHasMore(Boolean(pagination.hasNextPage))
+            setNextCursor(pagination.nextCursor ?? '')
+        }
+    }, [pagination, products.length, setProductCount])
 
     useEffect(() => {
         if (openAddModal) setAddProductModalOpen(true)
@@ -174,11 +183,18 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
         }
     }
 
-    // Fetch full list (API returns all rows; no server pagination)
+    // Fetch first cursor-page (5 items)
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
+                const apiProducts = await getAllProducts(
+                    '',
+                    PAGE_SIZE,
+                    debouncedSearch,
+                    type,
+                    sortOrder === 'z_a' ? 'z_a' : undefined,
+                    false
+                )
                 const convertedProducts = apiProducts.map(convertApiProductToLocal)
                 setProducts(convertedProducts)
             } catch (err) {
@@ -188,7 +204,32 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
 
         fetchProducts()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearch, type])
+    }, [debouncedSearch, type, sortOrder])
+    const handleFilterClick = () => {
+        setSortOrder(prev => (prev === 'z_a' ? 'default' : 'z_a'))
+    }
+
+    const handleLoadMore = async () => {
+        if (!hasMore || !nextCursor || isLoadingMore) return
+        setIsLoadingMore(true)
+        try {
+            const apiProducts = await getAllProducts(
+                nextCursor,
+                PAGE_SIZE,
+                debouncedSearch,
+                type,
+                sortOrder === 'z_a' ? 'z_a' : undefined,
+                true
+            )
+            const convertedProducts = apiProducts.map(convertApiProductToLocal)
+            setProducts((prev) => [...prev, ...convertedProducts])
+        } catch (err) {
+            console.error('Failed to load more milling blocks:', err)
+        } finally {
+            setIsLoadingMore(false)
+        }
+    }
+
 
     // Search handler
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,6 +260,19 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                 </div>
             )}
 
+            <div className="flex items-center justify-start mb-3">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleFilterClick}
+                    className={`h-9 gap-2 cursor-pointer ${sortOrder === 'z_a' ? 'border-[#61A178] text-[#2f7f4b]' : ''}`}
+                    title="Filter"
+                >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {sortOrder === 'z_a' ? 'Filter: Z-A' : 'Filter'}
+                </Button>
+            </div>
+
             <MillingBlocksTable
                 visibleProducts={filteredProducts}
                 sizeColumns={sizeColumns}
@@ -238,7 +292,14 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                                 return
                             }
                         }
-                        const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
+                        const apiProducts = await getAllProducts(
+                            '',
+                            PAGE_SIZE,
+                            debouncedSearch,
+                            type,
+                            sortOrder === 'z_a' ? 'z_a' : undefined,
+                            false
+                        )
                         const convertedProducts = apiProducts.map(convertApiProductToLocal)
                         setProducts(convertedProducts)
                     } catch (err) {
@@ -246,6 +307,19 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                     }
                 }}
             />
+            {products.length > 0 && hasMore && (
+                <div className="mt-4 flex justify-center">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void handleLoadMore()}
+                        disabled={isLoadingProducts || isLoadingMore}
+                        className="min-w-[160px] cursor-pointer"
+                    >
+                        {isLoadingProducts || isLoadingMore ? 'Lädt...' : 'Mehr Anzeigen'}
+                    </Button>
+                </div>
+            )}
 
             {/* Add Product Modal */}
             <AddProductTypeModal
@@ -255,7 +329,14 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
                     handleCloseAddModal()
                     // Refresh products list
                     try {
-                        const apiProducts = await getAllProducts(1, STORE_LIST_FETCH_LIMIT, debouncedSearch, type)
+                        const apiProducts = await getAllProducts(
+                            '',
+                            PAGE_SIZE,
+                            debouncedSearch,
+                            type,
+                            sortOrder === 'z_a' ? 'z_a' : undefined,
+                            false
+                        )
                         const convertedProducts = apiProducts.map(convertApiProductToLocal)
                         setProducts(convertedProducts)
                     } catch (err) {

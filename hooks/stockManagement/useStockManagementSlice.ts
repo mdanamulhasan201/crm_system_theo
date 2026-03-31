@@ -83,6 +83,7 @@ interface PaginationInfo {
     itemsPerPage: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
+    nextCursor?: string | null;
 }
 
 interface ApiResponse {
@@ -222,17 +223,26 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const getAllProducts = async (page: number = 1, limit: number = STORE_LIST_FETCH_LIMIT, search: string = '', type?: string) => {
-        setIsLoadingProducts(true);
+    const getAllProducts = async (
+        cursor: string = '',
+        limit: number = STORE_LIST_FETCH_LIMIT,
+        search: string = '',
+        type?: string,
+        sort?: string,
+        append: boolean = false
+    ) => {
+        if (!append) {
+            setIsLoadingProducts(true);
+        }
         setError(null);
 
         try {
-            const response = await getAllStorages(page, limit, search, type);
+            const response = await getAllStorages(cursor, limit, search, type, sort);
             // console.log('Fetched storages:', response);
 
             if (response.success && response.data) {
                 // The API response already has the correct format, use it directly
-                const products: ApiProduct[] = response.data.map((item: any) => ({
+                const mappedProducts: ApiProduct[] = response.data.map((item: any) => ({
                     id: item.id,
                     produktname: item.produktname,
                     hersteller: item.hersteller,
@@ -256,22 +266,36 @@ export const useStockManagementSlice = () => {
                     store_brand_settings: item.store_brand_settings ?? null,
                 }));
 
-                setProducts(products);
+                const mergedProducts = append ? [...products, ...mappedProducts] : mappedProducts;
+                setProducts(mergedProducts);
                 const raw = response.pagination as PaginationInfo | undefined;
-                const listLen = products.length;
+                const nextCursor =
+                    response?.nextCursor ??
+                    raw?.nextCursor ??
+                    response?.pagination?.next_cursor ??
+                    response?.next_cursor ??
+                    null;
+                const listLen = mergedProducts.length;
                 setPagination(
                     raw && typeof raw.totalItems === 'number'
-                        ? raw
+                        ? {
+                            ...raw,
+                            nextCursor,
+                            hasNextPage: typeof raw.hasNextPage === 'boolean'
+                                ? raw.hasNextPage
+                                : Boolean(nextCursor),
+                        }
                         : {
                               totalItems: listLen,
                               totalPages: 1,
                               currentPage: 1,
                               itemsPerPage: Math.max(listLen, 1),
-                              hasNextPage: false,
+                              hasNextPage: Boolean(nextCursor),
                               hasPrevPage: false,
+                              nextCursor,
                           }
                 );
-                return products;
+                return mappedProducts;
             } else {
                 throw new Error(response.message || 'Failed to fetch products');
             }
@@ -281,7 +305,9 @@ export const useStockManagementSlice = () => {
             // console.error('Error fetching products:', err);
             throw err;
         } finally {
-            setIsLoadingProducts(false);
+            if (!append) {
+                setIsLoadingProducts(false);
+            }
         }
     };
 
@@ -318,8 +344,15 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const refreshProducts = async (page: number = 1, limit: number = STORE_LIST_FETCH_LIMIT, search: string = '', type?: string) => {
-        return await getAllProducts(page, limit, search, type);
+    const refreshProducts = async (
+        cursor: string = '',
+        limit: number = STORE_LIST_FETCH_LIMIT,
+        search: string = '',
+        type?: string,
+        sort?: string,
+        append: boolean = false
+    ) => {
+        return await getAllProducts(cursor, limit, search, type, sort, append);
     };
 
     return {
