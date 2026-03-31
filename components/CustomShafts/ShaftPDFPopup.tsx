@@ -493,7 +493,10 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   )}
                   
                   {/* Lederdetails in einer Zeile */}
-                  {(shaftConfiguration.numberOfLeatherColors || shaftConfiguration.lederType || shaftConfiguration.lederfarbe || (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0)) && (
+                  {(shaftConfiguration.numberOfLeatherColors ||
+                    (shaftConfiguration.numberOfLeatherColors === '1'
+                      ? (shaftConfiguration.lederType || shaftConfiguration.lederfarbe)
+                      : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0))) && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                         Lederdetails
@@ -501,13 +504,13 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       <div className="flex-1 leading-loose">
                         <ModalCheckbox
                           isSelected={true}
-                          label={`Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${shaftConfiguration.lederType || '-'} | Lederfarbe: ${
+                          label={
                             shaftConfiguration.numberOfLeatherColors === '1'
-                              ? (shaftConfiguration.lederfarbe || '-')
-                              : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0
-                                  ? shaftConfiguration.leatherColors.filter(Boolean).join(', ')
-                                  : '-')
-                          }`}
+                              ? `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${
+                                  shaftConfiguration.lederType || '-'
+                                } | Lederfarbe: ${shaftConfiguration.lederfarbe || '-'}`
+                              : `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'}`
+                          }
                         />
                         {/* Lederfarben list directly under option when 2 or 3 selected */}
                         {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
@@ -900,7 +903,10 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 )}
                 
                 {/* Lederdetails in einer Zeile */}
-                {(shaftConfiguration.numberOfLeatherColors || shaftConfiguration.lederType || shaftConfiguration.lederfarbe || (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0)) && (
+                {(shaftConfiguration.numberOfLeatherColors ||
+                  (shaftConfiguration.numberOfLeatherColors === '1'
+                    ? (shaftConfiguration.lederType || shaftConfiguration.lederfarbe)
+                    : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0))) && (
                   <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Lederdetails
@@ -908,13 +914,13 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox
                         isSelected={true}
-                        label={`Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${shaftConfiguration.lederType || '-'} | Lederfarbe: ${
+                        label={
                           shaftConfiguration.numberOfLeatherColors === '1'
-                            ? (shaftConfiguration.lederfarbe || '-')
-                            : (shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0
-                                ? shaftConfiguration.leatherColors.filter(Boolean).join(', ')
-                                : '-')
-                        }`}
+                            ? `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${
+                                shaftConfiguration.lederType || '-'
+                              } | Lederfarbe: ${shaftConfiguration.lederfarbe || '-'}`
+                            : `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'}`
+                        }
                       />
                       {/* Lederfarben list directly under option when 2 or 3 selected */}
                       {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (

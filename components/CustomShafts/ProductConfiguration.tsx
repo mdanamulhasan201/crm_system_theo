@@ -579,6 +579,9 @@ ref: React.Ref<ProductConfigurationHandle>
 
     // When 2 or 3 are selected, use only the popup flow
     if (value === '2' || value === '3') {
+      // Clear single-color fields to avoid stale data in preview/PDF.
+      setLederType('');
+      setLederfarbe('');
       setShowLeatherColorModal(true);
     }
   };
