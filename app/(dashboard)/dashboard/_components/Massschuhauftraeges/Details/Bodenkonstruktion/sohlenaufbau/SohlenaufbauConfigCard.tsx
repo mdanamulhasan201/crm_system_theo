@@ -323,7 +323,7 @@ export default function SohlenaufbauConfigCard({
                   split={value.zwSplit}
                   onChange={(zwSplit) => apply({ zwSplit })}
                   sideContent={
-                    <div className="space-y-3 lg:w-[280px]">
+                    <div className="space-y-3 lg:w-[460px]">
                       <div className="flex flex-wrap gap-x-4 gap-y-2">
                         <RadioOption
                           selected={!isZwDualColorEnabled}
@@ -337,19 +337,23 @@ export default function SohlenaufbauConfigCard({
                         />
                       </div>
                       {isZwDualColorEnabled ? (
-                        <div className="space-y-2">
-                          <SohlenaufbauColorPicker
-                            value={value.zwLayerFarben[0] || value.zwFarbe}
-                            onChange={(c) => updateZwLayerFarbe(0, c)}
-                            label="Zwischensohle – Lage 1"
-                            shore={getShore("zw", 0)}
-                          />
-                          <SohlenaufbauColorPicker
-                            value={value.zwLayerFarben[1] || value.zwFarbe}
-                            onChange={(c) => updateZwLayerFarbe(1, c)}
-                            label="Zwischensohle – Lage 2"
-                            shore={getShore("zw", 1)}
-                          />
+                        <div className="flex items-start gap-4">
+                          <div className="min-w-0 flex-1">
+                            <SohlenaufbauColorPicker
+                              value={value.zwLayerFarben[0] || value.zwFarbe}
+                              onChange={(c) => updateZwLayerFarbe(0, c)}
+                              label="Zwischensohle – Lage 1"
+                              shore={getShore("zw", 0)}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <SohlenaufbauColorPicker
+                              value={value.zwLayerFarben[1] || value.zwFarbe}
+                              onChange={(c) => updateZwLayerFarbe(1, c)}
+                              label="Zwischensohle – Lage 2"
+                              shore={getShore("zw", 1)}
+                            />
+                          </div>
                         </div>
                       ) : (
                         <SohlenaufbauColorPicker
@@ -373,58 +377,72 @@ export default function SohlenaufbauConfigCard({
             ) : null}
             {calc.absatz > 0 ? (
               <div className="space-y-4">
-                <SohlenaufbauLayerSplitControl
-                  label="Absatz"
-                  total={calc.absatz}
-                  split={value.abSplit}
-                  onChange={(abSplit) => apply({ abSplit })}
-                />
                 {value.abSplit.mode === "gleichmaessig" ? (
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      <RadioOption
-                        selected={!isAbDualColorEnabled}
-                        onClick={() => setAbDualColorEnabled(false)}
-                        label="Eine Farbe"
-                      />
-                      <RadioOption
-                        selected={isAbDualColorEnabled}
-                        onClick={() => setAbDualColorEnabled(true)}
-                        label="2 unterschiedliche Farben"
-                      />
-                    </div>
-                    {isAbDualColorEnabled ? (
-                      <div className="space-y-2">
-                        <SohlenaufbauColorPicker
-                          value={value.abLayerFarben[0] || value.abFarbe}
-                          onChange={(c) => updateAbLayerFarbe(0, c)}
-                          label="Absatz – Lage 1"
-                          shore={getShore("ab", 0)}
-                        />
-                        <SohlenaufbauColorPicker
-                          value={value.abLayerFarben[1] || value.abFarbe}
-                          onChange={(c) => updateAbLayerFarbe(1, c)}
-                          label="Absatz – Lage 2"
-                          shore={getShore("ab", 1)}
-                        />
+                  <SohlenaufbauLayerSplitControl
+                    label="Absatz"
+                    total={calc.absatz}
+                    split={value.abSplit}
+                    onChange={(abSplit) => apply({ abSplit })}
+                    sideContent={
+                      <div className="space-y-3 lg:w-[460px]">
+                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                          <RadioOption
+                            selected={!isAbDualColorEnabled}
+                            onClick={() => setAbDualColorEnabled(false)}
+                            label="Eine Farbe"
+                          />
+                          <RadioOption
+                            selected={isAbDualColorEnabled}
+                            onClick={() => setAbDualColorEnabled(true)}
+                            label="2 unterschiedliche Farben"
+                          />
+                        </div>
+                        {isAbDualColorEnabled ? (
+                          <div className="flex items-start gap-4">
+                            <div className="min-w-0 flex-1">
+                              <SohlenaufbauColorPicker
+                                value={value.abLayerFarben[0] || value.abFarbe}
+                                onChange={(c) => updateAbLayerFarbe(0, c)}
+                                label="Absatz – Lage 1"
+                                shore={getShore("ab", 0)}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <SohlenaufbauColorPicker
+                                value={value.abLayerFarben[1] || value.abFarbe}
+                                onChange={(c) => updateAbLayerFarbe(1, c)}
+                                label="Absatz – Lage 2"
+                                shore={getShore("ab", 1)}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <SohlenaufbauColorPicker
+                            value={value.abFarbe}
+                            onChange={(abFarbe) => apply({ abFarbe, abLayerFarben: [abFarbe, abFarbe] })}
+                            label="Absatz"
+                            shore={getShore("ab")}
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <SohlenaufbauColorPicker
-                        value={value.abFarbe}
-                        onChange={(abFarbe) => apply({ abFarbe, abLayerFarben: [abFarbe, abFarbe] })}
-                        label="Absatz"
-                        shore={getShore("ab")}
-                      />
-                    )}
-                  </div>
+                    }
+                  />
                 ) : (
+                  <SohlenaufbauLayerSplitControl
+                    label="Absatz"
+                    total={calc.absatz}
+                    split={value.abSplit}
+                    onChange={(abSplit) => apply({ abSplit })}
+                  />
+                )}
+                {value.abSplit.mode !== "gleichmaessig" ? (
                   <SohlenaufbauColorPicker
                     value={value.abFarbe}
                     onChange={(abFarbe) => apply({ abFarbe })}
                     label="Absatz"
                     shore={getShore("ab")}
                   />
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>
