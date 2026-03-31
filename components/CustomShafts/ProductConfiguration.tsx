@@ -568,6 +568,7 @@ ref: React.Ref<ProductConfigurationHandle>
 
   // Handle number of leather colors change
   const handleNumberOfColorsChange = (value: string) => {
+    const prevValue = numberOfLeatherColors;
     setNumberOfLeatherColors(value);
 
     // If 1 color is selected, clear assignments and reset to single-color mode (no popup)
@@ -582,6 +583,12 @@ ref: React.Ref<ProductConfigurationHandle>
       // Clear single-color fields to avoid stale data in preview/PDF.
       setLederType('');
       setLederfarbe('');
+      // When switching between multi-color modes (2 <-> 3),
+      // reset previous modal selections so old assignments don't carry over.
+      if ((prevValue === '2' || prevValue === '3') && prevValue !== value) {
+        setLeatherColorAssignments([]);
+        setLeatherColors([]);
+      }
       setShowLeatherColorModal(true);
     }
   };
@@ -968,6 +975,7 @@ ref: React.Ref<ProductConfigurationHandle>
         {/* Leather Color Section Modal */}
         {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && (
           <LeatherColorSectionModal
+            key={`leather-color-modal-${numberOfLeatherColors}`}
             isOpen={showLeatherColorModal}
             onClose={() => setShowLeatherColorModal(false)}
             onSave={handleModalSave}
