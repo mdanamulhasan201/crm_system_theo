@@ -197,7 +197,8 @@ export default function AppointmentModal({
     const isClientEvent = form.watch('isClientEvent');
     const kundeContainerRef = React.useRef<HTMLDivElement | null>(null);
     const employeeContainerRef = React.useRef<HTMLDivElement | null>(null);
-    const employees = form.watch('employees') || [];
+    const watchedEmployees = form.watch('employees');
+    const employees = React.useMemo(() => watchedEmployees ?? [], [watchedEmployees]);
     const [currentEmployeeSearch, setCurrentEmployeeSearch] = React.useState('');
 
     const selectedEventDate = form.watch('selectedEventDate');
@@ -252,7 +253,6 @@ export default function AppointmentModal({
             })
             .catch(() => setAvailableSlots([]))
             .finally(() => setSlotsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [uhrzeitEnabled, selectedEventDate, durationValue, employees]);
 
     const clientTerminOptions = React.useMemo(() => [
@@ -775,20 +775,6 @@ export default function AppointmentModal({
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Dauer <span className="text-red-400">*</span>
                                         </FormLabel>
-                                        {maxAppointmentDurationMinutes != null &&
-                                            Number.isFinite(maxAppointmentDurationMinutes) &&
-                                            maxAppointmentDurationMinutes > 0 && (
-                                                <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    Max. {maxAppointmentDurationMinutes} Min. pro Termin (Buchungsregeln).
-                                                </p>
-                                            )}
-                                        {minAppointmentDurationMinutes != null &&
-                                            Number.isFinite(minAppointmentDurationMinutes) &&
-                                            minAppointmentDurationMinutes > 0 && (
-                                                <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    Mind. {minAppointmentDurationMinutes} Min. pro Termin.
-                                                </p>
-                                            )}
                                         <div className={cn(!dauerEnabled && "pointer-events-none select-none")}>
                                             <Select
                                                 disabled={!dauerEnabled || durationOptions.length === 0}
@@ -826,6 +812,29 @@ export default function AppointmentModal({
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        {(maxAppointmentDurationMinutes != null &&
+                                            Number.isFinite(maxAppointmentDurationMinutes) &&
+                                            maxAppointmentDurationMinutes > 0) ||
+                                        (minAppointmentDurationMinutes != null &&
+                                            Number.isFinite(minAppointmentDurationMinutes) &&
+                                            minAppointmentDurationMinutes > 0) ? (
+                                            <div className="mt-1 min-h-[28px] space-y-0.5">
+                                                {maxAppointmentDurationMinutes != null &&
+                                                    Number.isFinite(maxAppointmentDurationMinutes) &&
+                                                    maxAppointmentDurationMinutes > 0 && (
+                                                        <p className="text-[11px] text-gray-500">
+                                                            Max. {maxAppointmentDurationMinutes} Min. pro Termin (Buchungsregeln).
+                                                        </p>
+                                                    )}
+                                                {minAppointmentDurationMinutes != null &&
+                                                    Number.isFinite(minAppointmentDurationMinutes) &&
+                                                    minAppointmentDurationMinutes > 0 && (
+                                                        <p className="text-[11px] text-gray-500">
+                                                            Mind. {minAppointmentDurationMinutes} Min. pro Termin.
+                                                        </p>
+                                                    )}
+                                            </div>
+                                        ) : null}
                                         <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${dauerError ? 'visible' : 'invisible'}`}>
                                             {dauerError?.message}
                                         </p>
