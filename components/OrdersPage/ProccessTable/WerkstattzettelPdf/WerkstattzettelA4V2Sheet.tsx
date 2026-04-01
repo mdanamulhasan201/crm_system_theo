@@ -160,6 +160,26 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
+function CompactFieldRow({ label, value }: { label: string; value: React.ReactNode }) {
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, borderBottom: '1px solid #d9d9d9', padding: '1px 0' }}>
+            <div style={{ fontSize: 9, color: '#444', textTransform: 'uppercase', letterSpacing: 0.2 }}>{label}</div>
+            <div
+                style={{
+                    fontSize: 9,
+                    color: '#111',
+                    textAlign: 'left',
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                }}
+            >
+                {value}
+            </div>
+        </div>
+    );
+}
+
 export default function WerkstattzettelA4V2Sheet({
     data,
     logoProxyUrl,
@@ -311,22 +331,22 @@ export default function WerkstattzettelA4V2Sheet({
                     <Section title="Produktionsworkflow">
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                             <div>
-                                <FieldRow label="STEP3 MATERIAL" value={asText(step3Data.material)} />
-                                <FieldRow label="STEP3 THICKNESS" value={asText(step3Data.thickness)} />
-                                <FieldRow label="PELOTTE HÖHE LINKS" value={asText(step3Data.pelotte_hoehe_l)} />
-                                <FieldRow label="PELOTTE HÖHE RECHTS" value={asText(step3Data.pelotte_hoehe_r)} />
-                                <FieldRow label="SCHICHT1 STÄRKE" value={asText(step3Data.schicht1_starke)} />
-                                <FieldRow label="SCHICHT2 STÄRKE" value={asText(step3Data.schicht2_starke)} />
-                                <FieldRow label="DECKSOHLE STÄRKE" value={asText(step3Data.decksohle_starke)} />
+                                <CompactFieldRow label="STEP3 MATERIAL" value={asText(step3Data.material)} />
+                                <CompactFieldRow label="STEP3 THICKNESS" value={asText(step3Data.thickness)} />
+                                <CompactFieldRow label="PELOTTE HÖHE LINKS" value={asText(step3Data.pelotte_hoehe_l)} />
+                                <CompactFieldRow label="PELOTTE HÖHE RECHTS" value={asText(step3Data.pelotte_hoehe_r)} />
+                                <CompactFieldRow label="SCHICHT1 STÄRKE" value={asText(step3Data.schicht1_starke)} />
+                                <CompactFieldRow label="SCHICHT2 STÄRKE" value={asText(step3Data.schicht2_starke)} />
+                                <CompactFieldRow label="DECKSOHLE STÄRKE" value={asText(step3Data.decksohle_starke)} />
                             </div>
                             <div>
-                                <FieldRow label="VERSTEIFUNG ZONE" value={asText(step3Data.versteifung_zone)} />
-                                <FieldRow label="SCHICHT1 MATERIAL" value={asText(step3Data.schicht1_material)} />
-                                <FieldRow label="SCHICHT2 MATERIAL" value={asText(step3Data.schicht2_material)} />
-                                <FieldRow label="DECKSOHLE MATERIAL" value={asText(step3Data.decksohle_material)} />
-                                <FieldRow label="VERSTEIFUNG MATERIAL" value={asText(step3Data.versteifung_material)} />
-                                <FieldRow label="STEP3 NOTES" value={asText(step3Data.notes)} />
-                                <FieldRow label="ZUSÄTZLICHE NOTIZEN" value={asText(step3Data.zusätzliche_notizen)} />
+                                <CompactFieldRow label="VERSTEIFUNG ZONE" value={asText(step3Data.versteifung_zone)} />
+                                <CompactFieldRow label="SCHICHT1 MATERIAL" value={asText(step3Data.schicht1_material)} />
+                                <CompactFieldRow label="SCHICHT2 MATERIAL" value={asText(step3Data.schicht2_material)} />
+                                <CompactFieldRow label="DECKSOHLE MATERIAL" value={asText(step3Data.decksohle_material)} />
+                                <CompactFieldRow label="VERSTEIFUNG MATERIAL" value={asText(step3Data.versteifung_material)} />
+                                <CompactFieldRow label="STEP3 NOTES" value={asText(step3Data.notes)} />
+                                <CompactFieldRow label="ZUSÄTZLICHE NOTIZEN" value={asText(step3Data.zusätzliche_notizen)} />
                             </div>
                         </div>
                     </Section>
