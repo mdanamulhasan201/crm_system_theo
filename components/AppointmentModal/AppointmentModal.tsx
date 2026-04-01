@@ -62,10 +62,13 @@ function TimePicker({
 
     const commit = (nh: string, nm: string) => onChange(`${nh}:${nm}`);
 
+    const triggerRef = React.useRef<HTMLButtonElement>(null);
+
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={false}>
             <PopoverTrigger asChild>
                 <button
+                    ref={triggerRef}
                     type="button"
                     className={cn(
                         "flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors mt-1",
@@ -84,6 +87,17 @@ function TimePicker({
                 className="w-[160px] p-0 rounded-xl border border-gray-200 shadow-lg overflow-hidden"
                 align="start"
                 sideOffset={6}
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                onPointerDownOutside={(e) => {
+                    if (triggerRef.current?.contains(e.target as Node)) return;
+                    setOpen(false);
+                }}
+                onInteractOutside={(e) => {
+                    if (triggerRef.current?.contains(e.target as Node)) return;
+                    e.preventDefault();
+                    setOpen(false);
+                }}
             >
                 {/* Header */}
                 <div className="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100 bg-[#EBF3EE]">
@@ -302,6 +316,7 @@ export default function AppointmentModal({
     const watchedEmployees = form.watch('employees');
     const employees = React.useMemo(() => watchedEmployees ?? [], [watchedEmployees]);
     const [currentEmployeeSearch, setCurrentEmployeeSearch] = React.useState('');
+    const [datumOpen, setDatumOpen] = React.useState(false);
 
     // Appointment rooms from API
     const [rooms, setRooms]           = React.useState<string[]>([]);
@@ -338,23 +353,23 @@ export default function AppointmentModal({
         { value: 'externe-termine-kooperation', label: 'Externe Termine / Kooperation' },
     ], []);
 
-    const durationOptions = React.useMemo(
-        () =>
-            buildAppointmentDurationOptions(
-                maxAppointmentDurationMinutes,
-                minAppointmentDurationMinutes
-            ),
-        [maxAppointmentDurationMinutes, minAppointmentDurationMinutes]
-    );
-
-    React.useLayoutEffect(() => {
-        if (!isOpen || durationOptions.length === 0) return;
-        const cur = form.getValues("duration");
-        const clamped = clampDurationToAllowedOptions(cur, durationOptions);
-        if (clamped !== cur) {
-            form.setValue("duration", clamped, { shouldValidate: true, shouldDirty: true });
+    // Auto-set API default duration when modal opens and field is empty
+    React.useEffect(() => {
+        if (!isOpen) return;
+        if (
+            maxAppointmentDurationMinutes != null &&
+            Number.isFinite(maxAppointmentDurationMinutes) &&
+            maxAppointmentDurationMinutes > 0
+        ) {
+            const cur = form.getValues("duration");
+            if (!cur || !Number.isFinite(cur) || cur <= 0) {
+                form.setValue("duration", maxAppointmentDurationMinutes / 60, {
+                    shouldValidate: false,
+                    shouldDirty: false,
+                });
+            }
         }
-    }, [isOpen, durationOptions, form]);
+    }, [isOpen, maxAppointmentDurationMinutes, form]);
 
     const reminderOptions = [
         { value: null, label: 'Keine Erinnerung' },
@@ -786,7 +801,7 @@ export default function AppointmentModal({
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Datum <span className="text-red-400">*</span>
                                         </FormLabel>
-                                        <Popover>
+                                        <Popover open={datumOpen} onOpenChange={setDatumOpen}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                     <Button
@@ -799,18 +814,29 @@ export default function AppointmentModal({
                                                         {toValidDate(field.value) ? (
                                                             format(toValidDate(field.value)!, "dd.MM.yyyy", { locale: de })
                                                         ) : (
-                                                            <span>Datum auswählen</span>
+                                                            <span className="text-gray-400">Datum auswählen</span>
                                                         )}
                                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+                                            <PopoverContent
+                                                className="w-auto p-0 rounded-xl"
+                                                align="start"
+                                                onOpenAutoFocus={(e) => e.preventDefault()}
+                                                onCloseAutoFocus={(e) => e.preventDefault()}
+                                                onInteractOutside={(e) => {
+                                                    e.preventDefault();
+                                                    setDatumOpen(false);
+                                                }}
+                                            >
                                                 <Calendar
-                                                    key={toValidDate(field.value)?.getTime() ?? 'datum'}
                                                     mode="single"
                                                     selected={toValidDate(field.value)}
-                                                    onSelect={field.onChange}
+                                                    onSelect={(date) => {
+                                                        field.onChange(date);
+                                                        setDatumOpen(false);
+                                                    }}
                                                     disabled={(date) =>
                                                         date < new Date(new Date().setHours(0, 0, 0, 0))
                                                     }
@@ -836,67 +862,49 @@ export default function AppointmentModal({
                                 name="duration"
                                 render={({ field }) => {
                                     const dauerError = form.formState.errors.duration;
+                                    const displayMinutes =
+                                        Number.isFinite(field.value) && field.value > 0
+                                            ? String(Math.round(field.value * 60))
+                                            : '';
                                     return (
                                     <FormItem>
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Dauer <span className="text-red-400">*</span>
                                         </FormLabel>
-                                        <Select
-                                            disabled={durationOptions.length === 0}
-                                            onValueChange={(value) =>
-                                                field.onChange(parseInt(value, 10) / 60)
-                                            }
-                                            value={(() => {
-                                                if (durationOptions.length === 0) return undefined;
-                                                if (!Number.isFinite(field.value)) return undefined;
-                                                const m = Math.round(field.value * 60);
-                                                const match = durationOptions.some((o) => o.minutes === m);
-                                                return String(match ? m : durationOptions[0]!.minutes);
-                                            })()}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger className={cn(
-                                                    "w-full rounded-xl mt-1 cursor-pointer bg-white text-gray-700 transition-colors",
-                                                    dauerError ? "border-red-500" : "border-gray-200"
-                                                )}>
-                                                    <SelectValue placeholder="Dauer wählen" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent className="rounded-xl">
-                                                {durationOptions.map((opt) => (
-                                                    <SelectItem
-                                                        key={opt.minutes}
-                                                        value={String(opt.minutes)}
-                                                        className="cursor-pointer rounded-lg"
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {(maxAppointmentDurationMinutes != null &&
-                                            Number.isFinite(maxAppointmentDurationMinutes) &&
-                                            maxAppointmentDurationMinutes > 0) ||
-                                        (minAppointmentDurationMinutes != null &&
-                                            Number.isFinite(minAppointmentDurationMinutes) &&
-                                            minAppointmentDurationMinutes > 0) ? (
-                                            <div className="mt-1 min-h-[28px] space-y-0.5">
-                                                {maxAppointmentDurationMinutes != null &&
-                                                    Number.isFinite(maxAppointmentDurationMinutes) &&
-                                                    maxAppointmentDurationMinutes > 0 && (
-                                                        <p className="text-[11px] text-gray-500">
-                                                            Max. {maxAppointmentDurationMinutes} Min. pro Termin (Buchungsregeln).
-                                                        </p>
+                                        <FormControl>
+                                            <div className="relative mt-1">
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    placeholder={
+                                                        maxAppointmentDurationMinutes != null &&
+                                                        Number.isFinite(maxAppointmentDurationMinutes) &&
+                                                        maxAppointmentDurationMinutes > 0
+                                                            ? String(maxAppointmentDurationMinutes)
+                                                            : "z.B. 30"
+                                                    }
+                                                    value={displayMinutes}
+                                                    onChange={(e) => {
+                                                        const raw = e.target.value;
+                                                        if (raw === '') {
+                                                            field.onChange(undefined);
+                                                            return;
+                                                        }
+                                                        const mins = parseInt(raw, 10);
+                                                        if (!isNaN(mins) && mins > 0) {
+                                                            field.onChange(mins / 60);
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "w-full rounded-xl pr-12 bg-white text-gray-700 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                                                        dauerError ? "border-red-500" : "border-gray-200"
                                                     )}
-                                                {minAppointmentDurationMinutes != null &&
-                                                    Number.isFinite(minAppointmentDurationMinutes) &&
-                                                    minAppointmentDurationMinutes > 0 && (
-                                                        <p className="text-[11px] text-gray-500">
-                                                            Mind. {minAppointmentDurationMinutes} Min. pro Termin.
-                                                        </p>
-                                                    )}
+                                                />
+                                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 select-none">
+                                                    Min.
+                                                </span>
                                             </div>
-                                        ) : null}
+                                        </FormControl>
                                         <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${dauerError ? 'visible' : 'invisible'}`}>
                                             {dauerError?.message}
                                         </p>

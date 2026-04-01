@@ -1,4 +1,11 @@
 import React from 'react'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 
 interface StorageProduct {
     id: string
@@ -21,25 +28,26 @@ export default function ProductSelector({
 }: ProductSelectorProps) {
     return (
         <div>
-            <label className="font-semibold mb-1 block"> Rohling / Fräsblock </label>
-            <div className="relative">
-                <select
-                    value={selectedProductId}
-                    onChange={(e) => onSelect(e.target.value)}
-                    className="border p-2 rounded w-full"
-                    disabled={isLoading}
-                >
-                    <option value="">
-                        {isLoading ? 'Lade Produkte...' : 'Produkt auswählen'}
-                    </option>
+            <label className="font-semibold mb-1 block">Rohling / Fräsblock</label>
+            <Select
+                value={selectedProductId}
+                onValueChange={onSelect}
+                disabled={isLoading}
+            >
+                <SelectTrigger className="w-full border border-gray-300 px-3 py-2 rounded-md h-auto min-h-[42px]">
+                    <SelectValue
+                        placeholder={isLoading ? 'Lade Produkte...' : 'Produkt auswählen'}
+                    />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                     {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                            {product.produktname} - {product.artikelnummer}
-                        </option>
+                        <SelectItem key={product.id} value={product.id}>
+                            {product.produktname}
+                            {product.artikelnummer ? ` - ${product.artikelnummer}` : ''}
+                        </SelectItem>
                     ))}
-                </select>
-            </div>
+                </SelectContent>
+            </Select>
         </div>
     )
 }
-

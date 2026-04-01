@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react';
-import { getAllStorages } from '@/apis/productsManagementApis';
+import { getMyStoreForCreateOrder } from '@/apis/productsManagementApis';
 import ProductSelector from '@/components/VersorgungModal/ProductSelector';
 import MaterialienInput from '@/components/VersorgungModal/MaterialienInput';
 import toast from 'react-hot-toast';
@@ -10,18 +10,8 @@ import { createCustomVersorgung } from '@/apis/einlagenApis';
 interface StorageProduct {
     id: string
     produktname: string
-    hersteller: string
     artikelnummer: string
-    lagerort: string | null
-    mindestbestand: number | null
-    groessenMengen: { [key: string]: any }
-    purchase_price: number
-    selling_price: number
-    Status: string
-    userId: string
-    type?: 'milling_block' | 'rady_insole'
-    createdAt: string
-    updatedAt: string
+    type: 'milling_block' | 'rady_insole'
 }
 
 interface EinmaligeVersorgungContentProps {
@@ -72,11 +62,11 @@ export default function EinmaligeVersorgungContent({
         }
     }, [menge])
 
-    // Fetch all storage products (without type filter)
+    // Fetch store products (milling_block type only for Rohling/Fräsblock)
     const fetchStorageProducts = useCallback(async () => {
         try {
             setIsLoadingProducts(true)
-            const response = await getAllStorages('1', 1000, '', undefined)
+            const response = await getMyStoreForCreateOrder()
             if (response.success && response.data) {
                 setStorageProducts(response.data)
             }

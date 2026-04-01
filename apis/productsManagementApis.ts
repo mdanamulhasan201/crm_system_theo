@@ -6,14 +6,14 @@ export const STORE_LIST_FETCH_LIMIT = 10_000;
 // create product
 export const createProduct = async (productData: any, type: string) => {
     try {
-        const config = productData instanceof FormData 
+        const config = productData instanceof FormData
             ? {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             }
             : {};
-        
+
         const response = await axiosClient.post(`/store/create?type=${type}`, productData, config);
         return response.data;
     } catch (error) {
@@ -33,6 +33,17 @@ export const getAllStorages = async (cursor: string, limit: number, search: stri
     }
 };
 
+
+
+//  only for order get store/get-my-store-for-create-order
+export const getMyStoreForCreateOrder = async () => {
+    try {
+        const response = await axiosClient.get(`/store/get-my-store-for-create-order`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 
