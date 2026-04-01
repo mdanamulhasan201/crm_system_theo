@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CalendarIcon, Loader2, CalendarDays, Search } from "lucide-react";
+import { X, CalendarIcon, Loader2, CalendarDays, Search, Clock } from "lucide-react";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
@@ -19,50 +19,139 @@ import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
 import { useSearchEmployee } from "@/hooks/employee/useSearchEmployee";
-import { getCombinedAvailableSlots, getAllActiveAppointmentRooms } from "@/apis/appoinmentApis";
+import { getAllActiveAppointmentRooms } from "@/apis/appoinmentApis";
 import toast from "react-hot-toast";
 
-// Expand API slot times into every valid minute-level start time
-function expandAvailableSlots(times: string[], intervalMinutes: number): string[] {
-    if (!times || times.length === 0 || intervalMinutes <= 0) return [];
+const HOURS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
-    const toMin = (t: string) => {
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + m;
-    };
-    const toStr = (total: number) => {
-        const h = Math.floor(total / 60);
-        const m = total % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
+function TimePicker({
+    value,
+    onChange,
+    hasError,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    hasError?: boolean;
+}) {
+    const [open, setOpen] = React.useState(false);
+    const [h, m] = (value || "00:00").split(":").map((s) => s.padStart(2, "0"));
+    const selH = h || "00";
+    const selM = m || "00";
 
-    const sorted = [...times].map(toMin).sort((a, b) => a - b);
+    const hourRef   = React.useRef<HTMLDivElement>(null);
+    const minuteRef = React.useRef<HTMLDivElement>(null);
 
-    // Group into contiguous blocks
-    const blocks: { start: number; end: number }[] = [];
-    let bStart = sorted[0];
-    let bEnd = sorted[0] + intervalMinutes;
-
-    for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i] === bEnd) {
-            bEnd = sorted[i] + intervalMinutes;
-        } else {
-            blocks.push({ start: bStart, end: bEnd });
-            bStart = sorted[i];
-            bEnd = sorted[i] + intervalMinutes;
+    const scrollTo = (ref: React.RefObject<HTMLDivElement | null>, val: string, items: string[]) => {
+        const idx = items.indexOf(val);
+        if (idx < 0 || !ref.current) return;
+        const child = ref.current.children[idx] as HTMLElement | undefined;
+        if (child) {
+            ref.current.scrollTo({ top: child.offsetTop - 8, behavior: "smooth" });
         }
-    }
-    blocks.push({ start: bStart, end: bEnd });
+    };
 
-    // For each block, valid start = every minute from block.start to block.end - intervalMinutes
-    const result: string[] = [];
-    for (const { start, end } of blocks) {
-        for (let t = start; t <= end - intervalMinutes; t++) {
-            if (t < 24 * 60) result.push(toStr(t));
-        }
-    }
-    return result;
+    React.useEffect(() => {
+        if (!open) return;
+        const t = setTimeout(() => {
+            scrollTo(hourRef, selH, HOURS);
+            scrollTo(minuteRef, selM, MINUTES);
+        }, 60);
+        return () => clearTimeout(t);
+    }, [open, selH, selM]);
+
+    const commit = (nh: string, nm: string) => onChange(`${nh}:${nm}`);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className={cn(
+                        "flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors mt-1",
+                        "hover:border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#61A07B]/30",
+                        hasError ? "border-red-500" : "border-gray-200",
+                        open && "border-[#61A07B] ring-2 ring-[#61A07B]/20"
+                    )}
+                >
+                    <span className={value ? "text-gray-700" : "text-gray-400"}>
+                        {value || "Uhrzeit wählen"}
+                    </span>
+                    <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent
+                className="w-[160px] p-0 rounded-xl border border-gray-200 shadow-lg overflow-hidden"
+                align="start"
+                sideOffset={6}
+            >
+                {/* Header */}
+                <div className="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100 bg-[#EBF3EE]">
+                    <div className="py-2 text-center text-sm font-semibold text-[#3d7a5a]">
+                        {selH}
+                    </div>
+                    <div className="py-2 text-center text-sm font-semibold text-[#3d7a5a]">
+                        {selM}
+                    </div>
+                </div>
+                {/* Scroll columns */}
+                <div className="grid grid-cols-2 divide-x divide-gray-100">
+                    <div
+                        ref={hourRef}
+                        className="h-52 overflow-y-auto scroll-smooth py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                        {HOURS.map((hr) => (
+                            <button
+                                key={hr}
+                                type="button"
+                                onClick={() => { commit(hr, selM); scrollTo(hourRef, hr, HOURS); }}
+                                className={cn(
+                                    "w-full py-1.5 text-center text-sm transition-colors",
+                                    hr === selH
+                                        ? "bg-[#EBF3EE] font-semibold text-[#3d7a5a]"
+                                        : "text-gray-600 hover:bg-gray-50"
+                                )}
+                            >
+                                {hr}
+                            </button>
+                        ))}
+                    </div>
+                    <div
+                        ref={minuteRef}
+                        className="h-52 overflow-y-auto scroll-smooth py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                        {MINUTES.map((mn) => (
+                            <button
+                                key={mn}
+                                type="button"
+                                onClick={() => { commit(selH, mn); scrollTo(minuteRef, mn, MINUTES); }}
+                                className={cn(
+                                    "w-full py-1.5 text-center text-sm transition-colors",
+                                    mn === selM
+                                        ? "bg-[#EBF3EE] font-semibold text-[#3d7a5a]"
+                                        : "text-gray-600 hover:bg-gray-50"
+                                )}
+                            >
+                                {mn}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                {/* Done button */}
+                <div className="border-t border-gray-100 p-2">
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="w-full rounded-lg bg-[#61A07B] py-1.5 text-xs font-semibold text-white hover:bg-[#4f8a69] transition-colors"
+                    >
+                        OK
+                    </button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
 }
+
 
 /** Minute steps offered for Dauer (filtered by booking rules). */
 const DURATION_STEPS_MINUTES = [
@@ -214,18 +303,6 @@ export default function AppointmentModal({
     const employees = React.useMemo(() => watchedEmployees ?? [], [watchedEmployees]);
     const [currentEmployeeSearch, setCurrentEmployeeSearch] = React.useState('');
 
-    const selectedEventDate = form.watch('selectedEventDate');
-    const durationValue = form.watch('duration');
-
-    // Step-by-step progressive unlock
-    const datumEnabled   = employees.length > 0;
-    const dauerEnabled   = datumEnabled && !!toValidDate(selectedEventDate);
-    const uhrzeitEnabled = dauerEnabled && !!durationValue;
-
-    // Available time slots from API
-    const [availableSlots, setAvailableSlots] = React.useState<string[]>([]);
-    const [slotsLoading, setSlotsLoading]     = React.useState(false);
-
     // Appointment rooms from API
     const [rooms, setRooms]           = React.useState<string[]>([]);
     const [roomsLoading, setRoomsLoading] = React.useState(false);
@@ -242,31 +319,6 @@ export default function AppointmentModal({
             .catch(() => setRooms([]))
             .finally(() => setRoomsLoading(false));
     }, [isOpen]);
-
-    React.useEffect(() => {
-        if (!uhrzeitEnabled) {
-            setAvailableSlots([]);
-            return;
-        }
-        const validDate = toValidDate(selectedEventDate);
-        if (!validDate || !durationValue || employees.length === 0) return;
-
-        const dateStr        = format(validDate, 'yyyy-MM-dd');
-        const employeeIds    = employees.map(e => e.employeeId);
-        const intervalMinutes = Math.round(durationValue * 60);
-
-        setSlotsLoading(true);
-        getCombinedAvailableSlots(dateStr, employeeIds, intervalMinutes)
-            .then((res) => {
-                if (res?.times) {
-                    setAvailableSlots(expandAvailableSlots(res.times as string[], intervalMinutes));
-                } else {
-                    setAvailableSlots([]);
-                }
-            })
-            .catch(() => setAvailableSlots([]))
-            .finally(() => setSlotsLoading(false));
-    }, [uhrzeitEnabled, selectedEventDate, durationValue, employees]);
 
     const clientTerminOptions = React.useMemo(() => [
         { value: 'fussanalyse-laufanalyse', label: 'Fußanalyse / Laufanalyse' },
@@ -315,21 +367,6 @@ export default function AppointmentModal({
         { value: 1440, label: '24 Stunden vorher' },
     ];
 
-    // Generate time slots in 5-minute intervals from 0:00 to 23:55 (full day for calendar slot click)
-    const timeSlots = React.useMemo(() => {
-        const slots = [];
-        const startHour = 0;
-        const endHour = 23;
-
-        for (let hour = startHour; hour <= endHour; hour++) {
-            for (let minute = 0; minute < 60; minute += 5) {
-                if (hour === endHour && minute > 55) break;
-                const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                slots.push({ value: timeString, label: timeString });
-            }
-        }
-        return slots;
-    }, []);
 
     React.useEffect(() => {
         const currentTermin = form.getValues('termin');
@@ -749,47 +786,40 @@ export default function AppointmentModal({
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Datum <span className="text-red-400">*</span>
                                         </FormLabel>
-                                        <div className={cn(!datumEnabled && "pointer-events-none select-none")}>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            disabled={!datumEnabled}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal rounded-xl mt-1 transition-colors",
-                                                                datumEnabled
-                                                                    ? cn("cursor-pointer bg-white text-gray-700", datumError ? "border-red-500" : "border-gray-200")
-                                                                    : "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
-                                                            )}
-                                                        >
-                                                            {toValidDate(field.value) ? (
-                                                                format(toValidDate(field.value)!, "dd.MM.yyyy", { locale: de })
-                                                            ) : (
-                                                                <span>Datum auswählen</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0 rounded-xl" align="start">
-                                                    <Calendar
-                                                        key={
-                                                            toValidDate(field.value)?.getTime() ?? 'datum'
-                                                        }
-                                                        mode="single"
-                                                        selected={toValidDate(field.value)}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                                                        }
-                                                        locale={de}
-                                                        weekStartsOn={1}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-full pl-3 text-left font-normal rounded-xl mt-1 cursor-pointer bg-white text-gray-700 transition-colors",
+                                                            datumError ? "border-red-500" : "border-gray-200"
+                                                        )}
+                                                    >
+                                                        {toValidDate(field.value) ? (
+                                                            format(toValidDate(field.value)!, "dd.MM.yyyy", { locale: de })
+                                                        ) : (
+                                                            <span>Datum auswählen</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+                                                <Calendar
+                                                    key={toValidDate(field.value)?.getTime() ?? 'datum'}
+                                                    mode="single"
+                                                    selected={toValidDate(field.value)}
+                                                    onSelect={field.onChange}
+                                                    disabled={(date) =>
+                                                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                                                    }
+                                                    locale={de}
+                                                    weekStartsOn={1}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
                                         <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${datumError ? 'visible' : 'invisible'}`}>
                                             {datumError?.message as string}
                                         </p>
@@ -811,43 +841,39 @@ export default function AppointmentModal({
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Dauer <span className="text-red-400">*</span>
                                         </FormLabel>
-                                        <div className={cn(!dauerEnabled && "pointer-events-none select-none")}>
-                                            <Select
-                                                disabled={!dauerEnabled || durationOptions.length === 0}
-                                                onValueChange={(value) =>
-                                                    field.onChange(parseInt(value, 10) / 60)
-                                                }
-                                                value={(() => {
-                                                    if (durationOptions.length === 0) return undefined;
-                                                    if (!Number.isFinite(field.value)) return undefined;
-                                                    const m = Math.round(field.value * 60);
-                                                    const match = durationOptions.some((o) => o.minutes === m);
-                                                    return String(match ? m : durationOptions[0]!.minutes);
-                                                })()}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger className={cn(
-                                                        "w-full rounded-xl mt-1 transition-colors",
-                                                        dauerEnabled
-                                                            ? cn("cursor-pointer bg-white text-gray-700", dauerError ? "border-red-500" : "border-gray-200")
-                                                            : "cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200"
-                                                    )}>
-                                                        <SelectValue placeholder="Dauer wählen" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent className="rounded-xl">
-                                                    {durationOptions.map((opt) => (
-                                                        <SelectItem
-                                                            key={opt.minutes}
-                                                            value={String(opt.minutes)}
-                                                            className="cursor-pointer rounded-lg"
-                                                        >
-                                                            {opt.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        <Select
+                                            disabled={durationOptions.length === 0}
+                                            onValueChange={(value) =>
+                                                field.onChange(parseInt(value, 10) / 60)
+                                            }
+                                            value={(() => {
+                                                if (durationOptions.length === 0) return undefined;
+                                                if (!Number.isFinite(field.value)) return undefined;
+                                                const m = Math.round(field.value * 60);
+                                                const match = durationOptions.some((o) => o.minutes === m);
+                                                return String(match ? m : durationOptions[0]!.minutes);
+                                            })()}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className={cn(
+                                                    "w-full rounded-xl mt-1 cursor-pointer bg-white text-gray-700 transition-colors",
+                                                    dauerError ? "border-red-500" : "border-gray-200"
+                                                )}>
+                                                    <SelectValue placeholder="Dauer wählen" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-xl">
+                                                {durationOptions.map((opt) => (
+                                                    <SelectItem
+                                                        key={opt.minutes}
+                                                        value={String(opt.minutes)}
+                                                        className="cursor-pointer rounded-lg"
+                                                    >
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         {(maxAppointmentDurationMinutes != null &&
                                             Number.isFinite(maxAppointmentDurationMinutes) &&
                                             maxAppointmentDurationMinutes > 0) ||
@@ -886,65 +912,16 @@ export default function AppointmentModal({
                                     const uhrzeitError = form.formState.errors.uhrzeit;
                                     return (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Uhrzeit <span className="text-red-400">*</span>
-                                            {slotsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#61A07B]" />}
                                         </FormLabel>
-                                        <div className={cn(!uhrzeitEnabled && "pointer-events-none select-none")}>
-                                            {uhrzeitEnabled && !slotsLoading && availableSlots.length === 0 ? (
-                                                <div className="mt-1 h-10 flex items-center px-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-600 text-sm">
-                                                    Keine verfügbaren Zeiten gefunden
-                                                </div>
-                                            ) : (
-                                                <Select
-                                                    disabled={!uhrzeitEnabled || slotsLoading}
-                                                    onValueChange={field.onChange}
-                                                    value={field.value || ''}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger className={cn(
-                                                            "w-full rounded-xl mt-1 transition-colors",
-                                                            uhrzeitEnabled && !slotsLoading
-                                                                ? cn("cursor-pointer bg-white text-gray-700", uhrzeitError ? "border-red-500" : "border-gray-200")
-                                                                : "cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200"
-                                                        )}>
-                                                            <SelectValue placeholder={
-                                                                slotsLoading ? "Lade verfügbare Zeiten..." : "Uhrzeit wählen"
-                                                            } />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="rounded-xl max-h-64">
-                                                        {availableSlots.length > 0 ? (
-                                                            (() => {
-                                                                // Group by hour for readability
-                                                                const byHour: Record<string, string[]> = {};
-                                                                availableSlots.forEach(t => {
-                                                                    const hour = t.split(':')[0];
-                                                                    if (!byHour[hour]) byHour[hour] = [];
-                                                                    byHour[hour].push(t);
-                                                                });
-                                                                return Object.entries(byHour).map(([hour, slots]) => (
-                                                                    <React.Fragment key={hour}>
-                                                                        <div className="px-2 pt-2 pb-0.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                                                                            {hour}:00 Uhr
-                                                                        </div>
-                                                                        {slots.map(t => (
-                                                                            <SelectItem key={t} value={t} className="cursor-pointer rounded-lg pl-4">
-                                                                                {t}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </React.Fragment>
-                                                                ));
-                                                            })()
-                                                        ) : (
-                                                            <div className="px-3 py-4 text-sm text-gray-400 text-center">
-                                                                {slotsLoading ? "Lädt..." : "Keine Zeiten verfügbar"}
-                                                            </div>
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        </div>
+                                        <FormControl>
+                                            <TimePicker
+                                                value={field.value || ''}
+                                                onChange={field.onChange}
+                                                hasError={!!uhrzeitError}
+                                            />
+                                        </FormControl>
                                         <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${uhrzeitError ? 'visible' : 'invisible'}`}>
                                             {uhrzeitError?.message}
                                         </p>
