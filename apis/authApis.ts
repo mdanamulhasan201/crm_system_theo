@@ -1,5 +1,22 @@
 import axiosClient from "@/lib/axiosClient";
 
+/** Axios 4xx/5xx bodies often use `{ error: "..." }` or `{ message: "..." }` */
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const err = error as {
+    response?: { data?: Record<string, unknown> }
+    message?: string
+  }
+  const data = err.response?.data
+  if (data && typeof data === "object") {
+    const e = data.error
+    const m = data.message
+    if (typeof e === "string" && e.trim()) return e
+    if (typeof m === "string" && m.trim()) return m
+  }
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
 // First login response (no role) - redirect to manage-profile
 interface FirstLoginResponse {
   success: boolean;
@@ -82,9 +99,8 @@ export const forgotPassword = async (email: string) => {
   try {
     const response = await axiosClient.post('/partner/forgot-password/send-otp', { email });
     return response.data;
-  } catch (error: any) {
-    const errorMessage = error.response?.message || error.message || 'Failed to send OTP';
-    throw new Error(errorMessage);
+  } catch (error: unknown) {
+    throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
   }
 };
 
@@ -93,9 +109,8 @@ export const matchOTP = async (email: string, otp: string) => {
   try {
     const response = await axiosClient.post('/partner/forgot-password/verify-otp', { email, otp });
     return response.data;
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.error || error.message || 'Failed to match OTP';
-    throw new Error(errorMessage);
+  } catch (error: unknown) {
+    throw new Error(getApiErrorMessage(error, 'Failed to match OTP'));
   }
 };
 
@@ -105,9 +120,8 @@ export const resetPassword = async (email: string, password: string) => {
   try {
     const response = await axiosClient.post('/partner/forgot-password/reset', { email, password });
     return response.data;
-  } catch (error: any) {
-    const errorMessage = error.response?.message || error.message || 'Failed to reset password';
-    throw new Error(errorMessage);
+  } catch (error: unknown) {
+    throw new Error(getApiErrorMessage(error, 'Failed to reset password'));
   }
 };
 

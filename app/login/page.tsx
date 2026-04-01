@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useLayoutEffect } from 'react'
 import logo from '@/public/images/logo.png'
 import Image from 'next/image'
 import { useForm } from 'react-hook-form'
@@ -10,6 +10,18 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import SendEmailModal from '@/components/ResetPassword/SendEmailModal'
 
+
+const accent = "#4a9072"
+
+const fieldShell =
+    "relative min-h-[52px] rounded-2xl border-2 bg-[#f7faf8] transition-all duration-200"
+
+/** When browser autofill fills the field, RHF often has not received the value yet — float label + padding */
+const autofillEmailShell =
+    "[&:has(#login-email:-webkit-autofill)]:border-[#4a9072] [&:has(#login-email:-webkit-autofill)]:shadow-[0_0_0_4px_rgba(74,144,114,0.14)] [&:has(#login-email:-webkit-autofill)_label]:top-2 [&:has(#login-email:-webkit-autofill)_label]:translate-y-0 [&:has(#login-email:-webkit-autofill)_label]:text-xs [&:has(#login-email:-webkit-autofill)_label]:font-medium [&:has(#login-email:-webkit-autofill)_label]:text-[#4a9072] [&:has(#login-email:-webkit-autofill)_input]:pt-5 [&:has(#login-email:-webkit-autofill)_input]:pb-2.5"
+
+const autofillPasswordShell =
+    "[&:has(#login-password:-webkit-autofill)]:border-[#4a9072] [&:has(#login-password:-webkit-autofill)]:shadow-[0_0_0_4px_rgba(74,144,114,0.14)] [&:has(#login-password:-webkit-autofill)_label]:top-2 [&:has(#login-password:-webkit-autofill)_label]:translate-y-0 [&:has(#login-password:-webkit-autofill)_label]:text-xs [&:has(#login-password:-webkit-autofill)_label]:font-medium [&:has(#login-password:-webkit-autofill)_label]:text-[#4a9072] [&:has(#login-password:-webkit-autofill)_input]:pt-5 [&:has(#login-password:-webkit-autofill)_input]:pb-2.5 [&:has(#login-password:-webkit-autofill)_button]:top-[26px]"
 
 type FormInputs = {
     email: string;
@@ -22,8 +34,9 @@ export default function Login() {
     const { isAuthenticated } = useAuth()
     const [showPassword, setShowPassword] = useState(false);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [emailFocused, setEmailFocused] = useState(false)
+    const [passwordFocused, setPasswordFocused] = useState(false)
 
-    // Redirect: full auth -> dashboard; token but no role (first login) -> manage-profile
     useEffect(() => {
         if (isAuthenticated) {
             router.push('/dashboard')
@@ -37,8 +50,59 @@ export default function Login() {
     const {
         register,
         handleSubmit,
+        watch,
+        setValue,
+        getValues,
         formState: { errors }
     } = useForm<FormInputs>()
+
+    // Browser autofill does not always fire input/change before paint — sync DOM → RHF so labels float
+    useLayoutEffect(() => {
+        const syncFromDom = () => {
+            const emailEl = document.getElementById('login-email') as HTMLInputElement | null
+            const passEl = document.getElementById('login-password') as HTMLInputElement | null
+            const email = emailEl?.value ?? ''
+            const pass = passEl?.value ?? ''
+            if (email && getValues('email') !== email) {
+                setValue('email', email, { shouldDirty: true, shouldValidate: false })
+            }
+            if (pass && getValues('password') !== pass) {
+                setValue('password', pass, { shouldDirty: true, shouldValidate: false })
+            }
+        }
+        syncFromDom()
+        const timeouts = [0, 50, 100, 200, 400, 800, 1500, 2500].map((ms) =>
+            setTimeout(syncFromDom, ms)
+        )
+        const interval = setInterval(syncFromDom, 300)
+        const stopInterval = setTimeout(() => clearInterval(interval), 4000)
+        return () => {
+            timeouts.forEach(clearTimeout)
+            clearInterval(interval)
+            clearTimeout(stopInterval)
+        }
+    }, [setValue, getValues])
+
+    const emailValue = watch("email")
+    const passwordValue = watch("password")
+    const floatEmail = emailFocused || !!String(emailValue ?? "").trim()
+    const floatPassword = passwordFocused || !!String(passwordValue ?? "").length
+
+    const emailReg = register("email", {
+        required: "E-Mail ist erforderlich",
+        pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: "Ungültige E-Mail-Adresse"
+        }
+    })
+
+    const passwordReg = register("password", {
+        required: "Passwort ist erforderlich",
+        minLength: {
+            value: 6,
+            message: "Passwort muss mindestens 6 Zeichen lang sein"
+        }
+    })
 
     const onSubmit = async (data: FormInputs) => {
         setIsLoading(true)
@@ -59,61 +123,126 @@ export default function Login() {
         }
     }
 
+    const labelBase =
+        "pointer-events-none absolute left-4 z-10 origin-left transition-all duration-200 ease-out"
+    const labelIdle = "top-1/2 -translate-y-1/2 text-base text-gray-500"
+    const labelFloat = "top-2 translate-y-0 text-xs font-medium"
+    const labelFloatColor = { color: accent } as const
+
+    const inputBase =
+        "w-full rounded-2xl border-0 bg-transparent text-gray-900 outline-none ring-0 transition-[padding] duration-200"
+
     return (
-        <div className="min-h-screen flex items-center justify-center ">
-            <div className="max-w-md w-full p-6 space-y-8 bg-[#A19B9B38] rounded-lg shadow-md">
-                <div className="flex flex-col items-center">
-                    <Image
-                        src={logo}
-                        alt="logo"
-                        width={60}
-                        height={60}
-                        className="mb-6"
-                    />
-                    <h1 className="text-2xl font-semibold">Willkommen zurück!</h1>
+        <div
+            className="min-h-screen flex items-center justify-center px-4 py-10"
+            style={{ backgroundColor: "#f0f2f4" }}
+        >
+            <div
+                className="max-w-md w-full rounded-2xl bg-white p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-5">
+                        <Image
+                            src={logo}
+                            alt="Logo"
+                            width={60}
+                            height={60}
+                            className="object-contain"
+                            style={{ filter: `saturate(1.1)` }}
+                        />
+                    </div>
+
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                        Willkommen zurück!
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-500">
+                        Melden Sie sich in Ihrem Konto an
+                    </p>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                <div className="mt-10 flex flex-col gap-5">
+                <form id="login-form" className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            E-Mail
-                        </label>
-                        <input
-                            {...register("email", {
-                                required: "E-Mail ist erforderlich",
-                                pattern: {
-                                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                    message: "Ungültige E-Mail-Adresse"
-                                }
-                            })}
-                            type="email"
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                        />
+                        <div
+                            className={`${fieldShell} ${autofillEmailShell} ${
+                                emailFocused
+                                    ? "border-[#4a9072] shadow-[0_0_0_4px_rgba(74,144,114,0.14)]"
+                                    : "border-gray-200"
+                            }`}
+                        >
+                            <label
+                                htmlFor="login-email"
+                                className={`${labelBase} ${floatEmail ? `${labelFloat}` : labelIdle}`}
+                                style={floatEmail ? labelFloatColor : undefined}
+                            >
+                                E-Mail
+                            </label>
+                            <input
+                                id="login-email"
+                                {...emailReg}
+                                type="email"
+                                autoComplete="email"
+                                onFocus={() => setEmailFocused(true)}
+                                onInput={(e) => {
+                                    const v = (e.target as HTMLInputElement).value
+                                    setValue('email', v, { shouldDirty: true, shouldValidate: false })
+                                }}
+                                onBlur={(e) => {
+                                    setEmailFocused(false)
+                                    void emailReg.onBlur(e)
+                                }}
+                                className={`${inputBase} pl-4 pr-4 ${
+                                    floatEmail ? "pb-2.5 pt-5" : "py-3.5"
+                                }`}
+                            />
+                        </div>
                         {errors.email && (
-                            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                            <p className="mt-1.5 text-sm text-red-600">{errors.email.message}</p>
                         )}
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Passwort
-                        </label>
-                        <div className="relative">
+                        <div
+                            className={`${fieldShell} ${autofillPasswordShell} ${
+                                passwordFocused
+                                    ? "border-[#4a9072] shadow-[0_0_0_4px_rgba(74,144,114,0.14)]"
+                                    : "border-gray-200"
+                            }`}
+                        >
+                            <label
+                                htmlFor="login-password"
+                                className={`${labelBase} ${floatPassword ? `${labelFloat}` : labelIdle}`}
+                                style={floatPassword ? labelFloatColor : undefined}
+                            >
+                                Passwort
+                            </label>
                             <input
-                                {...register("password", {
-                                    required: "Passwort ist erforderlich",
-                                    minLength: {
-                                        value: 6,
-                                        message: "Passwort muss mindestens 6 Zeichen lang sein"
-                                    }
-                                })}
+                                id="login-password"
+                                {...passwordReg}
                                 type={showPassword ? "text" : "password"}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                                autoComplete="current-password"
+                                onFocus={() => setPasswordFocused(true)}
+                                onInput={(e) => {
+                                    const v = (e.target as HTMLInputElement).value
+                                    setValue('password', v, { shouldDirty: true, shouldValidate: false })
+                                }}
+                                onBlur={(e) => {
+                                    setPasswordFocused(false)
+                                    void passwordReg.onBlur(e)
+                                }}
+                                className={`${inputBase} pl-4 pr-11 ${
+                                    floatPassword ? "pb-2.5 pt-5" : "py-3.5"
+                                }`}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                                className={`absolute cursor-pointer right-3 h-5 w-5 text-gray-400 transition-all duration-200 hover:text-gray-600 ${
+                                    floatPassword
+                                        ? "top-[26px] cursor-pointer"
+                                        : "top-1/2 -translate-y-1/2 cursor-pointer"
+                                }`}
+                                aria-label={showPassword ? "Passwort anzeigen" : "Passwort verbergen"}
                             >
                                 {showPassword ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -129,32 +258,52 @@ export default function Login() {
                             </button>
                         </div>
                         {errors.password && (
-                            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                            <p className="mt-1.5 text-sm text-red-600">{errors.password.message}</p>
                         )}
+                    </div>
+                </form>
+
+                    <div className="-mt-1 flex justify-end">
+                        <SendEmailModal open={isResetModalOpen} onOpenChange={setIsResetModalOpen} />
                     </div>
 
                     <button
                         type="submit"
+                        form="login-form"
                         disabled={isLoading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-[#585C5B] transform duration-300 cursor-pointer hover:bg-gray-700 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full cursor-pointer rounded-xl py-3.5 text-base font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4a9072] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{ backgroundColor: accent }}
                     >
                         {isLoading ? (
-                            <div className="inline-flex items-center">
-                                <div className="w-4 h-4 border-2 border-t-2 border-white rounded-full animate-spin mr-2"></div>
+                            <span className="inline-flex items-center justify-center gap-2">
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                 Wird geladen...
-                            </div>
+                            </span>
                         ) : (
-                            'Anmelden'
+                            "Anmelden"
                         )}
                     </button>
-                </form>
-                {/* reset code  */}
-                <div className='flex justify-end items-center'>
-                    <SendEmailModal  open={isResetModalOpen} onOpenChange={setIsResetModalOpen}/>
-                    
+                </div>
+
+                <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 shrink-0 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                    </svg>
+                    <span>Verschlüsselte Verbindung</span>
                 </div>
             </div>
-
         </div>
     )
 }
