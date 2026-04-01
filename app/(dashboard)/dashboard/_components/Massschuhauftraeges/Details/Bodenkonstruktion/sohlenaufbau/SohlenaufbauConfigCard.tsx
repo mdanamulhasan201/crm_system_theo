@@ -338,64 +338,74 @@ export default function SohlenaufbauConfigCard({
           <div className="space-y-5 border-t border-gray-200 pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schichtaufbau (optional)</p>
             {calc.zwischensohle > 0 ? (
-              value.zwSplit.mode === "gleichmaessig" ? (
-                <SohlenaufbauLayerSplitControl
-                  label="Zwischensohle"
-                  total={calc.zwischensohle}
-                  split={value.zwSplit}
-                  onChange={(zwSplit) => apply({ zwSplit })}
-                  sideContent={
-                    <div className="space-y-3 lg:w-[460px]">
-                      <div className="flex flex-wrap gap-x-4 gap-y-2">
-                        <RadioOption
-                          selected={!isZwDualColorEnabled}
-                          onClick={() => setZwDualColorEnabled(false)}
-                          label="Eine Farbe"
-                        />
-                        <RadioOption
-                          selected={isZwDualColorEnabled}
-                          onClick={() => setZwDualColorEnabled(true)}
-                          label="2 unterschiedliche Farben"
-                        />
-                      </div>
-                      {isZwDualColorEnabled ? (
-                        <div className="flex items-start gap-4">
-                          <div className="min-w-0 flex-1">
-                            <SohlenaufbauColorPicker
-                              value={value.zwLayerFarben[0] || value.zwFarbe}
-                              onChange={(c) => updateZwLayerFarbe(0, c)}
-                              label="Zwischensohle – Lage 1"
-                              shore={getShore("zw", 0)}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <SohlenaufbauColorPicker
-                              value={value.zwLayerFarben[1] || value.zwFarbe}
-                              onChange={(c) => updateZwLayerFarbe(1, c)}
-                              label="Zwischensohle – Lage 2"
-                              shore={getShore("zw", 1)}
-                            />
-                          </div>
+              <div className="space-y-4">
+                {value.zwSplit.mode === "gleichmaessig" ? (
+                  <SohlenaufbauLayerSplitControl
+                    label="Zwischensohle"
+                    total={calc.zwischensohle}
+                    split={value.zwSplit}
+                    onChange={(zwSplit) => apply({ zwSplit })}
+                    sideContent={
+                      <div className="space-y-3 lg:w-[460px]">
+                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                          <RadioOption
+                            selected={!isZwDualColorEnabled}
+                            onClick={() => setZwDualColorEnabled(false)}
+                            label="Eine Farbe"
+                          />
+                          <RadioOption
+                            selected={isZwDualColorEnabled}
+                            onClick={() => setZwDualColorEnabled(true)}
+                            label="2 unterschiedliche Farben"
+                          />
                         </div>
-                      ) : (
-                        <SohlenaufbauColorPicker
-                          value={value.zwFarbe}
-                          onChange={(zwFarbe) => apply({ zwFarbe, zwLayerFarben: [zwFarbe, zwFarbe] })}
-                          label="Zwischensohle"
-                          shore={getShore("zw")}
-                        />
-                      )}
-                    </div>
-                  }
-                />
-              ) : (
-                <SohlenaufbauLayerSplitControl
-                  label="Zwischensohle"
-                  total={calc.zwischensohle}
-                  split={value.zwSplit}
-                  onChange={(zwSplit) => apply({ zwSplit })}
-                />
-              )
+                        {isZwDualColorEnabled ? (
+                          <div className="flex items-start gap-4">
+                            <div className="min-w-0 flex-1">
+                              <SohlenaufbauColorPicker
+                                value={value.zwLayerFarben[0] || value.zwFarbe}
+                                onChange={(c) => updateZwLayerFarbe(0, c)}
+                                label="Zwischensohle – Lage 1"
+                                shore={getShore("zw", 0)}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <SohlenaufbauColorPicker
+                                value={value.zwLayerFarben[1] || value.zwFarbe}
+                                onChange={(c) => updateZwLayerFarbe(1, c)}
+                                label="Zwischensohle – Lage 2"
+                                shore={getShore("zw", 1)}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <SohlenaufbauColorPicker
+                            value={value.zwFarbe}
+                            onChange={(zwFarbe) => apply({ zwFarbe, zwLayerFarben: [zwFarbe, zwFarbe] })}
+                            label="Zwischensohle"
+                            shore={getShore("zw")}
+                          />
+                        )}
+                      </div>
+                    }
+                  />
+                ) : (
+                  <SohlenaufbauLayerSplitControl
+                    label="Zwischensohle"
+                    total={calc.zwischensohle}
+                    split={value.zwSplit}
+                    onChange={(zwSplit) => apply({ zwSplit })}
+                  />
+                )}
+                {value.zwSplit.mode !== "gleichmaessig" ? (
+                  <SohlenaufbauColorPicker
+                    value={value.zwFarbe}
+                    onChange={(zwFarbe) => apply({ zwFarbe })}
+                    label="Zwischensohle"
+                    shore={getShore("zw")}
+                  />
+                ) : null}
+              </div>
             ) : null}
             {calc.absatz > 0 ? (
               <div className="space-y-4">

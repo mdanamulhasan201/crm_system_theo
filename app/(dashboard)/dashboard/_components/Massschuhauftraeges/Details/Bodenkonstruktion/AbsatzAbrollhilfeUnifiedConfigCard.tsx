@@ -54,6 +54,7 @@ function isAbrollhilfeDisabled(
   if (
     selectedAbrollhilfe === "abzezzolle" &&
     optId !== "abzezzolle" &&
+    optId !== "mittelfussrolle" &&
     optId !== "beilemdie"
   ) {
     return true
