@@ -18,6 +18,7 @@ import {
   getAllLocations,
   updateLocation,
   deleteLocation,
+  getSingleLocation,
   type StoreLocation,
 } from "@/apis/setting/locationManagementApis"
 import toast from "react-hot-toast"
@@ -104,6 +105,7 @@ export default function AddressesLocations() {
   const [deletingLocation, setDeletingLocation] = useState<Location | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isFetchingEdit, setIsFetchingEdit] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Form state
@@ -221,17 +223,28 @@ export default function AddressesLocations() {
     setIsModalOpen(true)
   }
 
-  // Open edit modal
-  const handleEditLocation = (location: Location) => {
+  // Open edit modal — fetch fresh single record, response: { data: { ...fields } }
+  const handleEditLocation = async (location: Location) => {
     setEditingLocation(location)
-    setFormData({
-      address: location.address,
-      description: location.description ?? "",
-      isPrimary: location.isPrimary ?? false,
-      shop_open: location.shop_open ?? "09:00",
-      shop_close: location.shop_close ?? "17:00",
-    })
     setIsModalOpen(true)
+    setIsFetchingEdit(true)
+    try {
+      const res = await getSingleLocation(location.id)
+      // API returns { success, message, data: { id, address, ... } }
+      const data: StoreLocation = res?.data ?? res
+      setEditingLocation({ ...location, ...data })
+      setFormData({
+        address: data.address ?? "",
+        description: data.description ?? "",
+        isPrimary: data.isPrimary ?? false,
+        shop_open: data.shop_open ?? "09:00",
+        shop_close: data.shop_close ?? "17:00",
+      })
+    } catch {
+      toast.error("Standortdaten konnten nicht geladen werden.")
+    } finally {
+      setIsFetchingEdit(false)
+    }
   }
 
   // Open delete modal
@@ -455,7 +468,18 @@ export default function AddressesLocations() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="relative space-y-4 py-4">
+            {isFetchingEdit && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/75 backdrop-blur-[2px]">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Daten werden geladen…
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="address">Adresse *</Label>
               <WohnortInput
@@ -514,13 +538,13 @@ export default function AddressesLocations() {
                 setIsModalOpen(false)
                 resetForm()
               }}
-              disabled={isSaving}
+              disabled={isSaving || isFetchingEdit}
             >
               Abbrechen
             </Button>
             <Button
               onClick={handleSave}
-              disabled={isSaving || !formData.address.trim()}
+              disabled={isSaving || isFetchingEdit || !formData.address.trim()}
               className="bg-[#61A175] hover:bg-[#61A175]/90 text-white"
             >
               {isSaving

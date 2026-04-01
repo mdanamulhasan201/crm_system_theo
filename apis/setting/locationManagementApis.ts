@@ -110,3 +110,14 @@ export const updateLocation = async (id: string, location: any) => {
         throw error;
     }
 }
+
+
+// get single location customer-settings/store-locations/6af7a47c-e0d9-4e63-b791-0325a5c2c5e8
+export const getSingleLocation = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-settings/store-locations/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
