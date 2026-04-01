@@ -275,6 +275,7 @@ type AppointmentSubmitResult = {
     message?: string;
     employeeOverlap?: boolean;
     roomOverlap?: boolean;
+    outOfOffie?: boolean;
     data?: any;
 }
 
@@ -310,6 +311,10 @@ export default function AppointmentModal({
     const [overlapMessage, setOverlapMessage] = React.useState('');
     const [pendingOverlapData, setPendingOverlapData] = React.useState<SubmittedAppointmentData | null>(null);
     const [confirmingOverlap, setConfirmingOverlap] = React.useState(false);
+    const [outOfOfficeConfirmOpen, setOutOfOfficeConfirmOpen] = React.useState(false);
+    const [outOfOfficeMessage, setOutOfOfficeMessage] = React.useState('');
+    const [pendingOutOfOfficeData, setPendingOutOfOfficeData] = React.useState<SubmittedAppointmentData | null>(null);
+    const [confirmingOutOfOffice, setConfirmingOutOfOffice] = React.useState(false);
     const isClientEvent = form.watch('isClientEvent');
     const kundeContainerRef = React.useRef<HTMLDivElement | null>(null);
     const employeeContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -491,17 +496,26 @@ export default function AppointmentModal({
         return r.success === false && (r.employeeOverlap === true || r.roomOverlap === true);
     };
 
+    const isOutOfOfficeResponse = (result: unknown): result is AppointmentSubmitResult => {
+        if (!result || typeof result !== 'object') return false;
+        const r = result as AppointmentSubmitResult;
+        return r.success === false && r.outOfOffie === true;
+    };
+
     const handleFormSubmit = async (data: AppointmentFormData) => {
         const formattedData: SubmittedAppointmentData = {
             ...data,
-            // send Date directly without ISO conversion
             selectedEventDate: data.selectedEventDate,
             employees: data.employees || []
         };
         try {
             setSubmitting(true);
             const result = await Promise.resolve(onSubmit(formattedData));
-            if (isOverlapResponse(result)) {
+            if (isOutOfOfficeResponse(result)) {
+                setPendingOutOfOfficeData(formattedData);
+                setOutOfOfficeMessage(result.message || 'Der Mitarbeiter ist außerhalb der Arbeitszeit. Trotzdem erstellen?');
+                setOutOfOfficeConfirmOpen(true);
+            } else if (isOverlapResponse(result)) {
                 setPendingOverlapData(formattedData);
                 setOverlapMessage(result.message || 'Es gibt eine Überschneidung. Termin trotzdem erstellen?');
                 setOverlapConfirmOpen(true);
@@ -520,6 +534,18 @@ export default function AppointmentModal({
         } finally {
             setConfirmingOverlap(false);
             setPendingOverlapData(null);
+        }
+    };
+
+    const handleConfirmCreateOutOfOffice = async () => {
+        if (!pendingOutOfOfficeData) return;
+        try {
+            setConfirmingOutOfOffice(true);
+            setOutOfOfficeConfirmOpen(false);
+            await Promise.resolve(onSubmit({ ...pendingOutOfOfficeData, allowOverlap: true }));
+        } finally {
+            setConfirmingOutOfOffice(false);
+            setPendingOutOfOfficeData(null);
         }
     };
 
@@ -1089,6 +1115,41 @@ export default function AppointmentModal({
                                 disabled={confirmingOverlap}
                             >
                                 {confirmingOverlap ? 'Erstelle…' : 'Ja, erstellen'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {outOfOfficeConfirmOpen && (
+                <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 p-5">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                                <CalendarDays className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <h4 className="text-base font-semibold text-gray-900">Außerhalb der Arbeitszeit</h4>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-5">{outOfOfficeMessage}</p>
+                        <p className="text-sm font-medium text-gray-800 mb-5">Termin trotzdem erstellen?</p>
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setOutOfOfficeConfirmOpen(false);
+                                    setPendingOutOfOfficeData(null);
+                                }}
+                                disabled={confirmingOutOfOffice}
+                            >
+                                Nein
+                            </Button>
+                            <Button
+                                type="button"
+                                className="bg-amber-500 hover:bg-amber-600 text-white"
+                                onClick={handleConfirmCreateOutOfOffice}
+                                disabled={confirmingOutOfOffice}
+                            >
+                                {confirmingOutOfOffice ? 'Erstelle…' : 'Ja, erstellen'}
                             </Button>
                         </div>
                     </div>
