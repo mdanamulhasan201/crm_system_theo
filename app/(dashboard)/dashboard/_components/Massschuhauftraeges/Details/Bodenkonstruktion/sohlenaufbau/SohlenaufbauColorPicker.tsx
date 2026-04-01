@@ -10,17 +10,19 @@ export default function SohlenaufbauColorPicker({
   onChange,
   label,
   shore = "53",
+  compact = false,
 }: {
   value: string
   onChange: (c: string) => void
   label?: string
   shore?: SohlenaufbauShoreValue
+  compact?: boolean
 }) {
   const activeShore = shore || "53"
   return (
     <div className="space-y-1.5">
       {label ? <p className="text-xs font-medium text-gray-500">{label}</p> : null}
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
         {SOLE_COLORS.map((c) => {
           const allowed = isSohlenaufbauColorAllowedForShore(c.value, activeShore)
           return (
@@ -32,7 +34,7 @@ export default function SohlenaufbauColorPicker({
               }
               disabled={!allowed}
               onClick={() => onChange(c.value)}
-              className={`h-8 w-8 rounded-full border-2 transition-all ${
+              className={`${compact ? "h-6 w-6" : "h-8 w-8"} rounded-full border-2 transition-all ${
                 !allowed
                   ? "cursor-not-allowed border-gray-200 opacity-25"
                   : value === c.value
