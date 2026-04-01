@@ -219,7 +219,7 @@ export default function ChecklistSection({
                                     onAbrollhilfeReplace ??
                                     ((ids) => {
                                         onSetGroup("abrollhilfe", null)
-                                        if (ids?.[0]) onSetGroup("abrollhilfe", ids[0])
+                                        ids?.forEach((id) => onSetGroup("abrollhilfe", id))
                                     })
                                 }
                                 onAbsatzFormClick={onAbsatzFormClick}

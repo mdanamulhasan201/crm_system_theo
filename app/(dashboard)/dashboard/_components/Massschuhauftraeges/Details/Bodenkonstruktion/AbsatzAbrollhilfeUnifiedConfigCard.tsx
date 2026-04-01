@@ -42,17 +42,20 @@ function isAbsatzformDisabled(
 function isAbrollhilfeDisabled(
   optId: string,
   selectedSole: { id: string } | null | undefined,
-  selectedAbrollhilfe: string | null
+  selectedAbrollhilfe: string[]
 ): boolean {
+  const isSelected = selectedAbrollhilfe.includes(optId)
+  if (selectedAbrollhilfe.length >= 2 && !isSelected) return true
+
   if (
-    selectedAbrollhilfe === "beilemdie" &&
+    selectedAbrollhilfe.includes("beilemdie") &&
     optId !== "beilemdie" &&
     optId !== "abzezzolle"
   ) {
     return true
   }
   if (
-    selectedAbrollhilfe === "abzezzolle" &&
+    selectedAbrollhilfe.includes("abzezzolle") &&
     optId !== "abzezzolle" &&
     optId !== "mittelfussrolle" &&
     optId !== "beilemdie"
@@ -60,14 +63,14 @@ function isAbrollhilfeDisabled(
     return true
   }
   if (
-    selectedAbrollhilfe === "mittelfussrolle" &&
+    selectedAbrollhilfe.includes("mittelfussrolle") &&
     optId !== "mittelfussrolle" &&
     optId !== "abzezzolle"
   ) {
     return true
   }
   if (
-    selectedAbrollhilfe === "keine" &&
+    selectedAbrollhilfe.includes("keine") &&
     (optId === "mittelfussrolle" || optId === "abzezzolle" || optId === "beilemdie")
   ) {
     return true
@@ -94,7 +97,7 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
   selectedAbsatzform: string | null
   selectedAbrollhilfe: string | string[] | null
   onAbsatzformSelect: (optId: string | null) => void
-  /** Single-select UX: one roller or keine (replaces multi-array with one id). */
+  /** Multi-select UX with max 2 options (replaces array). */
   onAbrollhilfeReplace: (ids: string[] | null) => void
   onAbsatzFormClick?: (groupId: string, optionId: string) => void
   heelWidthAdjustment: HeelWidthAdjustmentData | null
@@ -134,7 +137,6 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
     return Array.isArray(v) ? v : [v]
   }, [selectedAbrollhilfe])
 
-  const abrollSingle = abrollArray.length === 1 ? abrollArray[0] : abrollArray.length > 1 ? abrollArray[0] : null
   const abrollhilfeDisplayOrder: Record<string, number> = {
     keine: 0,
     abzezzolle: 1,
@@ -255,11 +257,26 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
   }
 
   const handleAbrollClick = (optId: string) => {
-    if (isAbrollhilfeDisabled(optId, selectedSole, abrollSingle)) return
-    if (abrollSingle === optId) {
+    if (isAbrollhilfeDisabled(optId, selectedSole, abrollArray)) return
+    if (abrollArray.includes(optId)) {
+      const next = abrollArray.filter((id) => id !== optId)
+      onAbrollhilfeReplace(next.length > 0 ? next : null)
+      return
+    }
+
+    if (optId === "keine") {
+      onAbrollhilfeReplace(["keine"])
+      return
+    }
+
+    let base = abrollArray.filter((id) => id !== "keine")
+    if (base.length >= 2) return
+    base = [...base, optId]
+    if (base.length > 2) base = base.slice(0, 2)
+    if (base.length === 0) {
       onAbrollhilfeReplace(null)
     } else {
-      onAbrollhilfeReplace([optId])
+      onAbrollhilfeReplace(base)
     }
   }
 
@@ -299,8 +316,8 @@ export default function AbsatzAbrollhilfeUnifiedConfigCard({
           <p className="text-xs text-gray-500">Optionen werden je nach Auswahl intelligent eingeschraenkt.</p>
           <div className="flex flex-wrap gap-2">
             {orderedAbrollhilfeOptions.map((opt) => {
-              const dis = Boolean(opt.disabled || isAbrollhilfeDisabled(opt.id, selectedSole, abrollSingle))
-              const selected = !dis && abrollSingle === opt.id
+              const dis = Boolean(opt.disabled || isAbrollhilfeDisabled(opt.id, selectedSole, abrollArray))
+              const selected = !dis && abrollArray.includes(opt.id)
               return (
                 <OptionCard
                   key={opt.id}
