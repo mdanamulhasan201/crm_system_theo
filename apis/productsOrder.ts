@@ -620,3 +620,14 @@ export const getOrderSettingsShowMeasPoints10_11 = async () => {
 }
 
 
+
+// pdf data v2/shoe-orders/track/werkstattzettel-sheet-pdf/cmnd13i9a0005tyku5lwzaf6b
+
+export const getWerkstattzettelSheetPdf = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/werkstattzettel-sheet-pdf/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response.data.message || 'Failed to fetch werkstattzettel sheet pdf');
+    }
+}

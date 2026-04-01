@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2, MoreVertical, Barcode } from 'lucide-react';
+import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2, MoreVertical, Barcode, FileDown } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import toast from 'react-hot-toast';
 import MasschuhauNoteModal from './MasschuhauNoteModal';
 import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
 import { getAllMassschuheOrders, getKvaData, updateMassschuheOrderPriority } from '@/apis/MassschuheAddedApis';
+import { getWerkstattzettelSheetPdf } from '@/apis/productsOrder';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import KvaSheet, { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet';
 import MassschuhLabelPdfModal from './MassschuhLabelPdfModal';
+import WerkstattzettelA4V2Sheet, { WerkstattzettelA4V2Data } from '@/components/OrdersPage/ProccessTable/WerkstattzettelPdf/WerkstattzettelA4V2Sheet';
 
 // API response types
 export interface ShoeOrderStepApi {
@@ -470,11 +472,16 @@ export default function MasschuProgressTable({
     const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const [isGeneratingWerkPdf, setIsGeneratingWerkPdf] = useState(false);
+    const [generatingWerkPdfOrderId, setGeneratingWerkPdfOrderId] = useState<string | null>(null);
+    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelA4V2Data | null>(null);
+    const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
     const [showLabelPdfModal, setShowLabelPdfModal] = useState(false);
     const [labelPdfOrderId, setLabelPdfOrderId] = useState<string | null>(null);
     const [labelPdfOrderNumber, setLabelPdfOrderNumber] = useState<string | null>(null);
 
     const KVA_PDF_ELEMENT_ID = 'massschuhe-kva-sheet-pdf';
+    const WERK_PDF_ELEMENT_ID = 'massschuhe-werkstattzettel-sheet-v2-pdf';
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const getProxyImageUrl = (externalUrl: string): string => {
@@ -598,6 +605,59 @@ export default function MasschuProgressTable({
             setTimeout(() => {
                 setKvaPdfData(null);
                 setKvaPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
+
+    const handleWerkstattzettelDownload = async (orderId: string, customerName?: string) => {
+        if (isGeneratingWerkPdf) return;
+        setIsGeneratingWerkPdf(true);
+        setGeneratingWerkPdfOrderId(orderId);
+        try {
+            const res = await getWerkstattzettelSheetPdf(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Werkstattzettel Daten konnten nicht geladen werden');
+                return;
+            }
+
+            const sheetData: WerkstattzettelA4V2Data = res.data;
+            setWerkPdfData(sheetData);
+            setWerkPdfLogoProxy(sheetData.prescriptionInfo?.image ? getProxyImageUrl(sheetData.prescriptionInfo.image) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, {
+                ...pdfPresets.document,
+                width: 940,
+                height: 717,
+            });
+            const firstName = (sheetData.customerInfo?.firstName || '').toString().trim();
+            const lastName = (sheetData.customerInfo?.lastName || '').toString().trim();
+            const fullName = [firstName, lastName].filter(Boolean).join('_');
+            const safeName = (fullName || customerName || 'Kunde').toString().trim().replace(/\s+/g, '_');
+            const fileName = `Werkstattzettel_${safeName}.pdf`;
+
+            const previewUrl = URL.createObjectURL(pdfBlob);
+            const previewWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+            if (!previewWindow) {
+                toast.error('Popup blockiert. PDF wird direkt heruntergeladen.');
+            }
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+            downloadBlob(pdfBlob, fileName);
+        } catch (e) {
+            console.error('Werkstattzettel PDF error:', e);
+            const backendMessage =
+                e instanceof Error
+                    ? e.message
+                    : (e as any)?.response?.data?.message || (e as any)?.message;
+            toast.error(backendMessage || 'Fehler beim Erstellen des Werkstattzettel PDFs');
+        } finally {
+            setIsGeneratingWerkPdf(false);
+            setGeneratingWerkPdfOrderId(null);
+            setTimeout(() => {
+                setWerkPdfData(null);
+                setWerkPdfLogoProxy(null);
             }, 1500);
         }
     };
@@ -775,6 +835,23 @@ export default function MasschuProgressTable({
                                                 title="Notizen anzeigen"
                                             >
                                                 <FileText className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    await handleWerkstattzettelDownload(row.id, row.auftrag.name);
+                                                }}
+                                                disabled={isGeneratingWerkPdf && generatingWerkPdfOrderId === row.id}
+                                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                title="Werkstattzettel A4 PDF"
+                                                aria-label="Werkstattzettel A4 PDF"
+                                            >
+                                                {isGeneratingWerkPdf && generatingWerkPdfOrderId === row.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <FileDown className="w-4 h-4" />
+                                                )}
                                             </button>
                                         </div>
                                     </TableCell>
@@ -988,6 +1065,11 @@ export default function MasschuProgressTable({
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={KVA_PDF_ELEMENT_ID}>
                     {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
+                </div>
+            </div>
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={WERK_PDF_ELEMENT_ID}>
+                    {werkPdfData ? <WerkstattzettelA4V2Sheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
                 </div>
             </div>
 

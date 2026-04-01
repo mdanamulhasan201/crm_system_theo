@@ -75,10 +75,20 @@ export const generatePdfFromElement = async (
     } else {
         // Standard A4
         pdf = new jsPDF('p', 'mm', 'a4');
-        imgWidth = 210;
+        const pageWidth = 210;
+        const pageHeight = 297;
+        imgWidth = pageWidth;
         imgHeight = (canvas.height * imgWidth) / canvas.width;
+        // Prevent tiny overflow/cropping when source aspect ratio is slightly off A4.
+        if (imgHeight > pageHeight) {
+            imgHeight = pageHeight;
+            imgWidth = (canvas.width * imgHeight) / canvas.height;
+        }
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+        pdf.addImage(imgData, format.toUpperCase(), x, y, imgWidth, imgHeight);
+        return pdf.output('blob');
     }
-
     pdf.addImage(imgData, format.toUpperCase(), 0, 0, imgWidth, imgHeight);
 
     // Return as blob

@@ -760,7 +760,7 @@ export default function OrderTableRow({
                                 ) : (
                                     <ClipboardEdit className="h-4 w-4 text-gray-700" />
                                 )}
-                                <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel (PDF)"}</span>
+                                <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel A4 (Vorschau + Download)"}</span>
                             </DropdownMenuItem>
                         )}
                         {shouldShowVerordnungsvorschlag && (

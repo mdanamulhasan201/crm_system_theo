@@ -21,10 +21,9 @@ import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { useWerkstattzettelA3Download } from "@/hooks/orders/useWerkstattzettelA3Download";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getKvaNumber, getOrderSettingsShippingAddressesForKv, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getKvaNumber, getOrderSettingsShippingAddressesForKv, getPaymentStatus, getWerkstattzettelSheetPdf, updatePaidStatus } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
-import { generateFootScanPairPdfBlob } from '@/lib/footScanPairPdf';
-import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
+import WerkstattzettelA4V2Sheet, { WerkstattzettelA4V2Data } from './WerkstattzettelPdf/WerkstattzettelA4V2Sheet';
 import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
 import HalbprobeSheet, { HalbprobeData } from './HalbprobePdf/HalbprobeSheet';
 
@@ -98,7 +97,7 @@ export default function ProcessTable() {
     const [isUpdatingPaidStatus, setIsUpdatingPaidStatus] = useState(false);
     const [isGeneratingWerkPdf, setIsGeneratingWerkPdf] = useState(false);
     const [generatingWerkPdfOrderId, setGeneratingWerkPdfOrderId] = useState<string | null>(null);
-    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
+    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelA4V2Data | null>(null);
     const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
     const [isGeneratingKvaPdf, setIsGeneratingKvaPdf] = useState(false);
     const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
@@ -161,7 +160,7 @@ export default function ProcessTable() {
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
     };
 
-    const WERK_PDF_ELEMENT_ID = 'werkstattzettel-sheet-pdf';
+    const WERK_PDF_ELEMENT_ID = 'werkstattzettel-sheet-v2-pdf';
     const KVA_PDF_ELEMENT_ID = 'kva-sheet-pdf';
     const HALBPROBE_PDF_ELEMENT_ID = 'halbprobe-sheet-pdf';
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -171,49 +170,46 @@ export default function ProcessTable() {
         setIsGeneratingWerkPdf(true);
         setGeneratingWerkPdfOrderId(orderId);
         try {
-            const res = await getWerkstattzettelSheetPdfData(orderId);
+            const res = await getWerkstattzettelSheetPdf(orderId);
             if (!res?.success || !res?.data) {
                 toast.error(res?.message || 'Werkstattzettel Daten konnten nicht geladen werden');
                 return;
             }
 
-            const sheetData: WerkstattzettelSheetData = res.data;
+            const sheetData: WerkstattzettelA4V2Data = res.data;
             setWerkPdfData(sheetData);
-            setWerkPdfLogoProxy(sheetData.logo ? getProxyImageUrl(sheetData.logo) : null);
+            setWerkPdfLogoProxy(sheetData.prescriptionInfo?.image ? getProxyImageUrl(sheetData.prescriptionInfo.image) : null);
 
             // Let React commit the hidden sheet to the DOM before capturing
             await nextFrame();
             await nextFrame();
 
-            // Document preset (better visual quality for A4)
-            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
-            const safeName = (sheetData.customerName || kundenname || 'Kunde').toString().trim().replace(/\s+/g, '_');
-            downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+            // Custom sheet size (same ratio as provided template image, not A4)
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, {
+                ...pdfPresets.document,
+                width: 940,
+                height: 717,
+            });
+            const firstName = (sheetData.customerInfo?.firstName || '').toString().trim();
+            const lastName = (sheetData.customerInfo?.lastName || '').toString().trim();
+            const fullName = [firstName, lastName].filter(Boolean).join('_');
+            const safeName = (fullName || kundenname || 'Kunde').toString().trim().replace(/\s+/g, '_');
+            const fileName = `Werkstattzettel_${safeName}.pdf`;
 
-            if (
-                sheetData.otherPdfPrint === true &&
-                sheetData.otherPdfData &&
-                (sheetData.otherPdfData.footImage23 || sheetData.otherPdfData.footImage24)
-            ) {
-                try {
-                    const footBlob = await generateFootScanPairPdfBlob({
-                        logoUrl: sheetData.logo,
-                        customerName: String(sheetData.customerName || kundenname || 'Kunde'),
-                        kdnr: sheetData.auftragsnr,
-                        leftImageUrl: sheetData.otherPdfData.footImage23,
-                        rightImageUrl: sheetData.otherPdfData.footImage24,
-                        footLength: sheetData.otherPdfData.footLength,
-                        autoSendToProd: sheetData.autoSendToProd === true,
-                    });
-                    downloadBlob(footBlob, `Fussanalyse_${safeName}.pdf`);
-                } catch (footErr) {
-                    console.error('Fußanalyse PDF error:', footErr);
-                    toast.error('Fußanalyse-PDF (2 Seiten) konnte nicht erstellt werden.');
-                }
+            const previewUrl = URL.createObjectURL(pdfBlob);
+            const previewWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+            if (!previewWindow) {
+                toast.error('Popup blockiert. PDF wird direkt heruntergeladen.');
             }
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+            downloadBlob(pdfBlob, fileName);
         } catch (e) {
             console.error('Werkstattzettel PDF error:', e);
-            toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
+            const backendMessage =
+                e instanceof Error
+                    ? e.message
+                    : (e as any)?.response?.data?.message || (e as any)?.message;
+            toast.error(backendMessage || 'Fehler beim Erstellen des Werkstattzettel PDFs');
         } finally {
             setIsGeneratingWerkPdf(false);
             setGeneratingWerkPdfOrderId(null);
@@ -1089,7 +1085,7 @@ export default function ProcessTable() {
             {/* Hidden A4 sheet render for PDF generation */}
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={WERK_PDF_ELEMENT_ID}>
-                    {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
+                    {werkPdfData ? <WerkstattzettelA4V2Sheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
                 </div>
             </div>
 
