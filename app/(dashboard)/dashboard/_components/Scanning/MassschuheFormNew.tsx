@@ -130,8 +130,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     );
 
     // Privat billing fields (PREIS & STEUER – same logic as SonstigesForm, Brutto only)
-    const [nettoPreis, setNettoPreis] = useState<string>('0.00');
-    const [rabatt, setRabatt] = useState<string>('0');
+    const [nettoPreis, setNettoPreis] = useState<string>('');
+    const [rabatt, setRabatt] = useState<string>('');
     const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
     const isNetto = false; // Always Brutto (same as SonstigesForm)
 
@@ -166,8 +166,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         setSelectedPositionsnummer([]);
         setItemSides({});
         if (billingType === 'Krankenkassa') {
-            setNettoPreis('0.00');
-            setRabatt('0');
+            setNettoPreis('');
+            setRabatt('');
         }
     }, [billingType]);
 
@@ -413,8 +413,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setSelectedEmployeeId('');
             setSelectedPositionsnummer([]);
             setItemSides({});
-            setNettoPreis('0.00');
-            setRabatt('0');
+            setNettoPreis('');
+            setRabatt('');
             setHalbprobeErforderlich(null);
             setLeistenVorhanden(null);
             setBettungErforderlich(null);

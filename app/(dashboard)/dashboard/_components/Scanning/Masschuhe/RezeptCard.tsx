@@ -107,9 +107,9 @@ export default function RezeptCard({
     onHalbprobeGeplantChange,
     kostenvoranschlag,
     onKostenvoranschlagChange,
-    nettoPreis = '0.00',
+    nettoPreis = '',
     onNettoPreisChange,
-    rabatt = '0',
+    rabatt = '',
     onRabattChange,
     steuersatz = 22,
     onSteuersatzChange,
@@ -488,8 +488,8 @@ export default function RezeptCard({
                                                 <span
                                                     role="button"
                                                     tabIndex={-1}
-                                                    onClick={() => onRabattChange?.('0')}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRabattChange?.('0'); } }}
+                                                    onClick={() => onRabattChange?.('')}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRabattChange?.(''); } }}
                                                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                                     aria-label="Auswahl löschen"
                                                 >
