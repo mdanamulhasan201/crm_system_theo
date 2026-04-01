@@ -28,21 +28,66 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+type OrderRequiredFieldItem = {
+  key: string;
+  label: string;
+  value: boolean;
+};
+
+function parseOrderRequiredFieldItem(item: unknown): OrderRequiredFieldItem | null {
+  if (!isRecord(item)) return null;
+  const key = item.key;
+  const label = item.label;
+  const value = item.value;
+  if (typeof key !== "string" || !key.trim()) return null;
+  if (typeof label !== "string" || !label.trim()) return null;
+  if (typeof value !== "boolean") return null;
+  return {
+    key: key.trim(),
+    label: label.trim(),
+    value,
+  };
+}
+
 /** Pull boolean toggles from API `data` in key order; skip metadata keys. */
 function booleansFromDataObject(data: Record<string, unknown>): {
   keys: string[];
   values: Record<string, boolean>;
+  labels: Record<string, string>;
 } {
   const keys: string[] = [];
   const values: Record<string, boolean> = {};
+  const labels: Record<string, string> = {};
   for (const [k, v] of Object.entries(data)) {
     if (METADATA_KEYS.has(k)) continue;
     if (typeof v === "boolean") {
       keys.push(k);
       values[k] = v;
+      labels[k] = formatFieldLabel(k);
     }
   }
-  return { keys, values };
+  return { keys, values, labels };
+}
+
+function booleansFromDataArray(data: unknown[]): {
+  keys: string[];
+  values: Record<string, boolean>;
+  labels: Record<string, string>;
+} {
+  const keys: string[] = [];
+  const values: Record<string, boolean> = {};
+  const labels: Record<string, string> = {};
+
+  for (const rawItem of data) {
+    const item = parseOrderRequiredFieldItem(rawItem);
+    if (!item) continue;
+    if (keys.includes(item.key)) continue;
+    keys.push(item.key);
+    values[item.key] = item.value;
+    labels[item.key] = item.label;
+  }
+
+  return { keys, values, labels };
 }
 
 function messageFromUnknownBody(body: unknown): string | null {
@@ -55,6 +100,7 @@ function parseLoadResult(body: unknown): {
   ok: true;
   keys: string[];
   values: Record<string, boolean>;
+  labels: Record<string, string>;
 } | {
   ok: false;
   message: string;
@@ -71,12 +117,15 @@ function parseLoadResult(body: unknown): {
   }
 
   const data = body.data;
-  if (!isRecord(data)) {
+  if (!isRecord(data) && !Array.isArray(data)) {
     if (msg) return { ok: false, message: msg };
     return { ok: false, message: "Keine Einstellungen in der Antwort (data fehlt)." };
   }
 
-  const { keys, values } = booleansFromDataObject(data);
+  const { keys, values, labels } = Array.isArray(data)
+    ? booleansFromDataArray(data)
+    : booleansFromDataObject(data);
+
   if (keys.length === 0) {
     return {
       ok: false,
@@ -85,7 +134,7 @@ function parseLoadResult(body: unknown): {
   }
 
   if (success === true || success === undefined) {
-    return { ok: true, keys, values };
+    return { ok: true, keys, values, labels };
   }
 
   return {
@@ -112,6 +161,7 @@ export default function OrdersFieldSettings() {
   const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error">("loading");
   const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
   const [fieldKeys, setFieldKeys] = useState<string[]>([]);
+  const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({});
   const [fields, setFields] = useState<Record<string, boolean>>({});
   const [baseline, setBaseline] = useState<Record<string, boolean>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -128,6 +178,7 @@ export default function OrdersFieldSettings() {
         setLoadStatus("error");
         setLoadErrorMessage(parsed.message);
         setFieldKeys([]);
+        setFieldLabels({});
         setFields({});
         setBaseline({});
         toast.error(parsed.message);
@@ -135,6 +186,7 @@ export default function OrdersFieldSettings() {
       }
 
       setFieldKeys(parsed.keys);
+      setFieldLabels(parsed.labels);
       setFields(parsed.values);
       setBaseline({ ...parsed.values });
       setLoadStatus("ready");
@@ -145,6 +197,7 @@ export default function OrdersFieldSettings() {
       setLoadStatus("error");
       setLoadErrorMessage(msg);
       setFieldKeys([]);
+      setFieldLabels({});
       setFields({});
       setBaseline({});
       toast.error(msg);
@@ -226,7 +279,7 @@ export default function OrdersFieldSettings() {
                   htmlFor={`order-field-${key}`}
                   className="cursor-pointer text-base font-normal"
                 >
-                  {formatFieldLabel(key)}
+                  {fieldLabels[key] ?? formatFieldLabel(key)}
                 </Label>
                 <Switch
                   id={`order-field-${key}`}
