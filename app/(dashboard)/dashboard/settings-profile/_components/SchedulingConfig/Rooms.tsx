@@ -173,7 +173,7 @@ export default function Rooms() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             onClick={() => setOfficeHoursModalOpen(true)}
@@ -181,7 +181,7 @@ export default function Rooms() {
           >
             <Clock className="h-4 w-4" />
             Bürozeiten
-          </Button>
+          </Button> */}
           <Button
             onClick={openAddModal}
             className="cursor-pointer bg-[#61A07B] text-white hover:bg-[#4A8A6A]"
