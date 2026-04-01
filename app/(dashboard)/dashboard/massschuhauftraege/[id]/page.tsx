@@ -16,7 +16,10 @@ import {
 import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
 import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
 import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/LeistenerstellungStepFields';
-import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
+import BettungserstellungStepFields, {
+    defaultBettungStep3InputData,
+    type BettungStep3InputData,
+} from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
@@ -253,6 +256,36 @@ function getProgressFromShoeOrderSteps(shoeOrderStep: Array<{ status: string; is
     return { currentStepIndex, stepsCompleted, stepsAutoPrint };
 }
 
+function mapStep3InputsFromApi(data: any): BettungStep3InputData {
+    const step3 = data?.step3_json?.step3 ?? {};
+    const raw = (key: string) => step3[key];
+    const str = (key: string) => {
+        const v = raw(key);
+        if (v === true) return 'true';
+        if (v === false) return 'false';
+        return v != null ? String(v) : '';
+    };
+
+    return {
+        notes: str('notes'),
+        bettung_type: str('bettung_type'),
+        zusaetzliche_notizen: str('zusätzliche_notizen'),
+        material: str('material'),
+        pelotte: str('pelotte'),
+        versteifung: str('versteifung'),
+        pelotte_hoehe_l: str('pelotte_hoehe_l'),
+        pelotte_hoehe_r: str('pelotte_hoehe_r'),
+        schicht1_starke: str('schicht1_starke'),
+        schicht2_starke: str('schicht2_starke'),
+        decksohle_starke: str('decksohle_starke'),
+        versteifung_zone: str('versteifung_zone'),
+        schicht1_material: str('schicht1_material'),
+        schicht2_material: str('schicht2_material'),
+        decksohle_material: str('decksohle_material'),
+        versteifung_material: str('versteifung_material'),
+    };
+}
+
 export default function MassschuhauftraegePage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -278,6 +311,7 @@ export default function MassschuhauftraegePage() {
     const [leistentyp, setLeistentyp] = useState('');
     const [leistenfertigung, setLeistenfertigung] = useState<LeistenfertigungValue>('');
     const [thickness, setThickness] = useState('');
+    const [bettungStep3Data, setBettungStep3Data] = useState<BettungStep3InputData>(defaultBettungStep3InputData());
     const [preparation_date, setPreparation_date] = useState('');
     const [anmerkungen_halbprobe, setAnmerkungen_halbprobe] = useState('');
     const [halbprobe_durchfuehrung, setHalbprobe_durchfuehrung] = useState<HalbprobeDurchfuehrungValue>('');
@@ -323,6 +357,7 @@ export default function MassschuhauftraegePage() {
                     const lf = data.leistenfertigung;
                     if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
                     if (data.thickness != null && data.thickness !== '') setThickness(String(data.thickness));
+                    setBettungStep3Data(mapStep3InputsFromApi(data));
                     if (data.preparation_date) setPreparation_date(String(data.preparation_date).slice(0, 10));
                     if (data.anmerkungen_halbprobe != null && data.anmerkungen_halbprobe !== '') setAnmerkungen_halbprobe(String(data.anmerkungen_halbprobe));
                     if (data.checkliste_halbprobe != null) {
@@ -383,6 +418,7 @@ export default function MassschuhauftraegePage() {
                     setLeistentyp('');
                     setLeistenfertigung('');
                     setThickness('');
+                    setBettungStep3Data(defaultBettungStep3InputData());
                     setPreparation_date('');
                     setAnmerkungen_halbprobe('');
                     setCheckliste_halbprobe('');
@@ -485,6 +521,32 @@ export default function MassschuhauftraegePage() {
             formData.append('leistentyp', leistentyp);
             formData.append('leistenfertigung', leistenfertigung);
             formData.append('thickness', thickness);
+            if (statusFromUrl === 'Bettungserstellung') {
+                formData.append(
+                    'step3_json',
+                    JSON.stringify({
+                        step3: {
+                            notes: bettungStep3Data.notes,
+                            bettung_type: bettungStep3Data.bettung_type,
+                            zusätzliche_notizen: bettungStep3Data.zusaetzliche_notizen,
+                            material: bettungStep3Data.material,
+                            thickness: thickness || '',
+                            pelotte: bettungStep3Data.pelotte === '' ? null : bettungStep3Data.pelotte === 'true',
+                            versteifung: bettungStep3Data.versteifung === '' ? null : bettungStep3Data.versteifung === 'true',
+                            pelotte_hoehe_l: bettungStep3Data.pelotte_hoehe_l,
+                            pelotte_hoehe_r: bettungStep3Data.pelotte_hoehe_r,
+                            schicht1_starke: bettungStep3Data.schicht1_starke,
+                            schicht2_starke: bettungStep3Data.schicht2_starke,
+                            decksohle_starke: bettungStep3Data.decksohle_starke,
+                            versteifung_zone: bettungStep3Data.versteifung_zone,
+                            schicht1_material: bettungStep3Data.schicht1_material,
+                            schicht2_material: bettungStep3Data.schicht2_material,
+                            decksohle_material: bettungStep3Data.decksohle_material,
+                            versteifung_material: bettungStep3Data.versteifung_material,
+                        },
+                    })
+                );
+            }
             formData.append('preparation_date', preparation_date);
             formData.append('anmerkungen_halbprobe', anmerkungen_halbprobe);
             formData.append('halbprobe_durchfuehrung', halbprobe_durchfuehrung);
@@ -587,6 +649,7 @@ export default function MassschuhauftraegePage() {
                     })) : []);
                 } else {
                     setStepFilesFromApi([]);
+                    setBettungStep3Data(defaultBettungStep3InputData());
                 }
                 // Auto-activate next step: navigate so the next step is shown (e.g. Auftragserstellung done → Leistenerstellung active)
                 if (updated && updated.currentStepIndex < SHOE_STEPS.length) {
@@ -958,13 +1021,11 @@ export default function MassschuhauftraegePage() {
                                         />
                                     )}
 
-                                    {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
+                                    {/* Step 3: Bettungserstellung – Step3 JSON inputs */}
                                     {activeStepIndex === 2 && (
                                         <BettungserstellungStepFields
-                                            material={material}
-                                            thickness={thickness}
-                                            onMaterialChange={setMaterial}
-                                            onThicknessChange={setThickness}
+                                            values={bettungStep3Data}
+                                            onChange={setBettungStep3Data}
                                         />
                                     )}
 
