@@ -298,6 +298,17 @@ export const deleteMassschuheOrderImage = async (id: string) => {
 
 
 
+// make level pdf v2/shoe-orders/track/barcode-label/{{order if}}
+export const makeLevelPdf = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/barcode-label/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
 
 
 const MassschuheAddedApisDefault = {
