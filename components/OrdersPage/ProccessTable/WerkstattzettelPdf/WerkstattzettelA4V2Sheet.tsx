@@ -162,11 +162,11 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 function CompactFieldRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, borderBottom: '1px solid #d9d9d9', padding: '1px 0' }}>
-            <div style={{ fontSize: 9, color: '#444', textTransform: 'uppercase', letterSpacing: 0.2 }}>{label}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, borderBottom: '1px solid #d9d9d9', padding: '2px 0' }}>
+            <div style={{ fontSize: 9.5, color: '#444', textTransform: 'uppercase', letterSpacing: 0.2 }}>{label}</div>
             <div
                 style={{
-                    fontSize: 9,
+                    fontSize: 9.5,
                     color: '#111',
                     textAlign: 'left',
                     whiteSpace: 'pre-wrap',
