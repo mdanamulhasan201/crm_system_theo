@@ -28,6 +28,8 @@ export interface TransactionData {
     // Lieferdatum: formatted date and relative time (e.g. "noch 1 Tag", "heute")
     lieferdatumFormatted?: string;
     lieferdatumRelative?: string;
+    // Order source
+    orderFor?: string | null;
 }
 
 interface ApiOrderData {
@@ -42,6 +44,7 @@ interface ApiOrderData {
         hersteller?: string;
         artikelnummer?: string;
         status?: string;
+        delivered_date?: string | null;
     } | null;
     price: number;
     note: string | null;
@@ -144,14 +147,24 @@ export default function DataTables({
         return '';
     };
 
-    // Compute deadline for an order: use deliveryDate if set, else createdAt + category days
+    // Compute deadline for an order:
+    // - "store" orders → storeOrderOverview.delivered_date
+    // - "shoes" orders → custom_shafts.deliveryDate, fallback to createdAt + category days
     const getDeadlineForOrder = (order: ApiOrderData, deadlines: DeadlineDateItem[]): { formatted: string; relative: string } | null => {
-        const deliveryDateStr = order.custom_shafts?.deliveryDate;
+        let dateStr: string | null | undefined;
+
+        if (order.orderFor === 'store') {
+            dateStr = order.storeOrderOverview?.delivered_date;
+        } else {
+            dateStr = order.custom_shafts?.deliveryDate;
+        }
+
         let deadlineDate: Date;
 
-        if (deliveryDateStr) {
-            deadlineDate = new Date(deliveryDateStr);
+        if (dateStr) {
+            deadlineDate = new Date(dateStr);
         } else {
+            // fallback: createdAt + category days (only for shoes)
             const category = order.custom_shafts_catagoary;
             const item = deadlines.find((d) => d.category === category);
             if (!item) return null;
@@ -216,6 +229,7 @@ export default function DataTables({
                     custom_shafts_invoice2: item.custom_shafts?.invoice2 || null,
                     lieferdatumFormatted: lieferdatum?.formatted,
                     lieferdatumRelative: lieferdatum?.relative,
+                    orderFor: item.orderFor ?? null,
                 };
             } catch (error) {
                 return {
@@ -233,6 +247,7 @@ export default function DataTables({
                     custom_shafts_invoice2: null,
                     lieferdatumFormatted: undefined,
                     lieferdatumRelative: undefined,
+                    orderFor: null,
                 };
             }
         });
@@ -597,7 +612,7 @@ export default function DataTables({
         show: (row) => row.custom_shafts_order_status === 'active' && row.custom_shafts_status === 'Neu',
     };
 
-    // Reorder action - navigate to product-order to place the same order again
+    // Reorder action - store orders → /dashboard/lager, shoes orders → product-order page
     const reorderAction: TableAction<TransactionData> = {
         type: 'custom',
         label: 'Nachbestellen',
@@ -608,8 +623,12 @@ export default function DataTables({
         ),
         className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer border border-emerald-200 rounded-md px-2 py-1',
         onClick: (row) => {
-            const orderId = row.custom_shafts_id || row.id
-            router.push(`/dashboard/custom-shafts/product-order/${orderId}`)
+            if (row.orderFor === 'store') {
+                router.push('/dashboard/lager')
+            } else {
+                const orderId = row.custom_shafts_id || row.id
+                router.push(`/dashboard/custom-shafts/product-order/${orderId}`)
+            }
         },
         show: () => true,
     };
