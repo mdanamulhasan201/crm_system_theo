@@ -216,7 +216,7 @@ export default function CustomerHistory() {
     }
 
     const handleKundenordner = () => {
-        router.push(`/dashboard/kundenordner/${params.id}`);
+        router.push(`/dashboard/kundenordner/${params.id}/dokumente`);
     }
 
     const handleDocumentClick = (documentType: string) => {

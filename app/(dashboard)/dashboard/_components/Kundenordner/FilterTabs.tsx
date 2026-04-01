@@ -28,7 +28,7 @@ export default function FilterTabs({
                         key={type}
                         onClick={() => onFilterChange(type)}
                         className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-[#61A07B] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
@@ -43,7 +43,7 @@ export default function FilterTabs({
                         key={table}
                         onClick={() => onTableFilterChange(table)}
                         className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${tableFilter === table
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-[#61A07B] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { ScanLine, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-react'
+import { RezepteListSkeleton } from '../Kundenordner/KundenordnerSkeletons'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -166,12 +167,10 @@ export default function RezepteData({
     if (loading && list.length === 0) {
         return (
             <div className='space-y-6'>
-                <h2 className='font-sans text-xl font-semibold tracking-tight text-gray-900 mb-4'>
+                <h2 className='mb-4 font-sans text-xl font-semibold tracking-tight text-gray-900'>
                     Rezepte
                 </h2>
-                <div className='flex items-center justify-center py-12'>
-                    <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
-                </div>
+                <RezepteListSkeleton rows={5} />
             </div>
         )
     }

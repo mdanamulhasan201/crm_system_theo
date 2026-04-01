@@ -41,7 +41,7 @@ export default function SearchActionBar({
                         className='pl-10 w-full'
                     />
                 </div>
-                <div className='w-48 h-9 bg-gray-200 rounded-md' />
+                {/* <div className='w-48 h-9 bg-gray-200 rounded-md' /> */}
                 <Button
                     variant='outline'
                     className='flex items-center gap-2'

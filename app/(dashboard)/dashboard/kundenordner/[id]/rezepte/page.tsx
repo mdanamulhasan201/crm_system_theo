@@ -118,8 +118,8 @@ export default function RezeptePage() {
                 </Button>
             </div> */}
 
-            <div className='mb-20 p-4 space-y-6'>
-                <TopNavigation activeTab='rezepte' />
+            <div className='mb-20 w-full max-w-full space-y-6 p-4'>
+                <TopNavigation />
 
                 {/* Header Section with Title and Action Buttons */}
                 <div className='flex flex-col gap-4 lg:flex-row items-center justify-between mb-6'>

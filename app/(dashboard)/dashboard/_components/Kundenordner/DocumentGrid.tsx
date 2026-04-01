@@ -1,6 +1,6 @@
 'use client'
 
-import { Document } from '../../../../../types/types'
+import { Document } from '@/types/types'
 import DocumentCard from './DocumentCard'
 
 interface DocumentGridProps {
@@ -9,6 +9,8 @@ interface DocumentGridProps {
     onDownload: (doc: Document) => void
     onDelete: (doc: Document) => void
     searchQuery: string
+    /** Total for header, e.g. "11 Dokumente" */
+    totalLabelCount?: number
 }
 
 export default function DocumentGrid({
@@ -16,27 +18,33 @@ export default function DocumentGrid({
     onView,
     onDownload,
     onDelete,
-    searchQuery
+    searchQuery,
+    totalLabelCount,
 }: DocumentGridProps) {
     if (documents.length > 0) {
+        const headerCount = totalLabelCount ?? documents.length
+
         return (
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-                {documents.map((doc) => (
-                    <DocumentCard
-                        key={`${doc.id}-${doc.fieldName}`}
-                        doc={doc}
-                        onView={onView}
-                        onDownload={onDownload}
-                        onDelete={onDelete}
-                    />
-                ))}
+            <div className="flex flex-col gap-4">
+                <p className="text-sm font-medium text-gray-500">{headerCount} Dokumente</p>
+                <div className="flex flex-col gap-3">
+                    {documents.map((doc) => (
+                        <DocumentCard
+                            key={`${doc.id}-${doc.fieldName}`}
+                            doc={doc}
+                            onView={onView}
+                            onDownload={onDownload}
+                            onDelete={onDelete}
+                        />
+                    ))}
+                </div>
             </div>
         )
     }
 
     return (
-        <div className='text-center py-12 text-gray-500'>
-            {searchQuery ? 'No documents found matching your search.' : 'No documents available.'}
+        <div className="py-12 text-center text-gray-500">
+            {searchQuery ? 'Keine Dokumente gefunden.' : 'Keine Dokumente vorhanden.'}
         </div>
     )
 }
