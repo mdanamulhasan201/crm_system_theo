@@ -5,4 +5,6 @@ export interface Room {
   storeLocationId?: string | null;
   /** From API `storeLocation.address` for table display */
   storeLocationAddress?: string | null;
+  /** Current occupancy count from API */
+  occupancy?: number | null;
 }

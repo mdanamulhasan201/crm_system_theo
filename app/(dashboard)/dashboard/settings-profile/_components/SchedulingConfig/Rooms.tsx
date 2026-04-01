@@ -54,12 +54,15 @@ export default function Rooms() {
               sl && typeof sl.address === "string"
                 ? sl.address
                 : null;
+            const occupancy =
+              typeof room.occupancy === "number" ? room.occupancy : null;
             return {
               id: room.id || room._id,
               name: room.name,
               isActive: room.isActive,
               storeLocationId,
               storeLocationAddress,
+              occupancy,
             };
           })
         );
@@ -196,11 +199,14 @@ export default function Rooms() {
               <TableHead className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Raumbeschreibung
               </TableHead>
-              <TableHead className="w-[6.5rem] max-w-[6.5rem] sm:w-28 sm:max-w-28 px-2 py-4 text-xs font-semibold tracking-wider text-gray-600 uppercase">
+              <TableHead className="w-44 min-w-[11rem] max-w-[14rem] px-4 py-4 text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Standort
               </TableHead>
               <TableHead className="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Status
+              </TableHead>
+              <TableHead className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-600 uppercase">
+                Utilization
               </TableHead>
               <TableHead className="px-4 py-4 text-right text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Aktionen
@@ -211,7 +217,7 @@ export default function Rooms() {
             {loading && rooms.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-sm text-gray-500"
                 >
                   Räume werden geladen…
@@ -220,7 +226,7 @@ export default function Rooms() {
             ) : rooms.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-sm text-gray-500"
                 >
                   Noch keine Räume angelegt.
@@ -235,13 +241,10 @@ export default function Rooms() {
                   <TableCell className="px-4 py-4 font-medium text-gray-900">
                     {room.name}
                   </TableCell>
-                  <TableCell className="w-[6.5rem] max-w-[6.5rem] sm:w-28 sm:max-w-28 px-2 py-4 align-top">
+                  <TableCell className="w-44 min-w-[11rem] max-w-[14rem] px-4 py-4 align-top">
                     {room.storeLocationAddress ? (
-                      <span
-                        className="block max-w-full truncate text-[11px] leading-tight text-gray-600"
-                        title={room.storeLocationAddress}
-                      >
-                        {standortKurz(room.storeLocationAddress)}
+                      <span className="block break-words text-xs leading-snug text-gray-700">
+                        {room.storeLocationAddress}
                       </span>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
@@ -258,6 +261,25 @@ export default function Rooms() {
                         className="cursor-pointer data-[state=checked]:bg-[#61A07B]"
                       />
                     </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    {typeof room.occupancy === "number" ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-[5px] w-[80px] overflow-hidden rounded-full bg-gray-200">
+                          <div
+                            className="h-full rounded-full bg-[#8CA3B0]"
+                            style={{
+                              width: `${Math.min(Math.max(room.occupancy, 0), 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-[#7C90A0]">
+                          {Math.round(room.occupancy)}%
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
