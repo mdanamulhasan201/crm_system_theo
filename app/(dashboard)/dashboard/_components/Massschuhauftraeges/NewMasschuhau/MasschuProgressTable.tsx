@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2, MoreVertical } from 'lucide-react';
+import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2, MoreVertical, Barcode } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import toast from 'react-hot-toast';
 import MasschuhauNoteModal from './MasschuhauNoteModal';
@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import KvaSheet, { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet';
+import MassschuhLabelPdfModal from './MassschuhLabelPdfModal';
 
 // API response types
 export interface ShoeOrderStepApi {
@@ -469,6 +470,9 @@ export default function MasschuProgressTable({
     const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const [showLabelPdfModal, setShowLabelPdfModal] = useState(false);
+    const [labelPdfOrderId, setLabelPdfOrderId] = useState<string | null>(null);
+    const [labelPdfOrderNumber, setLabelPdfOrderNumber] = useState<string | null>(null);
 
     const KVA_PDF_ELEMENT_ID = 'massschuhe-kva-sheet-pdf';
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -866,6 +870,20 @@ export default function MasschuProgressTable({
                                                     <ArrowRight className="w-4 h-4" />
                                                     <span>Details anzeigen</span>
                                                 </DropdownMenuItem>
+                                                {row.currentStepIndex === 8 || row.currentStep === 'Abholbereit' ? (
+                                                    <DropdownMenuItem
+                                                        className="cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setLabelPdfOrderId(row.id);
+                                                            setLabelPdfOrderNumber(row.auftrag.orderNumber);
+                                                            setShowLabelPdfModal(true);
+                                                        }}
+                                                    >
+                                                        <Barcode className="w-4 h-4" />
+                                                        <span>Barcode-Etikett (PDF)</span>
+                                                    </DropdownMenuItem>
+                                                ) : null}
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem
                                                     className="cursor-pointer"
@@ -972,6 +990,17 @@ export default function MasschuProgressTable({
                     {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
                 </div>
             </div>
+
+            <MassschuhLabelPdfModal
+                isOpen={showLabelPdfModal}
+                onClose={() => {
+                    setShowLabelPdfModal(false);
+                    setLabelPdfOrderId(null);
+                    setLabelPdfOrderNumber(null);
+                }}
+                orderId={labelPdfOrderId || ''}
+                orderNumber={labelPdfOrderNumber || undefined}
+            />
         </div>
         </TooltipProvider>
     );
