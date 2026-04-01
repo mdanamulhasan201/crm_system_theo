@@ -14,6 +14,8 @@ export type StoreLocation = {
     address: string;
     description?: string;
     isPrimary?: boolean;
+    shop_open?: string;
+    shop_close?: string;
     createdAt?: string;
     employees?: StoreLocationEmployee | null;
 };

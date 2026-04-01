@@ -3,10 +3,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { MapPin, Edit, Trash2, Plus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   createLocation,
   getAllLocations,
@@ -16,6 +22,76 @@ import {
 } from "@/apis/setting/locationManagementApis"
 import toast from "react-hot-toast"
 import WohnortInput from "../Customers/WohnortInput"
+import { cn } from "@/lib/utils"
+
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
+
+function parseTo24Parts(raw: string): { h: string; m: string } {
+  const [a, b] = (raw || "00:00").split(":")
+  const hn = parseInt(a ?? "0", 10)
+  const mn = parseInt(b ?? "0", 10)
+  const h = Number.isFinite(hn) ? Math.min(23, Math.max(0, hn)) : 0
+  const m = Number.isFinite(mn) ? Math.min(59, Math.max(0, mn)) : 0
+  return { h: String(h).padStart(2, "0"), m: String(m).padStart(2, "0") }
+}
+
+function TimeInput24({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const { h, m } = parseTo24Parts(value)
+  const commit = (nh: string, nm: string) =>
+    onChange(`${nh.padStart(2, "0")}:${nm.padStart(2, "0")}`)
+
+  const triggerClass = cn(
+    "w-full min-w-0 border-gray-200 bg-white shadow-sm",
+    "focus-visible:border-[#61A175] focus-visible:ring-[#61A175]/25 focus-visible:ring-[3px]"
+  )
+
+  return (
+    <div className="grid w-full min-w-0 gap-1.5">
+      <Label htmlFor={id} className="text-sm font-medium text-gray-900">
+        {label}{" "}
+        <span className="font-normal text-muted-foreground">(24 h)</span>
+      </Label>
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-2" id={id}>
+        <div className="min-w-0 flex-1 basis-0">
+          <Select value={h} onValueChange={(nh) => commit(nh, m)}>
+            <SelectTrigger className={triggerClass} aria-label={`${label}: Stunde`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-60 border-gray-200">
+              {HOURS_24.map((hour) => (
+                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <span className="shrink-0 text-sm font-semibold text-gray-400" aria-hidden>:</span>
+        <div className="min-w-0 flex-1 basis-0">
+          <Select value={m} onValueChange={(nm) => commit(h, nm)}>
+            <SelectTrigger className={triggerClass} aria-label={`${label}: Minute`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-60 border-gray-200">
+              {MINUTES_60.map((min) => (
+                <SelectItem key={min} value={min}>{min}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type Location = StoreLocation
 
@@ -35,6 +111,8 @@ export default function AddressesLocations() {
     address: "",
     description: "",
     isPrimary: false,
+    shop_open: "09:00",
+    shop_close: "17:00",
   })
 
   // Fetch locations
@@ -131,6 +209,8 @@ export default function AddressesLocations() {
       address: "",
       description: "",
       isPrimary: false,
+      shop_open: "09:00",
+      shop_close: "17:00",
     })
     setEditingLocation(null)
   }
@@ -148,6 +228,8 @@ export default function AddressesLocations() {
       address: location.address,
       description: location.description ?? "",
       isPrimary: location.isPrimary ?? false,
+      shop_open: location.shop_open ?? "09:00",
+      shop_close: location.shop_close ?? "17:00",
     })
     setIsModalOpen(true)
   }
@@ -171,6 +253,8 @@ export default function AddressesLocations() {
         address: formData.address.trim(),
         description: formData.description.trim(),
         isPrimary: formData.isPrimary,
+        shop_open: formData.shop_open,
+        shop_close: formData.shop_close,
       }
 
       if (editingLocation) {
@@ -405,6 +489,21 @@ export default function AddressesLocations() {
               >
                 Als primären Standort festlegen
               </Label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <TimeInput24
+                id="shop_open"
+                label="Öffnungszeit"
+                value={formData.shop_open}
+                onChange={(v) => handleInputChange("shop_open", v)}
+              />
+              <TimeInput24
+                id="shop_close"
+                label="Schließzeit"
+                value={formData.shop_close}
+                onChange={(v) => handleInputChange("shop_close", v)}
+              />
             </div>
           </div>
 
