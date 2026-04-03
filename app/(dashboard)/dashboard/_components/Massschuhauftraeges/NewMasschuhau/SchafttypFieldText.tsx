@@ -44,7 +44,12 @@ export interface SchafttypFieldTextProps {
     /** When true, only the Extern erweitert button is disabled (no redirect). Intern stays enabled. */
     disableExternErweitert?: boolean;
     /** Standalone (no orderId) submit handler – called when user saves the Intern modal. */
-    onStandaloneSubmit?: (payload: { imageFile?: File; massschafterstellung_json: MassschafterstellungJson }) => Promise<void>;
+    onStandaloneSubmit?: (payload: {
+        imageFile?: File;
+        linkerLeistenFile?: File | null;
+        rechterLeistenFile?: File | null;
+        massschafterstellung_json: MassschafterstellungJson;
+    }) => Promise<void>;
     /** Standalone prefill – used as initialData/initialImageUrl when not in step5 mode. */
     standaloneInitialData?: MassschafterstellungJson | null;
     standaloneInitialImageUrl?: string | null;
@@ -173,11 +178,15 @@ export default function SchafttypFieldText({
 
     const handleMassschafterstellungSubmit = async (payload: {
         imageFile?: File;
+        linkerLeistenFile?: File | null;
+        rechterLeistenFile?: File | null;
         massschafterstellung_json: MassschafterstellungJson;
     }) => {
         if (!orderId) return;
         const formData = new FormData();
         if (payload.imageFile) formData.append('massschafterstellung_image', payload.imageFile);
+        if (payload.rechterLeistenFile) formData.append('massschafterstellung_threeDFile', payload.rechterLeistenFile);
+        if (payload.linkerLeistenFile) formData.append('massschafterstellung_threeDFile_2', payload.linkerLeistenFile);
         formData.append('massschafterstellung_json', JSON.stringify(payload.massschafterstellung_json));
         try {
             await MassschuheAddedApis.updateMassschuheOrderStepMassschafterstellung(orderId, formData);

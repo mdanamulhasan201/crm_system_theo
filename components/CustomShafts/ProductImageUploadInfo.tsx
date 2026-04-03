@@ -13,6 +13,10 @@ interface ProductImageUploadInfoProps {
   basePrice: number;
   /** CAD + Kategorie in the same card below a divider */
   footer?: React.ReactNode;
+  /** When true, hides the price display */
+  hidePrice?: boolean;
+  /** When true, hides the "Custom Made #1000" title and renders the image full-width */
+  hideTitle?: boolean;
 }
 
 export default function ProductImageUploadInfo({
@@ -22,6 +26,8 @@ export default function ProductImageUploadInfo({
   setProductDescription,
   basePrice,
   footer,
+  hidePrice = false,
+  hideTitle = false,
 }: ProductImageUploadInfoProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,31 +59,38 @@ export default function ProductImageUploadInfo({
     setUploadedImage(null);
   };
 
+  const imageWrapperCls = hideTitle
+    ? 'w-full'
+    : 'mb-4 w-full lg:mb-0 lg:w-1/2';
+  const imageInnerCls = hideTitle
+    ? 'group relative w-full'
+    : 'group relative w-full max-w-[350px] sm:max-w-[400px]';
+
   return (
     <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-col items-start gap-6 md:gap-8 lg:flex-row lg:items-center lg:gap-10">
+      <div className={hideTitle ? 'w-full' : 'flex flex-col items-start gap-6 md:gap-8 lg:flex-row lg:items-center lg:gap-10'}>
       {/* Image */}
-      <div className="mb-4 w-full lg:mb-0 lg:w-1/2">
-        <div className="group relative w-full max-w-[350px] sm:max-w-[400px]">
+      <div className={imageWrapperCls}>
+        <div className={imageInnerCls}>
           <button
             type="button"
             onClick={handleImageClick}
             className="relative block focus:outline-none cursor-pointer w-full"
           >
             {uploadedImage ? (
-              <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-[#faf9f7] p-3">
+              <div className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-[#faf9f7] p-3 ${hideTitle ? 'h-[140px]' : ''}`}>
                 <Image
                   src={uploadedImage}
                   alt="Product image"
                   width={1000}
                   height={1000}
-                  className="h-auto w-full rounded-lg object-contain"
+                  className={`w-full rounded-lg object-contain ${hideTitle ? 'h-full object-center' : 'h-auto'}`}
                   priority
                   unoptimized={shouldUnoptimizeImage(uploadedImage)}
                 />
               </div>
             ) : (
-              <div className="flex aspect-4/3 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-[#faf9f7] transition-colors hover:bg-gray-50">
+              <div className={`flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-[#faf9f7] transition-colors hover:bg-gray-50 ${hideTitle ? 'h-[140px]' : 'aspect-4/3'}`}>
                 <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mb-2" />
                 <span className="text-sm sm:text-base text-gray-500 font-medium">Bild hochladen</span>
                 <span className="text-xs text-gray-400 mt-1 px-2 text-center">Klicken Sie hier, um ein Bild auszuwählen</span>
@@ -123,35 +136,29 @@ export default function ProductImageUploadInfo({
         </div>
       </div>
 
-      {/* Product info section */}
-      <div className="flex w-full flex-col gap-4 lg:w-1/2">
-        <div className="flex flex-col gap-2">
-          <span className="text-xl font-bold sm:text-2xl lg:text-2xl">
-            Custom Made #1000
-          </span>
-          {/* <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
-            Beschreibung:
-          </Label>
-          <textarea
-            id="productDescription"
-            placeholder="Produktbeschreibung eingeben..."
-            value={productDescription}
-            onChange={(e) => setProductDescription(e.target.value)}
-            className="min-h-[100px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-          /> */}
-        </div>
+      {/* Product info section — hidden when hideTitle is true (image takes full width) */}
+      {!hideTitle && (
+        <div className="flex w-full flex-col gap-4 lg:w-1/2">
+          <div className="flex flex-col gap-2">
+            <span className="text-xl font-bold sm:text-2xl lg:text-2xl">
+              Custom Made #1000
+            </span>
+          </div>
 
-        <div>
-          <span className="text-xs text-gray-500 block mb-1">
-            Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
-          </span>
-          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {basePrice > 0 
-              ? basePrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
-              : '0,00 €'}
-          </span>
+          {!hidePrice && (
+            <div>
+              <span className="text-xs text-gray-500 block mb-1">
+                Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                {basePrice > 0
+                  ? basePrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+                  : '0,00 €'}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      )}
       </div>
       {footer ? (
         <>

@@ -1,166 +1,319 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Info, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-const CATEGORY_OPTIONS = [
-    { value: 'Halbschuhe', label: 'Halbschuhe' },
-    { value: 'Stiefel', label: 'Stiefel' },
-    { value: 'Knöchelhoch', label: 'Knöchelhoch' },
-    { value: 'Sandalen', label: 'Sandalen' },
-    { value: 'Bergschuhe', label: 'Bergschuhe' },
-    { value: 'Businessschuhe', label: 'Businessschuhe' },
-];
+import ProductImageUploadInfo from '@/components/CustomShafts/ProductImageUploadInfo';
+import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
+import ProductConfiguration, {
+    type ProductConfigurationHandle,
+} from '@/components/CustomShafts/ProductConfiguration';
+import {
+    EMPTY_POLSTERUNG_MM,
+    type PolsterungMmFields,
+} from '@/components/CustomShafts/polsterungPayload';
+import type { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
+import type { ZipperPosition } from '@/components/CustomShafts/ZipperPlacementModal';
 
-const VERSCHLUSS_OPTIONS = [
-    { value: 'Eyelets', label: 'Ösen (Schnürung)' },
-    { value: 'Velcro', label: 'Klettverschluss' },
-];
-
-const POLSTERUNG_OPTIONS = ['Standard', 'Lasche', 'Ferse', 'Innen-Außenknöchel', 'Vorderfuß'];
-const VERSTAERKUNGEN_OPTIONS = ['Standard', 'Fersenverstärkung', 'Innen-Außenknöchel', 'Vorderfuß'];
-
-/** JSON payload for massschafterstellung (all modal fields except image) */
+/** JSON payload for massschafterstellung */
 export interface MassschafterstellungJson {
+    productDescription?: string;
     cadModeling?: string;
+    customCategory?: string;
+    customCategoryPrice?: number | null;
+    lederType?: string;
+    lederfarbe?: string;
+    numberOfLeatherColors?: string;
+    leatherColors?: string[];
+    leatherColorAssignments?: LeatherColorAssignment[];
+    innenfutter?: string;
+    schafthohe?: string;
+    schafthoheLinks?: string;
+    schafthoheRechts?: string;
+    umfangBei14Links?: string;
+    umfangBei16Links?: string;
+    umfangBei18Links?: string;
+    knoechelumfangLinks?: string;
+    umfangBei14Rechts?: string;
+    umfangBei16Rechts?: string;
+    umfangBei18Rechts?: string;
+    knoechelumfangRechts?: string;
+    polsterung?: string[];
+    polsterungText?: string;
+    polsterungMm?: PolsterungMmFields;
+    verstarkungen?: string[];
+    verstarkungenText?: string;
+    nahtfarbeOption?: string;
+    customNahtfarbe?: string;
+    nahtfarbe?: string;
+    ziernahtVorhanden?: boolean;
+    closureType?: string;
+    verschlussart?: string;
+    offenstandSchnuerungMm?: string;
+    anzahlOesen?: string;
+    anzahlHaken?: string;
+    anzahlKlettstreifen?: string;
+    breiteKlettstreifenMm?: string;
+    passendenSchnursenkel?: boolean;
+    osenEinsetzen?: boolean;
+    zipperExtra?: boolean;
+    zipperPosition?: ZipperPosition | null;
+    additionalNotes?: string;
+    // Legacy fields (backward compat)
     kategorie?: string;
     modelName?: string;
     anzahlLedertypen?: string;
-    innenfutter?: string;
-    nahtfarbe?: string;
-    schafthoheLinks?: string;
-    schafthoheRechts?: string;
-    polsterung?: string[];
-    polsterungText?: string;
-    verstarkungen?: string[];
-    verstarkungenText?: string;
-    verschlussart?: string;
-    zipperExtra?: boolean;
     sonstigeNotizen?: string;
 }
 
 export interface SchafttypCustomModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** Prefill form when opening (e.g. from GET massschafterstellung) */
     initialData?: MassschafterstellungJson | null;
-    /** URL of saved image to show (e.g. from API) */
     initialImageUrl?: string | null;
-    /** Called on Abschließen with image file + JSON (for POST massschafterstellung). Can return Promise for loading state. */
-    onSubmit?: (payload: { imageFile?: File; massschafterstellung_json: MassschafterstellungJson }) => void | Promise<void>;
+    onSubmit?: (payload: {
+        imageFile?: File;
+        linkerLeistenFile?: File | null;
+        rechterLeistenFile?: File | null;
+        massschafterstellung_json: MassschafterstellungJson;
+    }) => void | Promise<void>;
 }
 
-export default function SchafttypCustomModal({ open, onOpenChange, initialData, initialImageUrl, onSubmit }: SchafttypCustomModalProps) {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+}
+
+export default function SchafttypCustomModal({
+    open,
+    onOpenChange,
+    initialData,
+    initialImageUrl,
+    onSubmit,
+}: SchafttypCustomModalProps) {
+    const productConfigRef = useRef<ProductConfigurationHandle>(null);
+
+    // 3D Leisten files
+    const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null);
+    const [linkerLeistenFileName, setLinkerLeistenFileName] = useState('');
+    const [rechterLeistenFile, setRechterLeistenFile] = useState<File | null>(null);
+    const [rechterLeistenFileName, setRechterLeistenFileName] = useState('');
+
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
-    const [kategorie, setKategorie] = useState('');
-    const [modelName, setModelName] = useState('');
-    const [anzahlLedertypen, setAnzahlLedertypen] = useState('');
+    const [customCategory, setCustomCategory] = useState('');
+    const [customCategoryPrice, setCustomCategoryPrice] = useState<number | null>(null);
+    const [productDescription, setProductDescription] = useState('');
+    const [lederType, setLederType] = useState('');
+    const [lederfarbe, setLederfarbe] = useState('');
+    const [numberOfLeatherColors, setNumberOfLeatherColors] = useState('');
+    const [leatherColorAssignments, setLeatherColorAssignments] = useState<LeatherColorAssignment[]>([]);
+    const [leatherColors, setLeatherColors] = useState<string[]>([]);
     const [innenfutter, setInnenfutter] = useState('');
-    const [nahtfarbe, setNahtfarbe] = useState('');
+    const [schafthohe, setSchafthohe] = useState('');
     const [schafthoheLinks, setSchafthoheLinks] = useState('');
     const [schafthoheRechts, setSchafthoheRechts] = useState('');
-    const [polsterung, setPolsterung] = useState<string[]>([]);
+    const [umfangBei14Links, setUmfangBei14Links] = useState('');
+    const [umfangBei16Links, setUmfangBei16Links] = useState('');
+    const [umfangBei18Links, setUmfangBei18Links] = useState('');
+    const [knoechelumfangLinks, setKnoechelumfangLinks] = useState('');
+    const [umfangBei14Rechts, setUmfangBei14Rechts] = useState('');
+    const [umfangBei16Rechts, setUmfangBei16Rechts] = useState('');
+    const [umfangBei18Rechts, setUmfangBei18Rechts] = useState('');
+    const [knoechelumfangRechts, setKnoechelumfangRechts] = useState('');
+    const [polsterung, setPolsterung] = useState<string[]>(['Standard']);
     const [polsterungText, setPolsterungText] = useState('');
-    const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
+    const [polsterungMm, setPolsterungMm] = useState<PolsterungMmFields>(EMPTY_POLSTERUNG_MM);
+    const [verstarkungen, setVerstarkungen] = useState<string[]>(['Standard']);
     const [verstarkungenText, setVerstarkungenText] = useState('');
-    const [verschlussart, setVerschlussart] = useState('');
-    const [zipperExtra, setZipperExtra] = useState<boolean>(false);
-    const [sonstigeNotizen, setSonstigeNotizen] = useState('');
+    const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
+    const [customNahtfarbe, setCustomNahtfarbe] = useState('');
+    const [ziernahtVorhanden, setZiernahtVorhanden] = useState<boolean | undefined>(undefined);
+    const [closureType, setClosureType] = useState('Eyelets');
+    const [offenstandSchnuerungMm, setOffenstandSchnuerungMm] = useState('');
+    const [anzahlOesen, setAnzahlOesen] = useState('');
+    const [anzahlHaken, setAnzahlHaken] = useState('');
+    const [anzahlKlettstreifen, setAnzahlKlettstreifen] = useState('');
+    const [breiteKlettstreifenMm, setBreiteKlettstreifenMm] = useState('');
+    const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
+    const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
+    const [zipperExtra, setZipperExtra] = useState<boolean | undefined>(undefined);
+    const [zipperPosition, setZipperPosition] = useState<ZipperPosition | null>(null);
+    const [zipperImage, setZipperImage] = useState<string | null>(null);
+    const [paintImage, setPaintImage] = useState<string | null>(null);
+    const [additionalNotes, setAdditionalNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    const resetState = useCallback(() => {
+        setLinkerLeistenFile(null);
+        setLinkerLeistenFileName('');
+        setRechterLeistenFile(null);
+        setRechterLeistenFileName('');
+        setUploadedImage(null);
+        setCadModeling('1x');
+        setCustomCategory('');
+        setCustomCategoryPrice(null);
+        setProductDescription('');
+        setLederType('');
+        setLederfarbe('');
+        setNumberOfLeatherColors('');
+        setLeatherColorAssignments([]);
+        setLeatherColors([]);
+        setInnenfutter('');
+        setSchafthohe('');
+        setSchafthoheLinks('');
+        setSchafthoheRechts('');
+        setUmfangBei14Links('');
+        setUmfangBei16Links('');
+        setUmfangBei18Links('');
+        setKnoechelumfangLinks('');
+        setUmfangBei14Rechts('');
+        setUmfangBei16Rechts('');
+        setUmfangBei18Rechts('');
+        setKnoechelumfangRechts('');
+        setPolsterung(['Standard']);
+        setPolsterungText('');
+        setPolsterungMm(EMPTY_POLSTERUNG_MM);
+        setVerstarkungen(['Standard']);
+        setVerstarkungenText('');
+        setNahtfarbeOption('default');
+        setCustomNahtfarbe('');
+        setZiernahtVorhanden(undefined);
+        setClosureType('Eyelets');
+        setOffenstandSchnuerungMm('');
+        setAnzahlOesen('');
+        setAnzahlHaken('');
+        setAnzahlKlettstreifen('');
+        setBreiteKlettstreifenMm('');
+        setPassendenSchnursenkel(undefined);
+        setOsenEinsetzen(undefined);
+        setZipperExtra(undefined);
+        setZipperPosition(null);
+        setZipperImage(null);
+        setPaintImage(null);
+        setAdditionalNotes('');
+    }, []);
+
     useEffect(() => {
-        if (open) {
-            if (initialData) {
-                setCadModeling((initialData.cadModeling as '1x' | '2x') || '1x');
-                setKategorie(initialData.kategorie ?? '');
-                setModelName(initialData.modelName ?? '');
-                setAnzahlLedertypen(initialData.anzahlLedertypen ?? '');
-                setInnenfutter(initialData.innenfutter ?? '');
-                setNahtfarbe(initialData.nahtfarbe ?? '');
-                setSchafthoheLinks(initialData.schafthoheLinks ?? '');
-                setSchafthoheRechts(initialData.schafthoheRechts ?? '');
-                setPolsterung(Array.isArray(initialData.polsterung) ? initialData.polsterung : []);
-                setPolsterungText(initialData.polsterungText ?? '');
-                setVerstarkungen(Array.isArray(initialData.verstarkungen) ? initialData.verstarkungen : []);
-                setVerstarkungenText(initialData.verstarkungenText ?? '');
-                setVerschlussart(initialData.verschlussart ?? '');
-                setZipperExtra(initialData.zipperExtra ?? false);
-                setSonstigeNotizen(initialData.sonstigeNotizen ?? '');
-            } else {
-                setCadModeling('1x');
-                setKategorie('');
-                setModelName('');
-                setAnzahlLedertypen('');
-                setInnenfutter('');
-                setNahtfarbe('');
-                setSchafthoheLinks('');
-                setSchafthoheRechts('');
-                setPolsterung([]);
-                setPolsterungText('');
-                setVerstarkungen([]);
-                setVerstarkungenText('');
-                setVerschlussart('');
-                setZipperExtra(false);
-                setSonstigeNotizen('');
-            }
-            setUploadedImage(initialImageUrl || null);
-            setImageFile(null);
+        if (!open) return;
+        // Always reset 3D file selections on open (files can't be pre-populated from URLs)
+        setLinkerLeistenFile(null);
+        setLinkerLeistenFileName('');
+        setRechterLeistenFile(null);
+        setRechterLeistenFileName('');
+        if (initialData) {
+            setCadModeling((initialData.cadModeling as '1x' | '2x') || '1x');
+            setCustomCategory(initialData.customCategory ?? initialData.kategorie ?? '');
+            setCustomCategoryPrice(initialData.customCategoryPrice ?? null);
+            setProductDescription(initialData.productDescription ?? initialData.modelName ?? '');
+            setLederType(initialData.lederType ?? '');
+            setLederfarbe(initialData.lederfarbe ?? initialData.anzahlLedertypen ?? '');
+            setNumberOfLeatherColors(initialData.numberOfLeatherColors ?? '');
+            setLeatherColorAssignments(initialData.leatherColorAssignments ?? []);
+            setLeatherColors(initialData.leatherColors ?? []);
+            setInnenfutter(initialData.innenfutter ?? '');
+            setSchafthohe(initialData.schafthohe ?? '');
+            setSchafthoheLinks(initialData.schafthoheLinks ?? '');
+            setSchafthoheRechts(initialData.schafthoheRechts ?? '');
+            setUmfangBei14Links(initialData.umfangBei14Links ?? '');
+            setUmfangBei16Links(initialData.umfangBei16Links ?? '');
+            setUmfangBei18Links(initialData.umfangBei18Links ?? '');
+            setKnoechelumfangLinks(initialData.knoechelumfangLinks ?? '');
+            setUmfangBei14Rechts(initialData.umfangBei14Rechts ?? '');
+            setUmfangBei16Rechts(initialData.umfangBei16Rechts ?? '');
+            setUmfangBei18Rechts(initialData.umfangBei18Rechts ?? '');
+            setKnoechelumfangRechts(initialData.knoechelumfangRechts ?? '');
+            setPolsterung(initialData.polsterung?.length ? initialData.polsterung : ['Standard']);
+            setPolsterungText(initialData.polsterungText ?? '');
+            setPolsterungMm(initialData.polsterungMm ?? EMPTY_POLSTERUNG_MM);
+            setVerstarkungen(initialData.verstarkungen?.length ? initialData.verstarkungen : ['Standard']);
+            setVerstarkungenText(initialData.verstarkungenText ?? '');
+            setNahtfarbeOption(initialData.nahtfarbeOption ?? 'default');
+            setCustomNahtfarbe(initialData.customNahtfarbe ?? '');
+            setZiernahtVorhanden(initialData.ziernahtVorhanden);
+            setClosureType(initialData.closureType ?? initialData.verschlussart ?? 'Eyelets');
+            setOffenstandSchnuerungMm(initialData.offenstandSchnuerungMm ?? '');
+            setAnzahlOesen(initialData.anzahlOesen ?? '');
+            setAnzahlHaken(initialData.anzahlHaken ?? '');
+            setAnzahlKlettstreifen(initialData.anzahlKlettstreifen ?? '');
+            setBreiteKlettstreifenMm(initialData.breiteKlettstreifenMm ?? '');
+            setPassendenSchnursenkel(initialData.passendenSchnursenkel);
+            setOsenEinsetzen(initialData.osenEinsetzen);
+            setZipperExtra(initialData.zipperExtra);
+            setZipperPosition(initialData.zipperPosition ?? null);
+            setAdditionalNotes(initialData.additionalNotes ?? initialData.sonstigeNotizen ?? '');
+        } else {
+            resetState();
         }
-    }, [open, initialData, initialImageUrl]);
-
-    const handleImageClick = () => fileInputRef.current?.click();
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file?.type.startsWith('image/')) return;
-        setImageFile(file);
-        const reader = new FileReader();
-        reader.onload = () => typeof reader.result === 'string' && setUploadedImage(reader.result);
-        reader.readAsDataURL(file);
-    };
-
-    const togglePolsterung = (opt: string) => {
-        setPolsterung((prev) => (prev.includes(opt) ? prev.filter((x) => x !== opt) : [...prev, opt]));
-    };
-    const toggleVerstarkungen = (opt: string) => {
-        setVerstarkungen((prev) => (prev.includes(opt) ? prev.filter((x) => x !== opt) : [...prev, opt]));
-    };
+        setUploadedImage(initialImageUrl || null);
+    }, [open, initialData, initialImageUrl, resetState]);
 
     const handleAbschliessen = async () => {
         const massschafterstellung_json: MassschafterstellungJson = {
+            productDescription: productDescription.trim() || undefined,
             cadModeling,
-            kategorie: kategorie || undefined,
-            modelName: modelName?.trim() || undefined,
-            anzahlLedertypen: anzahlLedertypen || undefined,
+            customCategory: customCategory || undefined,
+            customCategoryPrice: customCategoryPrice ?? undefined,
+            lederType: lederType || undefined,
+            lederfarbe: lederfarbe || undefined,
+            numberOfLeatherColors: numberOfLeatherColors || undefined,
+            leatherColors: leatherColors.length ? leatherColors : undefined,
+            leatherColorAssignments: leatherColorAssignments.length ? leatherColorAssignments : undefined,
             innenfutter: innenfutter || undefined,
-            nahtfarbe: nahtfarbe || undefined,
+            schafthohe: schafthohe || undefined,
             schafthoheLinks: schafthoheLinks || undefined,
             schafthoheRechts: schafthoheRechts || undefined,
+            umfangBei14Links: umfangBei14Links || undefined,
+            umfangBei16Links: umfangBei16Links || undefined,
+            umfangBei18Links: umfangBei18Links || undefined,
+            knoechelumfangLinks: knoechelumfangLinks || undefined,
+            umfangBei14Rechts: umfangBei14Rechts || undefined,
+            umfangBei16Rechts: umfangBei16Rechts || undefined,
+            umfangBei18Rechts: umfangBei18Rechts || undefined,
+            knoechelumfangRechts: knoechelumfangRechts || undefined,
             polsterung: polsterung.length ? polsterung : undefined,
             polsterungText: polsterungText || undefined,
+            polsterungMm,
             verstarkungen: verstarkungen.length ? verstarkungen : undefined,
             verstarkungenText: verstarkungenText || undefined,
-            verschlussart: verschlussart || undefined,
+            nahtfarbeOption,
+            customNahtfarbe: customNahtfarbe || undefined,
+            nahtfarbe: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : (nahtfarbeOption || 'default'),
+            ziernahtVorhanden,
+            closureType,
+            verschlussart: closureType,
+            offenstandSchnuerungMm: offenstandSchnuerungMm || undefined,
+            anzahlOesen: anzahlOesen || undefined,
+            anzahlHaken: anzahlHaken || undefined,
+            anzahlKlettstreifen: anzahlKlettstreifen || undefined,
+            breiteKlettstreifenMm: breiteKlettstreifenMm || undefined,
+            passendenSchnursenkel,
+            osenEinsetzen,
             zipperExtra,
-            sonstigeNotizen: sonstigeNotizen || undefined,
+            zipperPosition: zipperPosition ?? null,
+            additionalNotes: additionalNotes.trim() || undefined,
         };
+
         setSubmitting(true);
         try {
-            const result = onSubmit?.({ imageFile: imageFile ?? undefined, massschafterstellung_json });
+            let imageFile: File | undefined;
+            if (uploadedImage && uploadedImage.startsWith('data:')) {
+                imageFile = await dataUrlToFile(uploadedImage, 'massschafterstellung.jpg');
+            }
+            const result = onSubmit?.({
+                imageFile,
+                linkerLeistenFile: linkerLeistenFile ?? null,
+                rechterLeistenFile: rechterLeistenFile ?? null,
+                massschafterstellung_json,
+            });
             if (result && typeof (result as Promise<unknown>).then === 'function') {
                 await (result as Promise<void>);
             }
@@ -172,278 +325,152 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+            <DialogContent className="max-w-6xl! h-[95vh] flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-200 shrink-0 pr-12">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <DialogTitle className="text-lg font-bold text-gray-800">
-                            Massschaftkonfigurator
-                        </DialogTitle>
-                        {/* <p className="text-sm font-medium text-gray-600">Custom Made #1000</p> */}
-                    </div>
+                    <DialogTitle className="text-lg font-bold text-gray-800">
+                        Massschaftkonfigurator
+                    </DialogTitle>
                 </DialogHeader>
 
-                <div className="overflow-y-auto px-6 py-4 space-y-6">
-                    {/* Bild hochladen */}
-                    <div>
-                        <button
-                            type="button"
-                            onClick={handleImageClick}
-                            className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors"
-                        >
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleFileChange}
-                            />
-                            {uploadedImage ? (
-                                <img src={uploadedImage} alt="Upload" className="max-h-32 object-contain rounded" />
-                            ) : (
-                                <>
-                                    <Upload className="w-10 h-10 text-gray-400" />
-                                    <span className="text-sm font-medium text-gray-600">Bild hochladen</span>
-                                    <span className="text-xs text-gray-400">Klicken Sie hier, um ein Bild auszuwählen</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Modellierung */}
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Label className="font-medium text-base">Modellierung</Label>
-                            <div className="relative group">
-                                <Info className="w-5 h-5 text-gray-400 cursor-help" />
-                                <div className="absolute left-0 bottom-full mb-1 w-72 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                    Bei deutlich unterschiedlichen Füßen empfehlen wir zwei separate Modellierungen.
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <Checkbox
-                                    checked={cadModeling === '1x'}
-                                    onChange={() => setCadModeling('1x')}
+                <div className="overflow-y-auto flex-1 px-6 py-4">
+                    <div className="relative w-full">
+                        {/* Product image (full width) + CAD / Category */}
+                        <ProductImageUploadInfo
+                            uploadedImage={uploadedImage}
+                            setUploadedImage={setUploadedImage}
+                            productDescription={productDescription}
+                            setProductDescription={setProductDescription}
+                            basePrice={customCategoryPrice || 0}
+                            hidePrice
+                            hideTitle
+                            footer={
+                                <ProductCadCategoryFields
+                                    layout="card"
+                                    cadModeling={cadModeling}
+                                    setCadModeling={setCadModeling}
+                                    customCategory={customCategory}
+                                    setCustomCategory={setCustomCategory}
+                                    setCustomCategoryPrice={setCustomCategoryPrice}
+                                    category={customCategory}
+                                    allowCategoryEdit
                                 />
-                                <span className="text-sm">1× Modellierung (Standard)</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <Checkbox
-                                    checked={cadModeling === '2x'}
-                                    onChange={() => setCadModeling('2x')}
-                                />
-                                <span className="text-sm">2× Modellierung (separat)</span>
-                            </label>
+                            }
+                        />
+
+                        {/* Full product configuration form */}
+                        <ProductConfiguration
+                            ref={productConfigRef}
+                            hideCadAndCategory
+                            cadModeling={cadModeling}
+                            setCadModeling={setCadModeling}
+                            customCategory={customCategory}
+                            setCustomCategory={setCustomCategory}
+                            customCategoryPrice={customCategoryPrice}
+                            setCustomCategoryPrice={setCustomCategoryPrice}
+                            nahtfarbeOption={nahtfarbeOption}
+                            setNahtfarbeOption={setNahtfarbeOption}
+                            customNahtfarbe={customNahtfarbe}
+                            setCustomNahtfarbe={setCustomNahtfarbe}
+                            ziernahtVorhanden={ziernahtVorhanden}
+                            setZiernahtVorhanden={setZiernahtVorhanden}
+                            passendenSchnursenkel={passendenSchnursenkel}
+                            setPassendenSchnursenkel={setPassendenSchnursenkel}
+                            osenEinsetzen={osenEinsetzen}
+                            setOsenEinsetzen={setOsenEinsetzen}
+                            zipperExtra={zipperExtra}
+                            setZipperExtra={(v) => {
+                                setZipperExtra(v);
+                                if (v === false) setZipperPosition(null);
+                            }}
+                            zipperPosition={zipperPosition}
+                            setZipperPosition={setZipperPosition}
+                            closureType={closureType}
+                            setClosureType={setClosureType}
+                            offenstandSchnuerungMm={offenstandSchnuerungMm}
+                            setOffenstandSchnuerungMm={setOffenstandSchnuerungMm}
+                            anzahlOesen={anzahlOesen}
+                            setAnzahlOesen={setAnzahlOesen}
+                            anzahlHaken={anzahlHaken}
+                            setAnzahlHaken={setAnzahlHaken}
+                            anzahlKlettstreifen={anzahlKlettstreifen}
+                            setAnzahlKlettstreifen={setAnzahlKlettstreifen}
+                            breiteKlettstreifenMm={breiteKlettstreifenMm}
+                            setBreiteKlettstreifenMm={setBreiteKlettstreifenMm}
+                            lederType={lederType}
+                            setLederType={setLederType}
+                            lederfarbe={lederfarbe}
+                            setLederfarbe={setLederfarbe}
+                            innenfutter={innenfutter}
+                            setInnenfutter={setInnenfutter}
+                            schafthohe={schafthohe}
+                            setSchafthohe={setSchafthohe}
+                            schafthoheLinks={schafthoheLinks}
+                            setSchafthoheLinks={setSchafthoheLinks}
+                            schafthoheRechts={schafthoheRechts}
+                            setSchafthoheRechts={setSchafthoheRechts}
+                            umfangBei14Links={umfangBei14Links}
+                            setUmfangBei14Links={setUmfangBei14Links}
+                            umfangBei16Links={umfangBei16Links}
+                            setUmfangBei16Links={setUmfangBei16Links}
+                            umfangBei18Links={umfangBei18Links}
+                            setUmfangBei18Links={setUmfangBei18Links}
+                            knoechelumfangLinks={knoechelumfangLinks}
+                            setKnoechelumfangLinks={setKnoechelumfangLinks}
+                            umfangBei14Rechts={umfangBei14Rechts}
+                            setUmfangBei14Rechts={setUmfangBei14Rechts}
+                            umfangBei16Rechts={umfangBei16Rechts}
+                            setUmfangBei16Rechts={setUmfangBei16Rechts}
+                            umfangBei18Rechts={umfangBei18Rechts}
+                            setUmfangBei18Rechts={setUmfangBei18Rechts}
+                            knoechelumfangRechts={knoechelumfangRechts}
+                            setKnoechelumfangRechts={setKnoechelumfangRechts}
+                            polsterung={polsterung}
+                            setPolsterung={setPolsterung}
+                            polsterungMm={polsterungMm}
+                            setPolsterungMm={setPolsterungMm}
+                            verstarkungen={verstarkungen}
+                            setVerstarkungen={setVerstarkungen}
+                            polsterungText={polsterungText}
+                            setPolsterungText={setPolsterungText}
+                            verstarkungenText={verstarkungenText}
+                            setVerstarkungenText={setVerstarkungenText}
+                            numberOfLeatherColors={numberOfLeatherColors}
+                            setNumberOfLeatherColors={setNumberOfLeatherColors}
+                            leatherColorAssignments={leatherColorAssignments}
+                            setLeatherColorAssignments={setLeatherColorAssignments}
+                            leatherColors={leatherColors}
+                            setLeatherColors={setLeatherColors}
+                            shoeImage={uploadedImage || null}
+                            onDeliveryChoiceRequired={() => {}}
+                            onOrderComplete={() => { handleAbschliessen(); }}
+                            category={customCategory}
+                            allowCategoryEdit
+                            zipperImage={zipperImage}
+                            setZipperImage={setZipperImage}
+                            paintImage={paintImage}
+                            setPaintImage={setPaintImage}
+                            additionalNotes={additionalNotes}
+                            setAdditionalNotes={setAdditionalNotes}
+                        />
+
+                        {/* Submit button */}
+                        <div className="mt-6">
+                            <Button
+                                type="button"
+                                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                                onClick={handleAbschliessen}
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Wird gespeichert...
+                                    </>
+                                ) : (
+                                    'Abschließen'
+                                )}
+                            </Button>
                         </div>
-                    </div>
-
-                    {/* Kategorie */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Kategorie:</Label>
-                        <Select value={kategorie} onValueChange={setKategorie}>
-                            <SelectTrigger className="col-span-2 border-gray-300">
-                                <SelectValue placeholder="Kategorie wählen..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {CATEGORY_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Modellname */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">
-                            Modellname <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            type="text"
-                            placeholder="Modellname eingeben..."
-                            className="col-span-2 border-gray-300"
-                            value={modelName}
-                            onChange={(e) => setModelName(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    {/* Lederfarbe */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Lederfarbe:</Label>
-                        <Input
-                            type="text"
-                            placeholder="z.B. Braun, Schwarz"
-                            className="col-span-2 border-gray-300"
-                            value={anzahlLedertypen}
-                            onChange={(e) => setAnzahlLedertypen(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Innenfutter */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Innenfutter:</Label>
-                        <Input
-                            type="text"
-                            placeholder="Innenfutter eingeben..."
-                            className="col-span-2 border-gray-300"
-                            value={innenfutter}
-                            onChange={(e) => setInnenfutter(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Nahtfarbe */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Nahtfarbe:</Label>
-                        <Input
-                            type="text"
-                            placeholder="Passende Nahtfarbe / Passend zur Lederfarbe"
-                            className="col-span-2 border-gray-300"
-                            value={nahtfarbe}
-                            onChange={(e) => setNahtfarbe(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Schafthöhe Links / Rechts */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Schafthöhe Links:</Label>
-                        <div className="col-span-2 flex items-center gap-2">
-                            <Input
-                                type="text"
-                                placeholder="z.B. 14"
-                                className="border-gray-300"
-                                value={schafthoheLinks}
-                                onChange={(e) => setSchafthoheLinks(e.target.value)}
-                            />
-                            <span className="text-sm text-gray-600">cm</span>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Schafthöhe Rechts:</Label>
-                        <div className="col-span-2 flex items-center gap-2">
-                            <Input
-                                type="text"
-                                placeholder="z.B. 14"
-                                className="border-gray-300"
-                                value={schafthoheRechts}
-                                onChange={(e) => setSchafthoheRechts(e.target.value)}
-                            />
-                            <span className="text-sm text-gray-600">cm</span>
-                        </div>
-                    </div>
-
-                    {/* Polsterung */}
-                    <div className="space-y-2">
-                        <Label className="font-medium text-base">Polsterung:</Label>
-                        <div className="flex flex-wrap gap-4">
-                            {POLSTERUNG_OPTIONS.map((opt) => (
-                                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                                    <Checkbox
-                                        checked={polsterung.includes(opt)}
-                                        onChange={() => togglePolsterung(opt)}
-                                    />
-                                    <span className="text-sm">{opt}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <Textarea
-                            placeholder="Spezielle Anmerkung (z.B. Polsterdicke in mm, asymmetrisch, extraweich..)"
-                            className="border-gray-300 mt-2"
-                            rows={2}
-                            value={polsterungText}
-                            onChange={(e) => setPolsterungText(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Verstärkungen */}
-                    <div className="space-y-2">
-                        <Label className="font-medium text-base">Verstärkungen:</Label>
-                        <div className="flex flex-wrap gap-4">
-                            {VERSTAERKUNGEN_OPTIONS.map((opt) => (
-                                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                                    <Checkbox
-                                        checked={verstarkungen.includes(opt)}
-                                        onChange={() => toggleVerstarkungen(opt)}
-                                    />
-                                    <span className="text-sm">{opt}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <Textarea
-                            placeholder="Besondere Anmerkung zu den Verstärkungen (z.B. Material, Stärke, Position)"
-                            className="border-gray-300 mt-2"
-                            rows={2}
-                            value={verstarkungenText}
-                            onChange={(e) => setVerstarkungenText(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Verschlussart */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Verschlussart:</Label>
-                        <Select value={verschlussart} onValueChange={setVerschlussart}>
-                            <SelectTrigger className="col-span-2 border-gray-300">
-                                <SelectValue placeholder="Verschlussart wählen..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {VERSCHLUSS_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Zusätzlicher Reißverschluss */}
-                    <div className="space-y-2">
-                        <Label className="font-medium text-base">Möchten Sie einen zusätzlichen Reißverschluss?</Label>
-                        <div className="flex gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <Checkbox
-                                    checked={!zipperExtra}
-                                    onChange={() => setZipperExtra(false)}
-                                />
-                                <span className="text-sm">Nein, ohne zusätzlichen Reißverschluss</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <Checkbox
-                                    checked={zipperExtra}
-                                    onChange={() => setZipperExtra(true)}
-                                />
-                                <span className="text-sm">Ja, zusätzlicher Reißverschluss </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Sonstige Notizen */}
-                    <div className="space-y-1">
-                        <Label className="font-medium text-base">Sonstige Notizen:</Label>
-                        <Textarea
-                            placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"
-                            className="border-gray-300"
-                            rows={3}
-                            value={sonstigeNotizen}
-                            onChange={(e) => setSonstigeNotizen(e.target.value)}
-                        />
-                        <p className="text-xs text-gray-500">Diese Notizen erscheinen in der Rechnung/PDF</p>
-                    </div>
-
-                    {/* Abschließen */}
-                    <div className="pt-2">
-                        <Button
-                            type="button"
-                            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-                            onClick={handleAbschliessen}
-                            disabled={submitting || !modelName?.trim()}
-                        >
-                            {submitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Wird gespeichert...
-                                </>
-                            ) : (
-                                'Abschließen'
-                            )}
-                        </Button>
                     </div>
                 </div>
             </DialogContent>

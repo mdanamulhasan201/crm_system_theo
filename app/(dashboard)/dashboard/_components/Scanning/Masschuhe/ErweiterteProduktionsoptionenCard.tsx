@@ -211,11 +211,20 @@ export default function ErweiterteProduktionsoptionenCard({
     // Called when Schafttyp Intern erweitert modal "Abschließen" is clicked
     const handleSchafttypStandaloneSubmit = async (payload: {
         imageFile?: File;
+        linkerLeistenFile?: File | null;
+        rechterLeistenFile?: File | null;
         massschafterstellung_json: MassschafterstellungJson;
     }) => {
         const formData = new FormData();
         if (payload.imageFile) {
             formData.append('massschafterstellung_image', payload.imageFile);
+        }
+        // 3D Leisten files — rechter = image3d_1, linker = image3d_2 (matches page naming)
+        if (payload.rechterLeistenFile) {
+            formData.append('massschafterstellung_threeDFile', payload.rechterLeistenFile);
+        }
+        if (payload.linkerLeistenFile) {
+            formData.append('massschafterstellung_threeDFile_2', payload.linkerLeistenFile);
         }
         formData.append('massschafterstellung_json', JSON.stringify(payload.massschafterstellung_json));
         if (data.schafttypInternNote) formData.append('schafttyp_intem_note', data.schafttypInternNote);
