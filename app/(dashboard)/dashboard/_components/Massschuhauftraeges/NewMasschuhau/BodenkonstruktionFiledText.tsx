@@ -40,6 +40,10 @@ export interface BodenkonstruktionFiledTextProps {
     stepStatus?: string;
     /** When true, only the Extern erweitert button is disabled (no redirect). Intern stays enabled. */
     disableExternErweitert?: boolean;
+    /** Standalone save handler – passed to BodenkonstruktionCustomerOrderView when no orderId. */
+    onStandaloneSave?: (formData: FormData) => Promise<void>;
+    /** sessionStorage key written by parent with { json, image } before modal opens (standalone). */
+    standalonePrefillKey?: string;
 }
 
 export default function BodenkonstruktionFiledText({
@@ -53,6 +57,8 @@ export default function BodenkonstruktionFiledText({
     redirectCustomerName,
     stepStatus,
     disableExternErweitert = false,
+    onStandaloneSave,
+    standalonePrefillKey,
 }: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
@@ -302,6 +308,8 @@ export default function BodenkonstruktionFiledText({
                             embeddedOrderId={orderId}
                             onCloseEmbedded={() => setInternPopupOpen(false)}
                             defaultCustomerName={redirectCustomerName || ""}
+                            onStandaloneSave={onStandaloneSave}
+                            standalonePrefillKey={standalonePrefillKey}
                         />
                     </div>
                 </DialogContent>

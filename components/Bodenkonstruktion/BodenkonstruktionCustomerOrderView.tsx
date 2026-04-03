@@ -40,12 +40,26 @@ type BodenkonstruktionCustomerOrderViewProps = {
     onCloseEmbedded?: () => void
     /** Pre-filled customer name shown immediately when modal opens */
     defaultCustomerName?: string
+    /**
+     * Standalone save handler (no orderId context).
+     * When provided, "Abschließen" saves via this callback instead of
+     * showing the PDF+completion popup flow.
+     */
+    onStandaloneSave?: (formData: FormData) => Promise<void>
+    /**
+     * sessionStorage key for standalone prefill (no orderId).
+     * Parent writes `{ json, image }` before opening the modal;
+     * this component reads and applies it once on mount.
+     */
+    standalonePrefillKey?: string
 }
 
 export function BodenkonstruktionCustomerOrderView({
     embeddedOrderId,
     onCloseEmbedded,
     defaultCustomerName = "",
+    onStandaloneSave,
+    standalonePrefillKey,
 }: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -141,36 +155,79 @@ export function BodenkonstruktionCustomerOrderView({
 
     const applyPrefillData = (json: any, imageUrl?: string | null) => {
         if (!json || typeof json !== "object") return
-        if (json.selected && typeof json.selected === "object") setSelected(json.selected as SelectedState)
+
+        // The JSON builder stores the full `selected` state under `checklist_selected`.
+        // Support both keys so any stored JSON (old or new) restores correctly.
+        const selectedData = json.selected ?? json.checklist_selected
+        if (selectedData && typeof selectedData === "object") setSelected(selectedData as SelectedState)
+
         if (json.sohlenversteifung_detail != null) {
             setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung_detail))
+        } else if (json.form_data_v2?.sohlenversteifung != null) {
+            setSohlenversteifung(normalizeSohlenversteifungData(json.form_data_v2.sohlenversteifung))
         } else if (json.sohlenversteifung != null && typeof json.sohlenversteifung === "object" && !Array.isArray(json.sohlenversteifung)) {
             setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung))
         }
+
         if (json.sohlenaufbau_detail != null) {
             setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau_detail))
+        } else if (json.form_data_v2?.sohlenaufbau != null) {
+            setSohlenaufbau(normalizeSohlenaufbauData(json.form_data_v2.sohlenaufbau))
         } else if (json.sohlenaufbau != null && typeof json.sohlenaufbau === "object" && !Array.isArray(json.sohlenaufbau)) {
             setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau))
         }
+
         if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
-        if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
+        const textAreasData = json.textAreas ?? json.text_areas
+        if (textAreasData && typeof textAreasData === "object") setTextAreas((prev) => ({ ...prev, ...textAreasData } as TextAreasState))
         if (typeof json.customerName === "string" && json.customerName.trim()) setCustomerName(json.customerName)
-        if (json.heelWidthAdjustment != null) setHeelWidthAdjustment(json.heelWidthAdjustment as HeelWidthAdjustmentData | null)
-        if (json.vorderkappeSide != null) setVorderkappeSide(json.vorderkappeSide as VorderkappeSideData | null)
-        if (json.rahmen != null) setRahmen(json.rahmen as RahmenData | null)
-        if (json.hinterkappeMusterSide != null) setHinterkappeMusterSide(json.hinterkappeMusterSide as HinterkappeMusterSideData | null)
-        if (json.hinterkappeSide != null) setHinterkappeSide(json.hinterkappeSide as HinterkappeSideData | null)
-        if (json.brandsohleSide != null) setBrandsohleSide(json.brandsohleSide as BrandsohleSideData | null)
-        if (json.selectedSoleId != null && Array.isArray(soleOptions)) {
-            const sole = soleOptions.find((s: SoleType) => s.id === json.selectedSoleId)
+
+        // The JSON builder stores heelWidthAdjustment under `heel_width_adjustment` (top-level)
+        // and also inside `form_data_v2.absatz_abrollhilfe.heel_width_adjustment`.
+        const heelData =
+            json.heelWidthAdjustment ??
+            json.heel_width_adjustment ??
+            json.form_data_v2?.absatz_abrollhilfe?.heel_width_adjustment ??
+            null
+        if (heelData != null) setHeelWidthAdjustment(heelData as HeelWidthAdjustmentData | null)
+
+        const vorderkappeData = json.vorderkappeSide ?? json.form_data_v2?.vorderkappe ?? null
+        if (vorderkappeData != null) setVorderkappeSide(vorderkappeData as VorderkappeSideData | null)
+
+        const rahmenData = json.rahmen ?? json.form_data_v2?.rahmen ?? null
+        if (rahmenData != null) setRahmen(rahmenData as RahmenData | null)
+
+        const hinterkappeMusterData = json.hinterkappeMusterSide ?? json.form_data_v2?.hinterkappe_muster ?? null
+        if (hinterkappeMusterData != null) setHinterkappeMusterSide(hinterkappeMusterData as HinterkappeMusterSideData | null)
+
+        const hinterkappeData = json.hinterkappeSide ?? json.form_data_v2?.hinterkappe ?? null
+        if (hinterkappeData != null) setHinterkappeSide(hinterkappeData as HinterkappeSideData | null)
+
+        const brandsohleData = json.brandsohleSide ?? json.form_data_v2?.brandsohle ?? null
+        if (brandsohleData != null) setBrandsohleSide(brandsohleData as BrandsohleSideData | null)
+
+        // selected_sole.id is the stored key; selectedSoleId is a legacy camelCase alias
+        const soleId = json.selectedSoleId ?? json.selected_sole?.id ?? null
+        if (soleId != null && Array.isArray(soleOptions)) {
+            const sole = soleOptions.find((s: SoleType) => s.id === soleId)
             if (sole) setSelectedSole(sole)
         }
-        if (json.sole4Thickness != null) setSole4Thickness(json.sole4Thickness)
-        if (json.sole4Color != null) setSole4Color(json.sole4Color)
-        if (json.sole5Thickness != null) setSole5Thickness(json.sole5Thickness)
-        if (json.sole5Color != null) setSole5Color(json.sole5Color)
-        if (json.sole6Thickness != null) setSole6Thickness(json.sole6Thickness)
-        if (json.sole6Color != null) setSole6Color(json.sole6Color)
+
+        // sole_variant_options is the stored key; direct keys are legacy aliases
+        const sv = json.sole_variant_options ?? {}
+        const s4t = json.sole4Thickness ?? sv.sole4Thickness ?? null
+        const s4c = json.sole4Color ?? sv.sole4Color ?? null
+        const s5t = json.sole5Thickness ?? sv.sole5Thickness ?? null
+        const s5c = json.sole5Color ?? sv.sole5Color ?? null
+        const s6t = json.sole6Thickness ?? sv.sole6Thickness ?? null
+        const s6c = json.sole6Color ?? sv.sole6Color ?? null
+        if (s4t != null) setSole4Thickness(s4t)
+        if (s4c != null) setSole4Color(s4c)
+        if (s5t != null) setSole5Thickness(s5t)
+        if (s5c != null) setSole5Color(s5c)
+        if (s6t != null) setSole6Thickness(s6t)
+        if (s6c != null) setSole6Color(s6c)
+
         if (imageUrl) setBodenkonstruktionImagePreview(imageUrl)
     }
 
@@ -190,6 +247,23 @@ export function BodenkonstruktionCustomerOrderView({
             setPrefillLoading(false)
         }
     }, [onCloseEmbedded, orderId, soleOptions])
+
+    // Prefill for standalone draft flow (no orderId) – parent writes sessionStorage before opening
+    useEffect(() => {
+        if (orderId || !standalonePrefillKey || prefillDoneRef.current) return
+        prefillDoneRef.current = true
+        try {
+            const raw = sessionStorage.getItem(standalonePrefillKey)
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                applyPrefillData(parsed?.json, parsed?.image)
+            }
+        } catch {
+            // fallback to empty form
+        } finally {
+            setPrefillLoading(false)
+        }
+    }, [standalonePrefillKey, orderId, soleOptions])   // eslint-disable-line react-hooks/exhaustive-deps
 
     // Prefill from GET when orderId present (legacy/order-step flow)
     useEffect(() => {
@@ -318,15 +392,17 @@ export function BodenkonstruktionCustomerOrderView({
 
     const handleWeiterClick = async () => {
         const isEmbedded = Boolean(orderId)
+        // Also skip validations when a standalone save handler is provided
+        const skipValidation = isEmbedded || Boolean(onStandaloneSave)
 
         // Validate customer name (skip for embedded modal)
-        if (!isEmbedded && !customerName.trim()) {
+        if (!skipValidation && !customerName.trim()) {
             toast.error("Bitte geben Sie einen Kundennamen ein.")
             return
         }
 
         // Validate required checkboxes (skip for embedded modal)
-        if (!isEmbedded) {
+        if (!skipValidation) {
             if (!isAllCheckboxAnswered) {
                 setCheckboxError(true)
                 return
@@ -335,7 +411,7 @@ export function BodenkonstruktionCustomerOrderView({
         }
 
         // Validate sole selections (skip for embedded modal)
-        if (!isEmbedded) {
+        if (!skipValidation) {
             if (selectedSole?.id === "4") {
                 if (!sole4Thickness || !sole4Color) {
                     toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
@@ -356,8 +432,8 @@ export function BodenkonstruktionCustomerOrderView({
             }
         }
 
-        // When from order step (orderId): save directly without modals
-        if (isEmbedded) {
+        // When from order step (orderId) OR standalone save handler: save directly without modals
+        if (isEmbedded || onStandaloneSave) {
             await handleFinalSubmit()
             return
         }
@@ -622,6 +698,7 @@ export function BodenkonstruktionCustomerOrderView({
         bodenkonstruktionJson.checklist_selected = removeNulls({ ...selected })
         bodenkonstruktionJson.option_inputs = removeNulls(optionInputs)
         bodenkonstruktionJson.text_areas = removeNulls(textAreas)
+        bodenkonstruktionJson.selectedSoleId = selectedSole?.id ?? null
         bodenkonstruktionJson.selected_sole = selectedSole
             ? removeNulls({ id: selectedSole.id, name: selectedSole.name, image: selectedSole.image, description: selectedSole.description, des: selectedSole.des ?? "" })
             : ""
@@ -681,6 +758,19 @@ export function BodenkonstruktionCustomerOrderView({
                 } else {
                     router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(BODEN_STEP_STATUS)}`)
                 }
+            } catch (e) {
+                console.error(e)
+                toast.error("Speichern fehlgeschlagen.")
+            } finally {
+                setIsSubmitting(false)
+            }
+        } else if (onStandaloneSave) {
+            try {
+                // Build full FormData (include 3D + image for draft endpoint)
+                const formData = await prepareFullBodenkonstruktionFormData(false)
+                await onStandaloneSave(formData)
+                setShowModal2(false)
+                if (onCloseEmbedded) onCloseEmbedded()
             } catch (e) {
                 console.error(e)
                 toast.error("Speichern fehlgeschlagen.")

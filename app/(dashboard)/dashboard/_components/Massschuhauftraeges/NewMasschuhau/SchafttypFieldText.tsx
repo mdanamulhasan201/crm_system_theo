@@ -43,6 +43,11 @@ export interface SchafttypFieldTextProps {
     stepStatus?: string;
     /** When true, only the Extern erweitert button is disabled (no redirect). Intern stays enabled. */
     disableExternErweitert?: boolean;
+    /** Standalone (no orderId) submit handler – called when user saves the Intern modal. */
+    onStandaloneSubmit?: (payload: { imageFile?: File; massschafterstellung_json: MassschafterstellungJson }) => Promise<void>;
+    /** Standalone prefill – used as initialData/initialImageUrl when not in step5 mode. */
+    standaloneInitialData?: MassschafterstellungJson | null;
+    standaloneInitialImageUrl?: string | null;
 }
 
 export default function SchafttypFieldText({
@@ -58,6 +63,9 @@ export default function SchafttypFieldText({
     redirectCustomerName,
     stepStatus,
     disableExternErweitert = false,
+    onStandaloneSubmit,
+    standaloneInitialData,
+    standaloneInitialImageUrl,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -318,9 +326,9 @@ export default function SchafttypFieldText({
             <SchafttypCustomModal
                 open={internCustomModalOpen}
                 onOpenChange={setInternCustomModalOpen}
-                initialData={isStep5 ? massschafterstellungData?.json : undefined}
-                initialImageUrl={isStep5 ? massschafterstellungData?.imageUrl : undefined}
-                onSubmit={isStep5 ? handleMassschafterstellungSubmit : undefined}
+                initialData={isStep5 ? massschafterstellungData?.json : (standaloneInitialData ?? undefined)}
+                initialImageUrl={isStep5 ? massschafterstellungData?.imageUrl : (standaloneInitialImageUrl ?? undefined)}
+                onSubmit={isStep5 ? handleMassschafterstellungSubmit : onStandaloneSubmit}
             />
         </>
     );

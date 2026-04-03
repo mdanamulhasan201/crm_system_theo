@@ -310,6 +310,27 @@ export const makeLevelPdf = async (orderId: string) => {
 
 
 
+// craete Schafttyp and Bodenkonstruktion   2/shoe-orders/schaft-boden-draft
+export const createSchafttypAndBodenkonstruktion = async (data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/schaft-boden-draft`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// get all data  v2/shoe-orders/schaft-boden-draft
+export const getAllSchafttypAndBodenkonstruktion = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/schaft-boden-draft`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
 
 const MassschuheAddedApisDefault = {
     getMassschuheOrderById,
