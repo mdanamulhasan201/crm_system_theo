@@ -22,6 +22,7 @@ import BettungserstellungStepFields, {
 } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
+import BodenerstellenBodenkonstruktionSection from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BodenerstellenBodenkonstruktionSection';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -580,6 +581,10 @@ export default function MassschuhauftraegePage() {
                 if (bodenkonstruktionInternNote) formData.append('bodenkonstruktion_intem_note', bodenkonstruktionInternNote);
                 if (bodenkonstruktionExternNote) formData.append('bodenkonstruktion_extem_note', bodenkonstruktionExternNote);
             }
+            if (statusFromUrl === 'Bodenerstellen') {
+                if (bodenkonstruktionInternNote) formData.append('bodenkonstruktion_intem_note', bodenkonstruktionInternNote);
+                if (bodenkonstruktionExternNote) formData.append('bodenkonstruktion_extem_note', bodenkonstruktionExternNote);
+            }
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 setUploadedFiles([]);
@@ -1003,6 +1008,19 @@ export default function MassschuhauftraegePage() {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Step 7 (Bodenerstellen): Bodenkonstruktion – above Notiz, same behaviour as in step 5 */}
+                                    {activeStepIndex === 6 && id && (
+                                        <BodenerstellenBodenkonstruktionSection
+                                            orderId={id}
+                                            redirectOrderId={id}
+                                            redirectCustomerName={customerFullName || undefined}
+                                            bodenkonstruktionInternNote={bodenkonstruktionInternNote}
+                                            bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                                            onBodenkonstruktionInternNoteChange={setBodenkonstruktionInternNote}
+                                            onBodenkonstruktionExternNoteChange={setBodenkonstruktionExternNote}
+                                        />
+                                    )}
 
                                     {/* Notiz Section */}
                                     <div className="mb-6">

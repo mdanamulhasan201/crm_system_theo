@@ -129,12 +129,34 @@ export default function SchafttypFieldText({
                 intern: Boolean(res?.data?.schafttyp?.intern),
                 extern: Boolean(res?.data?.schafttyp?.extern),
             });
+            const internNoteFromApi = res?.data?.schafttyp?.note?.intern;
+            const externNoteFromApi = res?.data?.schafttyp?.note?.extern;
+            if (
+                typeof internNoteFromApi === 'string' &&
+                internNoteFromApi.trim() &&
+                !schafttypInternNote.trim()
+            ) {
+                onSchafttypInternNoteChange(internNoteFromApi);
+            }
+            if (
+                typeof externNoteFromApi === 'string' &&
+                externNoteFromApi.trim() &&
+                !schafttypExternNote.trim()
+            ) {
+                onSchafttypExternNoteChange(externNoteFromApi);
+            }
         } catch {
             setActiveButtons({ intern: false, extern: false });
         } finally {
             setActiveButtonsLoading(false);
         }
-    }, [orderId]);
+    }, [
+        orderId,
+        schafttypInternNote,
+        schafttypExternNote,
+        onSchafttypInternNoteChange,
+        onSchafttypExternNoteChange,
+    ]);
 
     const handleErweitertClick = async () => {
         if (isStep5) {

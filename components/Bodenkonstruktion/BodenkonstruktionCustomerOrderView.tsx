@@ -33,13 +33,15 @@ import { updateMassschuheOrderStepBodenkonstruktion, getMassschuheOrderStepBoden
 import { buildSohlenaufbauGlbBlob } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauExport"
 import { canExportSohlenaufbau3d, getSohlenaufbauPreviewDataFromForm } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauPreviewFromForm"
 
-const BODEN_STEP_STATUS = "Halbprobe_durchführen"
+const DEFAULT_BODEN_ORDER_STEP_STATUS = "Halbprobe_durchführen"
 
 type BodenkonstruktionCustomerOrderViewProps = {
     embeddedOrderId?: string | null
     onCloseEmbedded?: () => void
     /** Pre-filled customer name shown immediately when modal opens */
     defaultCustomerName?: string
+    /** GET/redirect status for order-step Bodenkonstruktion (e.g. Halbprobe step vs. Bodenerstellen). */
+    orderStepStatusForApi?: string
     /**
      * Standalone save handler (no orderId context).
      * When provided, "Abschließen" saves via this callback instead of
@@ -60,6 +62,7 @@ export function BodenkonstruktionCustomerOrderView({
     defaultCustomerName = "",
     onStandaloneSave,
     standalonePrefillKey,
+    orderStepStatusForApi = DEFAULT_BODEN_ORDER_STEP_STATUS,
 }: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -231,22 +234,39 @@ export function BodenkonstruktionCustomerOrderView({
         if (imageUrl) setBodenkonstruktionImagePreview(imageUrl)
     }
 
-    // Prefill for embedded step flow from sessionStorage (written by parent before opening modal).
+    // Prefill for embedded step flow: sessionStorage from parent, else GET order-step for this status.
     useEffect(() => {
         if (!onCloseEmbedded || !orderId) return
+        let cancelled = false
         prefillDoneRef.current = true
-        try {
-            const raw = sessionStorage.getItem(`bodenkonstruktion-embedded-prefill:${orderId}`)
-            if (raw) {
-                const parsed = JSON.parse(raw)
-                applyPrefillData(parsed?.json, parsed?.image)
+        ;(async () => {
+            try {
+                const raw = sessionStorage.getItem(`bodenkonstruktion-embedded-prefill:${orderId}`)
+                if (raw) {
+                    const parsed = JSON.parse(raw)
+                    applyPrefillData(parsed?.json, parsed?.image)
+                } else {
+                    const res: any = await getMassschuheOrderStepBodenkonstruktion(orderId, orderStepStatusForApi)
+                    if (cancelled) return
+                    const data = res?.data ?? res
+                    const rawJson = data?.bodenkonstruktion_json
+                    if (rawJson) {
+                        const json = typeof rawJson === "string" ? (() => { try { return JSON.parse(rawJson) } catch { return null } })() : rawJson
+                        if (json && typeof json === "object") {
+                            applyPrefillData(json, data?.bodenkonstruktion_image)
+                        }
+                    }
+                }
+            } catch {
+                /* empty form */
+            } finally {
+                if (!cancelled) setPrefillLoading(false)
             }
-        } catch {
-            // fallback to empty form
-        } finally {
-            setPrefillLoading(false)
+        })()
+        return () => {
+            cancelled = true
         }
-    }, [onCloseEmbedded, orderId, soleOptions])
+    }, [onCloseEmbedded, orderId, orderStepStatusForApi, soleOptions])
 
     // Prefill for standalone draft flow (no orderId) – parent writes sessionStorage before opening
     useEffect(() => {
@@ -270,7 +290,7 @@ export function BodenkonstruktionCustomerOrderView({
         if (onCloseEmbedded) return
         if (!orderId || prefillDoneRef.current) return
         prefillDoneRef.current = true
-        getMassschuheOrderStepBodenkonstruktion(orderId, BODEN_STEP_STATUS)
+        getMassschuheOrderStepBodenkonstruktion(orderId, orderStepStatusForApi)
             .then((res: any) => {
                 const data = res?.data ?? res
                 const raw = data?.bodenkonstruktion_json
@@ -287,7 +307,7 @@ export function BodenkonstruktionCustomerOrderView({
             })
             .catch(() => {})
             .finally(() => setPrefillLoading(false))
-    }, [orderId, soleOptions, onCloseEmbedded])
+    }, [orderId, soleOptions, onCloseEmbedded, orderStepStatusForApi])
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -756,7 +776,7 @@ export function BodenkonstruktionCustomerOrderView({
                 if (onCloseEmbedded) {
                     onCloseEmbedded()
                 } else {
-                    router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(BODEN_STEP_STATUS)}`)
+                    router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(orderStepStatusForApi)}`)
                 }
             } catch (e) {
                 console.error(e)

@@ -94,12 +94,28 @@ export default function BodenkonstruktionFiledText({
                 intern: Boolean(res?.data?.bodenkonstruktion?.intern),
                 extern: Boolean(res?.data?.bodenkonstruktion?.extern),
             });
+            const internNoteFromApi = res?.data?.bodenkonstruktion?.note?.intern;
+            const externNoteFromApi = res?.data?.bodenkonstruktion?.note?.extern;
+            if (
+                typeof internNoteFromApi === 'string' &&
+                internNoteFromApi.trim() &&
+                !internNote.trim()
+            ) {
+                setInternNote(internNoteFromApi);
+            }
+            if (
+                typeof externNoteFromApi === 'string' &&
+                externNoteFromApi.trim() &&
+                !externNote.trim()
+            ) {
+                setExternNote(externNoteFromApi);
+            }
         } catch {
             setActiveButtons({ intern: false, extern: false });
         } finally {
             setActiveButtonsLoading(false);
         }
-    }, [orderId]);
+    }, [orderId, internNote, externNote, setInternNote, setExternNote]);
 
     useEffect(() => {
         if (isStep5) {
@@ -113,6 +129,21 @@ export default function BodenkonstruktionFiledText({
             fetchActiveButtons();
         }
     }, [internPopupOpen, isStep5, fetchActiveButtons]);
+
+    useEffect(() => {
+        if (!internControlled && !externControlled) return;
+        if (bodenOption !== '') return;
+        const i = (bodenkonstruktionInternNote ?? '').trim();
+        const e = (bodenkonstruktionExternNote ?? '').trim();
+        if (i && !e) setBodenOption('Intern');
+        else if (e && !i) setBodenOption('Extern');
+    }, [
+        bodenkonstruktionInternNote,
+        bodenkonstruktionExternNote,
+        internControlled,
+        externControlled,
+        bodenOption,
+    ]);
 
     const handleErweitertClick = async () => {
         // Always fetch fresh prefill data on every click (regardless of activeButtons.intern)
@@ -320,6 +351,7 @@ export default function BodenkonstruktionFiledText({
                             defaultCustomerName={redirectCustomerName || ""}
                             onStandaloneSave={onStandaloneSave}
                             standalonePrefillKey={standalonePrefillKey}
+                            orderStepStatusForApi={stepStatus ?? 'Halbprobe_durchführen'}
                         />
                     </div>
                 </DialogContent>
