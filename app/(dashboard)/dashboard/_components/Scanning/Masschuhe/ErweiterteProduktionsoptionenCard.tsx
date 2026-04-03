@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { ChevronDown } from 'lucide-react';
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
-    AccordionTrigger,
 } from '@/components/ui/accordion';
 import SchafttypFieldText, { type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/SchafttypFieldText';
 import BodenkonstruktionFiledText from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BodenkonstruktionFiledText';
 import type { MassschafterstellungJson } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/SchafttypCustomModal';
-import { createSchafttypAndBodenkonstruktion, getAllSchafttypAndBodenkonstruktion } from '@/apis/MassschuheAddedApis';
+import {
+    createSchafttypAndBodenkonstruktion,
+    getAllSchafttypAndBodenkonstruktion,
+    deleteSchafttypAndBodenkonstruktion,
+} from '@/apis/MassschuheAddedApis';
 
 // Fixed sessionStorage key used for standalone bodenkonstruktion prefill
 const BODEN_STANDALONE_PREFILL_KEY = 'bodenkonstruktion-standalone-draft-prefill';
@@ -42,6 +47,8 @@ export default function ErweiterteProduktionsoptionenCard({
     // Draft data fetched from GET /v2/shoe-orders/schaft-boden-draft
     const [schafftypInitialData, setSchafftypInitialData] = useState<MassschafterstellungJson | null>(null);
     const [schafftypInitialImageUrl, setSchafftypInitialImageUrl] = useState<string | null>(null);
+    const [hasDraftData, setHasDraftData] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
     const hasFetchedRef = useRef(false);
 
     const fetchDraft = useCallback(async () => {
@@ -49,8 +56,12 @@ export default function ErweiterteProduktionsoptionenCard({
             const res: any = await getAllSchafttypAndBodenkonstruktion();
             const draft = res?.data ?? res;
 
-            // Schafttyp prefill
             const schaft = draft?.massschafterstellung;
+            const boden = draft?.bodenkonstruktion;
+            const hasData = Boolean(schaft || boden);
+            setHasDraftData(hasData);
+
+            // Schafttyp prefill
             if (schaft) {
                 const rawJson = schaft.massschafterstellung_json;
                 const parsedJson: MassschafterstellungJson | null =
@@ -60,13 +71,14 @@ export default function ErweiterteProduktionsoptionenCard({
                 setSchafftypInitialData(parsedJson);
                 setSchafftypInitialImageUrl(schaft.massschafterstellung_image ?? null);
 
-                // Sync notes into parent state if they differ
                 if (schaft.schafttyp_intem_note) onChange({ ...data, schafttypInternNote: schaft.schafttyp_intem_note });
                 if (schaft.schafttyp_extem_note) onChange({ ...data, schafttypExternNote: schaft.schafttyp_extem_note });
+            } else {
+                setSchafftypInitialData(null);
+                setSchafftypInitialImageUrl(null);
             }
 
-            // Bodenkonstruktion prefill → write to sessionStorage so BodenkonstruktionCustomerOrderView picks it up
-            const boden = draft?.bodenkonstruktion;
+            // Bodenkonstruktion prefill → write to sessionStorage
             if (boden) {
                 const rawJson = boden.bodenkonstruktion_json;
                 const parsedJson =
@@ -78,7 +90,6 @@ export default function ErweiterteProduktionsoptionenCard({
                     JSON.stringify({ json: parsedJson, image: boden.bodenkonstruktion_image ?? null })
                 );
 
-                // Sync notes into parent state
                 if (boden.bodenkonstruktion_intem_note) onChange({ ...data, bodenkonstruktionInternNote: boden.bodenkonstruktion_intem_note });
                 if (boden.bodenkonstruktion_extem_note) onChange({ ...data, bodenkonstruktionExternNote: boden.bodenkonstruktion_extem_note });
             } else {
@@ -96,6 +107,25 @@ export default function ErweiterteProduktionsoptionenCard({
         fetchDraft();
     }, [fetchDraft]);
 
+    const handleClearDraft = async (e: React.MouseEvent) => {
+        e.stopPropagation(); // prevent accordion toggle
+        setIsClearing(true);
+        try {
+            await deleteSchafttypAndBodenkonstruktion();
+            // Reset all local draft state
+            setSchafftypInitialData(null);
+            setSchafftypInitialImageUrl(null);
+            setHasDraftData(false);
+            sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
+            toast.success('Entwurf gelöscht.');
+        } catch (e) {
+            console.error(e);
+            toast.error('Löschen fehlgeschlagen.');
+        } finally {
+            setIsClearing(false);
+        }
+    };
+
     // Called when Schafttyp Intern erweitert modal "Abschließen" is clicked
     const handleSchafttypStandaloneSubmit = async (payload: {
         imageFile?: File;
@@ -111,7 +141,6 @@ export default function ErweiterteProduktionsoptionenCard({
         try {
             await createSchafttypAndBodenkonstruktion(formData);
             toast.success('Schafttyp gespeichert!');
-            // Refresh draft so re-opening the modal shows updated data
             await fetchDraft();
         } catch (e) {
             console.error(e);
@@ -137,7 +166,6 @@ export default function ErweiterteProduktionsoptionenCard({
         try {
             await createSchafttypAndBodenkonstruktion(renamedFormData);
             toast.success('Bodenkonstruktion gespeichert!');
-            // Refresh draft so re-opening the modal shows updated data
             await fetchDraft();
         } catch (e) {
             console.error(e);
@@ -149,12 +177,33 @@ export default function ErweiterteProduktionsoptionenCard({
     return (
         <Accordion type="single" collapsible className="w-full mb-5">
             <AccordionItem value="erweiterte-optionen" className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-gray-50 transition-colors data-[state=open]:bg-gray-50 group">
-                    <span className="flex items-center gap-2.5 text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">
-                        <Settings2 className="size-4 text-gray-400 group-hover:text-gray-500 shrink-0" />
+                {/*
+                  * Custom header: AccordionPrimitive.Header renders the <h3>,
+                  * AccordionPrimitive.Trigger renders the <button> as flex-1.
+                  * The delete button sits as a sibling inside the <h3> — no nesting.
+                  */}
+                <AccordionPrimitive.Header className="flex w-full items-center">
+                    <AccordionPrimitive.Trigger className="group flex flex-1 cursor-pointer items-center gap-2.5 px-5 py-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 data-[state=open]:bg-gray-50 [&[data-state=open]>svg.chevron]:rotate-180">
+                        <Settings2 className="size-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-500" />
                         Erweiterte Produktionsoptionen anzeigen
-                    </span>
-                </AccordionTrigger>
+                        <ChevronDown className="chevron ml-auto size-4 shrink-0 text-gray-400 transition-transform duration-200" />
+                    </AccordionPrimitive.Trigger>
+
+                    {hasDraftData && (
+                        <div className="pr-4 shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleClearDraft}
+                                disabled={isClearing}
+                                title="Entwurf löschen"
+                                className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-100 hover:border-rose-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Trash2 className="size-3.5" />
+                                {isClearing ? 'Löschen…' : 'Entwurf löschen'}
+                            </button>
+                        </div>
+                    )}
+                </AccordionPrimitive.Header>
                 <AccordionContent className="px-0 pb-0">
                     <div className="p-5 space-y-4 border-t border-gray-200">
                         {/* Schafttyp */}

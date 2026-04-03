@@ -332,6 +332,19 @@ export const getAllSchafttypAndBodenkonstruktion = async () => {
 
 
 
+// v2/shoe-orders/schaft-boden-draft
+export const deleteSchafttypAndBodenkonstruktion = async () => {
+    try {
+        const response = await axiosClient.delete('/v2/shoe-orders/schaft-boden-draft');
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
+
 const MassschuheAddedApisDefault = {
     getMassschuheOrderById,
     getMassschuheOrderDetails,
