@@ -278,11 +278,14 @@ export const getKvaData = async (orderId: string) => {
 }
 
 
-// update note v2/shoe-orders/update-order/:id "supply_note": "Hello"
-export const updateMassschuheOrderNote = async (orderId: string, supply_note: string) => {
+// update note v2/shoe-orders/update-order/:id — supply_note, order_note
+export const updateMassschuheOrderNote = async (
+    orderId: string,
+    payload: { supply_note: string; order_note: string }
+) => {
     try {
-        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${orderId}`, { supply_note });
-        return response.data.success;
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${orderId}`, payload);
+        return response.data?.success ?? true;
     } catch (error: any) {
         throw error;
     }

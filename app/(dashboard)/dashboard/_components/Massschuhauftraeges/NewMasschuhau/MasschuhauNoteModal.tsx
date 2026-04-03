@@ -72,8 +72,10 @@ export default function MasschuhauNoteModal({
     const [notesList, setNotesList] = useState<MassschuheNoteItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditingSupply, setIsEditingSupply] = useState(false);
+    const [isEditingOrder, setIsEditingOrder] = useState(false);
     const [editSupplyNote, setEditSupplyNote] = useState('');
+    const [editOrderNote, setEditOrderNote] = useState('');
     const [saving, setSaving] = useState(false);
     const [addNoteModalOpen, setAddNoteModalOpen] = useState(false);
 
@@ -84,6 +86,7 @@ export default function MasschuhauNoteModal({
             setOrderNote(res?.orderNote ?? null);
             setNotesList(res?.notes ?? []);
             setEditSupplyNote(res?.orderNote?.supply_note ?? '');
+            setEditOrderNote(res?.orderNote?.order_note ?? '');
             onSaved?.();
         } catch {
             // keep current data on refetch error
@@ -96,7 +99,9 @@ export default function MasschuhauNoteModal({
             setNotesList([]);
             setError(null);
             setEditSupplyNote('');
-            setIsEditing(false);
+            setEditOrderNote('');
+            setIsEditingSupply(false);
+            setIsEditingOrder(false);
             return;
         }
         let cancelled = false;
@@ -108,6 +113,7 @@ export default function MasschuhauNoteModal({
                 setOrderNote(res?.orderNote ?? null);
                 setNotesList(res?.notes ?? []);
                 setEditSupplyNote(res?.orderNote?.supply_note ?? '');
+                setEditOrderNote(res?.orderNote?.order_note ?? '');
             })
             .catch((err) => {
                 if (cancelled) return;
@@ -127,34 +133,79 @@ export default function MasschuhauNoteModal({
         else setEditSupplyNote('');
     }, [orderNote?.supply_note]);
 
-    const handleStartEdit = () => {
+    useEffect(() => {
+        if (orderNote?.order_note != null) setEditOrderNote(orderNote.order_note);
+        else setEditOrderNote('');
+    }, [orderNote?.order_note]);
+
+    const handleStartEditSupply = () => {
         setEditSupplyNote(orderNote?.supply_note ?? '');
-        setIsEditing(true);
+        setIsEditingSupply(true);
     };
 
-    const handleCancelEdit = () => {
-        setIsEditing(false);
+    const handleCancelEditSupply = () => {
+        setIsEditingSupply(false);
         setEditSupplyNote(orderNote?.supply_note ?? '');
     };
 
-    const handleSaveSupplyNote = async () => {
-        if (!orderId) return;
+    const handleStartEditOrder = () => {
+        setEditOrderNote(orderNote?.order_note ?? '');
+        setIsEditingOrder(true);
+    };
+
+    const handleCancelEditOrder = () => {
+        setIsEditingOrder(false);
+        setEditOrderNote(orderNote?.order_note ?? '');
+    };
+
+    const persistOrderNotes = async (nextSupply: string, nextOrder: string) => {
+        if (!orderId) return false;
         setSaving(true);
         setError(null);
         try {
-            const success = await updateMassschuheOrderNote(orderId, editSupplyNote);
+            const success = await updateMassschuheOrderNote(orderId, {
+                supply_note: nextSupply,
+                order_note: nextOrder,
+            });
             if (success) {
-                setOrderNote(prev => prev ? { ...prev, supply_note: editSupplyNote } : { id: '', status_note: null, order_note: null, supply_note: editSupplyNote });
-                setIsEditing(false);
-                toast.success('Versorgung Notiz gespeichert');
+                setOrderNote((prev) =>
+                    prev
+                        ? { ...prev, supply_note: nextSupply, order_note: nextOrder }
+                        : {
+                              id: '',
+                              status_note: null,
+                              order_note: nextOrder,
+                              supply_note: nextSupply,
+                          }
+                );
+                setEditSupplyNote(nextSupply);
+                setEditOrderNote(nextOrder);
                 onSaved?.();
-            } else {
-                setError('Aktualisierung fehlgeschlagen');
+                return true;
             }
+            setError('Aktualisierung fehlgeschlagen');
+            return false;
         } catch (err) {
             setError((err as Error)?.message || 'Fehler beim Speichern');
+            return false;
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleSaveSupplyNote = async () => {
+        const ok = await persistOrderNotes(editSupplyNote, editOrderNote);
+        if (ok) {
+            setIsEditingSupply(false);
+            toast.success('Versorgung Notiz gespeichert');
+        }
+    };
+
+    const handleSaveOrderNote = async () => {
+        const ok = await persistOrderNotes(editSupplyNote, editOrderNote);
+        if (ok) {
+            setIsEditingOrder(false);
+            toast.success('Auftragsnotiz gespeichert');
         }
     };
 
@@ -261,12 +312,12 @@ export default function MasschuhauNoteModal({
                                 <div className="px-4 py-3 bg-amber-50/80 border-b border-amber-100/50 flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <FileText className="w-4 h-4 text-amber-600" />
-                                        <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Versorgung Notiz (supply_note)</p>
+                                        <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Versorgung Notiz</p>
                                     </div>
-                                    {!isEditing ? (
+                                    {!isEditingSupply ? (
                                         <button
                                             type="button"
-                                            onClick={handleStartEdit}
+                                            onClick={handleStartEditSupply}
                                             className="flex items-center cursor-pointer gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 hover:bg-amber-100/80 transition-colors"
                                             title="Versorgung Notiz bearbeiten"
                                         >
@@ -276,7 +327,7 @@ export default function MasschuhauNoteModal({
                                     ) : null}
                                 </div>
                                 <div className="p-4 min-h-[88px]">
-                                    {isEditing ? (
+                                    {isEditingSupply ? (
                                         <div className="space-y-3">
                                             <textarea
                                                 value={editSupplyNote}
@@ -289,7 +340,7 @@ export default function MasschuhauNoteModal({
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={handleCancelEdit}
+                                                    onClick={handleCancelEditSupply}
                                                     disabled={saving}
                                                     className="gap-1.5 cursor-pointer"
                                                 >
@@ -314,6 +365,73 @@ export default function MasschuhauNoteModal({
                                     ) : (
                                         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                                             {orderNote?.supply_note?.trim() || '—'}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Auftragsnotiz (order_note) — after Versorgung Notiz */}
+                            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                                <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-slate-600" />
+                                        <p className="text-xs font-semibold text-slate-800 uppercase tracking-wide">
+                                            Auftragsnotiz
+                                        </p>
+                                    </div>
+                                    {!isEditingOrder ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleStartEditOrder}
+                                            className="flex items-center cursor-pointer gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100/80 transition-colors"
+                                            title="Auftragsnotiz bearbeiten"
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            Bearbeiten
+                                        </button>
+                                    ) : null}
+                                </div>
+                                <div className="p-4 min-h-[88px]">
+                                    {isEditingOrder ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={editOrderNote}
+                                                onChange={(e) => setEditOrderNote(e.target.value)}
+                                                className="w-full min-h-[120px] px-3 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-y"
+                                                placeholder="Auftragsnotiz eingeben…"
+                                                autoFocus
+                                            />
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={handleCancelEditOrder}
+                                                    disabled={saving}
+                                                    className="gap-1.5 cursor-pointer"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                    Abbrechen
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={handleSaveOrderNote}
+                                                    disabled={saving}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+                                                >
+                                                    {saving ? (
+                                                        <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                                                    ) : (
+                                                        <Check className="w-4 h-4" />
+                                                    )}
+                                                    Speichern
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                            {orderNote?.order_note != null && orderNote.order_note.trim() !== ''
+                                                ? orderNote.order_note
+                                                : '—'}
                                         </p>
                                     )}
                                 </div>
