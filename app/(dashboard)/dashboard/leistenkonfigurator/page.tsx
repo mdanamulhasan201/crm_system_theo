@@ -26,8 +26,18 @@ export default function LeistenKonfiguratorPage() {
   const korrekturenRef = useRef<KorrekturenModellierungRef>(null);
   const bemerkungenRef = useRef<BemerkungenRef>(null);
   const basePrice = 199.99;
-  const knoechelhoherLeistenPrice = 9.99;
+  /** Knöchelhoher Leisten: bis 15 cm +9,99 €; über 15 bis 20 cm +14,99 € (pro Seite) */
+  const KNOECHEL_PREIS_BIS_15 = 9.99;
+  const KNOECHEL_PREIS_UEBER_15_BIS_20 = 14.99;
   const plastikleistenDiscount = 20;
+
+  /** Ohne Höhe: unteres Preisband (entspricht „ab +9,99 €“); mit Höhe: Stufen bis 15 / 15–20 cm */
+  const preisKnoechelhoherProSeite = (hoeheCm: number | null | undefined): number => {
+    if (hoeheCm == null || hoeheCm <= 0) return KNOECHEL_PREIS_BIS_15;
+    if (hoeheCm <= 15) return KNOECHEL_PREIS_BIS_15;
+    if (hoeheCm <= 20) return KNOECHEL_PREIS_UEBER_15_BIS_20;
+    return KNOECHEL_PREIS_UEBER_15_BIS_20;
+  };
 
   const [totalPrice, setTotalPrice] = useState(basePrice);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -45,8 +55,14 @@ export default function LeistenKonfiguratorPage() {
     const kopfdatenData = kopfdatenRef.current?.getData();
     const leistentypData = leistentypRef.current?.getData();
     const leistenmaterial = leistenmaterialOverride ?? kopfdatenData?.leistenmaterial;
-    const knoechelhoherLinks = leistentypData?.knoechelhoherLeistenLinks ? knoechelhoherLeistenPrice : 0;
-    const knoechelhoherRechts = leistentypData?.knoechelhoherLeistenRechts ? knoechelhoherLeistenPrice : 0;
+    const knoechelhoherLinks =
+      leistentypData?.knoechelhoherLeistenLinks
+        ? preisKnoechelhoherProSeite(leistentypData.knoechelhoherHoeheLinksCm)
+        : 0;
+    const knoechelhoherRechts =
+      leistentypData?.knoechelhoherLeistenRechts
+        ? preisKnoechelhoherProSeite(leistentypData.knoechelhoherHoeheRechtsCm)
+        : 0;
     const hasPlastikleisten = leistenmaterial === 'plastik';
     const materialAdjust = hasPlastikleisten ? -plastikleistenDiscount : 0;
 
@@ -87,8 +103,14 @@ export default function LeistenKonfiguratorPage() {
     }
     if (l) {
       const leisten: string[] = [];
-      if (l.knoechelhoherLeistenLinks) leisten.push('Knöchelhoher Leisten Links');
-      if (l.knoechelhoherLeistenRechts) leisten.push('Knöchelhoher Leisten Rechts');
+      if (l.knoechelhoherLeistenLinks) {
+        const h = l.knoechelhoherHoeheLinksCm != null ? ` (${l.knoechelhoherHoeheLinksCm} cm)` : '';
+        leisten.push(`Knöchelhoher Leisten Links${h}`);
+      }
+      if (l.knoechelhoherLeistenRechts) {
+        const h = l.knoechelhoherHoeheRechtsCm != null ? ` (${l.knoechelhoherHoeheRechtsCm} cm)` : '';
+        leisten.push(`Knöchelhoher Leisten Rechts${h}`);
+      }
       if (l.halbschuhleistenSchmalerLinks) leisten.push('Halbschuhleisten schmaler Links');
       if (l.halbschuhleistenSchmalerRechts) leisten.push('Halbschuhleisten schmaler Rechts');
       if (l.halbschuhleistenBreiterLinks) leisten.push('Halbschuhleisten breiter Links');
