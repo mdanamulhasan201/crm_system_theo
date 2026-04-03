@@ -126,6 +126,34 @@ export default function ErweiterteProduktionsoptionenCard({
         }
     };
 
+    // Auto-save Schafttyp notes on textarea blur
+    const handleSchafttypNoteBlur = async () => {
+        if (!data.schafttypInternNote && !data.schafttypExternNote) return;
+        const formData = new FormData();
+        if (data.schafttypInternNote) formData.append('schafttyp_intem_note', data.schafttypInternNote);
+        if (data.schafttypExternNote) formData.append('schafttyp_extem_note', data.schafttypExternNote);
+        try {
+            await createSchafttypAndBodenkonstruktion(formData);
+            setHasDraftData(true);
+        } catch (e) {
+            console.error('Auto-save Schafttyp notes failed:', e);
+        }
+    };
+
+    // Auto-save Bodenkonstruktion notes on textarea blur
+    const handleBodenkonstruktionNoteBlur = async () => {
+        if (!data.bodenkonstruktionInternNote && !data.bodenkonstruktionExternNote) return;
+        const formData = new FormData();
+        if (data.bodenkonstruktionInternNote) formData.append('bodenkonstruktion_intem_note', data.bodenkonstruktionInternNote);
+        if (data.bodenkonstruktionExternNote) formData.append('bodenkonstruktion_extem_note', data.bodenkonstruktionExternNote);
+        try {
+            await createSchafttypAndBodenkonstruktion(formData);
+            setHasDraftData(true);
+        } catch (e) {
+            console.error('Auto-save Bodenkonstruktion notes failed:', e);
+        }
+    };
+
     // Called when Schafttyp Intern erweitert modal "Abschließen" is clicked
     const handleSchafttypStandaloneSubmit = async (payload: {
         imageFile?: File;
@@ -218,6 +246,8 @@ export default function ErweiterteProduktionsoptionenCard({
                             onStandaloneSubmit={handleSchafttypStandaloneSubmit}
                             standaloneInitialData={schafftypInitialData}
                             standaloneInitialImageUrl={schafftypInitialImageUrl}
+                            onSchafttypInternNoteBlur={handleSchafttypNoteBlur}
+                            onSchafttypExternNoteBlur={handleSchafttypNoteBlur}
                         />
 
                         {/* Bodenkonstruktion */}
@@ -230,6 +260,8 @@ export default function ErweiterteProduktionsoptionenCard({
                                 disableExternErweitert={true}
                                 onStandaloneSave={handleBodenkonstruktionStandaloneSubmit}
                                 standalonePrefillKey={BODEN_STANDALONE_PREFILL_KEY}
+                                onBodenkonstruktionInternNoteBlur={handleBodenkonstruktionNoteBlur}
+                                onBodenkonstruktionExternNoteBlur={handleBodenkonstruktionNoteBlur}
                             />
                         </div>
                     </div>

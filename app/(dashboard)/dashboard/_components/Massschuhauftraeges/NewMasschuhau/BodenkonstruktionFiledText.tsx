@@ -44,6 +44,9 @@ export interface BodenkonstruktionFiledTextProps {
     onStandaloneSave?: (formData: FormData) => Promise<void>;
     /** sessionStorage key written by parent with { json, image } before modal opens (standalone). */
     standalonePrefillKey?: string;
+    /** Called on textarea blur – use for auto-save in standalone context. */
+    onBodenkonstruktionInternNoteBlur?: () => void;
+    onBodenkonstruktionExternNoteBlur?: () => void;
 }
 
 export default function BodenkonstruktionFiledText({
@@ -59,6 +62,8 @@ export default function BodenkonstruktionFiledText({
     disableExternErweitert = false,
     onStandaloneSave,
     standalonePrefillKey,
+    onBodenkonstruktionInternNoteBlur,
+    onBodenkonstruktionExternNoteBlur,
 }: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
@@ -225,6 +230,7 @@ export default function BodenkonstruktionFiledText({
                     <textarea
                         value={internNote}
                         onChange={(e) => setInternNote(e.target.value)}
+                        onBlur={onBodenkonstruktionInternNoteBlur}
                         placeholder="Details zur internen Bodenkonstruktion..."
                         rows={3}
                         className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
@@ -258,6 +264,7 @@ export default function BodenkonstruktionFiledText({
                     <textarea
                         value={externNote}
                         onChange={(e) => setExternNote(e.target.value)}
+                        onBlur={onBodenkonstruktionExternNoteBlur}
                         placeholder="Details zur externen Bodenkonstruktion..."
                         rows={3}
                         className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"

@@ -48,6 +48,9 @@ export interface SchafttypFieldTextProps {
     /** Standalone prefill – used as initialData/initialImageUrl when not in step5 mode. */
     standaloneInitialData?: MassschafterstellungJson | null;
     standaloneInitialImageUrl?: string | null;
+    /** Called on textarea blur – use for auto-save in standalone context. */
+    onSchafttypInternNoteBlur?: () => void;
+    onSchafttypExternNoteBlur?: () => void;
 }
 
 export default function SchafttypFieldText({
@@ -66,6 +69,8 @@ export default function SchafttypFieldText({
     onStandaloneSubmit,
     standaloneInitialData,
     standaloneInitialImageUrl,
+    onSchafttypInternNoteBlur,
+    onSchafttypExternNoteBlur,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -246,6 +251,7 @@ export default function SchafttypFieldText({
                         <textarea
                             value={schafttypInternNote}
                             onChange={(e) => onSchafttypInternNoteChange(e.target.value)}
+                            onBlur={onSchafttypInternNoteBlur}
                             placeholder="Details, Besonderheiten oder Wünsche für den internen Schaft..."
                             rows={3}
                             className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
@@ -279,6 +285,7 @@ export default function SchafttypFieldText({
                         <textarea
                             value={schafttypExternNote}
                             onChange={(e) => onSchafttypExternNoteChange(e.target.value)}
+                            onBlur={onSchafttypExternNoteBlur}
                             placeholder="Notizen für die externe Schaftfertigung..."
                             rows={3}
                             className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
