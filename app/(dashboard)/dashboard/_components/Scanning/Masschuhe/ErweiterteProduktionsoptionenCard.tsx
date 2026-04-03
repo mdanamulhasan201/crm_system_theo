@@ -61,6 +61,10 @@ export default function ErweiterteProduktionsoptionenCard({
             const hasData = Boolean(schaft || boden);
             setHasDraftData(hasData);
 
+            // Collect all note updates and apply in a single onChange call
+            // to avoid stale-closure overwrites from multiple separate calls.
+            const noteUpdates: Partial<ErweiterteProduktionsoptionenData> = {};
+
             // Schafttyp prefill
             if (schaft) {
                 const rawJson = schaft.massschafterstellung_json;
@@ -71,8 +75,8 @@ export default function ErweiterteProduktionsoptionenCard({
                 setSchafftypInitialData(parsedJson);
                 setSchafftypInitialImageUrl(schaft.massschafterstellung_image ?? null);
 
-                if (schaft.schafttyp_intem_note) onChange({ ...data, schafttypInternNote: schaft.schafttyp_intem_note });
-                if (schaft.schafttyp_extem_note) onChange({ ...data, schafttypExternNote: schaft.schafttyp_extem_note });
+                if (schaft.schafttyp_intem_note) noteUpdates.schafttypInternNote = schaft.schafttyp_intem_note;
+                if (schaft.schafttyp_extem_note) noteUpdates.schafttypExternNote = schaft.schafttyp_extem_note;
             } else {
                 setSchafftypInitialData(null);
                 setSchafftypInitialImageUrl(null);
@@ -90,10 +94,15 @@ export default function ErweiterteProduktionsoptionenCard({
                     JSON.stringify({ json: parsedJson, image: boden.bodenkonstruktion_image ?? null })
                 );
 
-                if (boden.bodenkonstruktion_intem_note) onChange({ ...data, bodenkonstruktionInternNote: boden.bodenkonstruktion_intem_note });
-                if (boden.bodenkonstruktion_extem_note) onChange({ ...data, bodenkonstruktionExternNote: boden.bodenkonstruktion_extem_note });
+                if (boden.bodenkonstruktion_intem_note) noteUpdates.bodenkonstruktionInternNote = boden.bodenkonstruktion_intem_note;
+                if (boden.bodenkonstruktion_extem_note) noteUpdates.bodenkonstruktionExternNote = boden.bodenkonstruktion_extem_note;
             } else {
                 sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
+            }
+
+            // Single merged onChange — avoids each call overwriting the previous
+            if (Object.keys(noteUpdates).length > 0) {
+                onChange({ ...data, ...noteUpdates });
             }
         } catch {
             // silently ignore – empty form is fine
@@ -117,6 +126,14 @@ export default function ErweiterteProduktionsoptionenCard({
             setSchafftypInitialImageUrl(null);
             setHasDraftData(false);
             sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
+            // Clear all note fields in parent state immediately
+            onChange({
+                ...data,
+                schafttypInternNote: '',
+                schafttypExternNote: '',
+                bodenkonstruktionInternNote: '',
+                bodenkonstruktionExternNote: '',
+            });
             toast.success('Entwurf gelöscht.');
         } catch (e) {
             console.error(e);
