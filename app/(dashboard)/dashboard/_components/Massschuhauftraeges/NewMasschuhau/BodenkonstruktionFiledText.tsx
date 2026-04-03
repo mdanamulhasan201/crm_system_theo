@@ -38,6 +38,8 @@ export interface BodenkonstruktionFiledTextProps {
     redirectCustomerId?: string;
     redirectCustomerName?: string;
     stepStatus?: string;
+    /** When true, only the Extern erweitert button is disabled (no redirect). Intern stays enabled. */
+    disableExternErweitert?: boolean;
 }
 
 export default function BodenkonstruktionFiledText({
@@ -50,6 +52,7 @@ export default function BodenkonstruktionFiledText({
     redirectCustomerId,
     redirectCustomerName,
     stepStatus,
+    disableExternErweitert = false,
 }: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
@@ -234,10 +237,11 @@ export default function BodenkonstruktionFiledText({
                             size="sm"
                             className={cn(
                                 'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                disableExternErweitert && 'opacity-50 cursor-not-allowed'
                             )}
                             onClick={handleExternErweitertClick}
-                            disabled={activeButtonsLoading}
+                            disabled={disableExternErweitert || activeButtonsLoading}
                         >
                             {isStep5 && activeButtons.extern ? (
                                 <Check className="w-4 h-4 mr-1.5 text-emerald-600" />

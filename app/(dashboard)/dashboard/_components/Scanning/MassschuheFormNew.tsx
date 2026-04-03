@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import RezeptCard from './Masschuhe/RezeptCard';
 import FilterCard, { type Step2Data, type Step3Data, type CustomerFittingData, type InternalPrepData } from './Masschuhe/FilterCard';
 import VersorgungsnotizCard from './Masschuhe/VersorgungsnotizCard';
+import ErweiterteProduktionsoptionenCard, { type ErweiterteProduktionsoptionenData } from './Masschuhe/ErweiterteProduktionsoptionenCard';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { getTaxRatesByCountry } from '@/utils/taxRates';
 
@@ -118,6 +119,13 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [ärztlicheDiagnose, setÄrztlicheDiagnose] = useState<string>('');
     const [ausführlicheDiagnose, setAusführlicheDiagnose] = useState<string>('');
     const [versorgungNote, setVersorgungNote] = useState<string>('');
+    const [erweiterteOptionen, setErweiterteOptionen] = useState<ErweiterteProduktionsoptionenData>({
+        schafttyp: '',
+        schafttypInternNote: '',
+        schafttypExternNote: '',
+        bodenkonstruktionInternNote: '',
+        bodenkonstruktionExternNote: '',
+    });
     const [halbprobeGeplant, setHalbprobeGeplant] = useState<boolean | null>(null);
     const [kostenvoranschlag, setKostenvoranschlag] = useState<boolean | null>(null);
 
@@ -317,7 +325,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         if (bettungErforderlich !== true) return true;
         const type = footbedData.bettung_type;
         if (type == null) return false;
-        
+
         if (type === 'on_last') {
             // For on_last: only type is required, Zusätzliche Notizen is optional
             return true;
@@ -334,15 +342,15 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             const br = parse(footbedData.thickness_ball_r);
             const tl = parse(footbedData.thickness_toe_l);
             const tr = parse(footbedData.thickness_toe_r);
-            
+
             // Check if all thickness fields are valid numbers > 0
-            const allValid = Number.isFinite(hl) && hl > 0 && 
-                           Number.isFinite(hr) && hr > 0 && 
-                           Number.isFinite(bl) && bl > 0 && 
-                           Number.isFinite(br) && br > 0 && 
-                           Number.isFinite(tl) && tl > 0 && 
-                           Number.isFinite(tr) && tr > 0;
-            
+            const allValid = Number.isFinite(hl) && hl > 0 &&
+                Number.isFinite(hr) && hr > 0 &&
+                Number.isFinite(bl) && bl > 0 &&
+                Number.isFinite(br) && br > 0 &&
+                Number.isFinite(tl) && tl > 0 &&
+                Number.isFinite(tr) && tr > 0;
+
             return allValid;
         }
         return false;
@@ -527,6 +535,13 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     customerFittingData={customerFittingData}
                     onCustomerFittingDataChange={setCustomerFittingData}
                     showBettungErrors={submitAttempted && bettungErforderlich === true && !isBettungValid}
+                />
+
+
+                {/* Erweiterte Produktionsoptionen (Schafttyp + Bodenkonstruktion) */}
+                <ErweiterteProduktionsoptionenCard
+                    data={erweiterteOptionen}
+                    onChange={setErweiterteOptionen}
                 />
 
                 {/* Versorgungsnotiz Card */}

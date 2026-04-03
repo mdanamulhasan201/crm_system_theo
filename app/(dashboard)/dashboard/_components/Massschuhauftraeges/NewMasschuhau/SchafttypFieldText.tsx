@@ -41,6 +41,8 @@ export interface SchafttypFieldTextProps {
     redirectCustomerId?: string;
     redirectCustomerName?: string;
     stepStatus?: string;
+    /** When true, only the Extern erweitert button is disabled (no redirect). Intern stays enabled. */
+    disableExternErweitert?: boolean;
 }
 
 export default function SchafttypFieldText({
@@ -55,6 +57,7 @@ export default function SchafttypFieldText({
     redirectCustomerId,
     redirectCustomerName,
     stepStatus,
+    disableExternErweitert = false,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -253,10 +256,11 @@ export default function SchafttypFieldText({
                                 size="sm"
                                 className={cn(
                                     'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                    isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                    isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                    disableExternErweitert && 'opacity-50 cursor-not-allowed'
                                 )}
                                 onClick={handleExternErweitertClick}
-                                disabled={activeButtonsLoading}
+                                disabled={disableExternErweitert || activeButtonsLoading}
                             >
                                 {isStep5 && activeButtons.extern ? (
                                     <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
