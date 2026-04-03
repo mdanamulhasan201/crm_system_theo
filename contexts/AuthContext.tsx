@@ -133,7 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('employeeToken');
-      
+      localStorage.removeItem('currentEmployeeId');
+      localStorage.removeItem('currentEmployeeData');
+
       setUser(null);
       setIsAuthenticated(false);
       setIsEmployeeMode(false);
@@ -237,19 +239,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('employeeToken');
+      localStorage.removeItem('currentEmployeeId');
+      localStorage.removeItem('currentEmployeeData');
 
       setUser(null);
       setIsAuthenticated(false);
       setIsEmployeeMode(false);
 
-      // SSO: redirect to CRM logout page so it clears its Zustand/localStorage,
-      // then CRM redirects back to Dashboard login page.
-      const crmUrl = process.env.NEXT_PUBLIC_CRM_URL || 'https://stock.feetf1rst.tech';
-      const dashboardLoginUrl = `${window.location.origin}/login`;
-      window.location.href = `${crmUrl}/sso-logout?redirect=${encodeURIComponent(dashboardLoginUrl)}`;
-    } catch (error) {
-      // If CRM redirect fails, fallback to local login
-      router.push('/login');
+      const loginUrl = `${window.location.origin}/login`;
+
+      // Optional: CRM SSO logout (clears CRM session, then redirects to loginUrl).
+      // Set NEXT_PUBLIC_USE_SSO_LOGOUT=true and NEXT_PUBLIC_CRM_URL to enable.
+      // Default: full-page navigation to /login so Session beenden always lands on Login.
+      const useSsoLogout = process.env.NEXT_PUBLIC_USE_SSO_LOGOUT === 'true';
+      const crmUrl = process.env.NEXT_PUBLIC_CRM_URL;
+      if (useSsoLogout && crmUrl) {
+        window.location.replace(`${crmUrl}/sso-logout?redirect=${encodeURIComponent(loginUrl)}`);
+        return;
+      }
+
+      window.location.replace(loginUrl);
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.location.replace(`${window.location.origin}/login`);
+      }
     }
   };
 
