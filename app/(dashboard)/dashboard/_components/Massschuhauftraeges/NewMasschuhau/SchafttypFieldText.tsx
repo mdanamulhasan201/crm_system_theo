@@ -278,6 +278,9 @@ export default function SchafttypFieldText({
                 )}
                 {schafttyp === 'Extern' && (
                     <div className="mt-4 pt-4 border-t border-gray-200/80">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-800">
+                            SCHAFT WIRD ZURZEIT EXTERN GEFERTIGT
+                        </p>
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                             <Label className="text-sm font-medium text-gray-800">
                                 Hinweise zur externen Schaftfertigung
