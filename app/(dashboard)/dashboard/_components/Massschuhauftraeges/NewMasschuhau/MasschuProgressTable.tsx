@@ -40,6 +40,9 @@ export interface ShoeOrderApi {
     priority: string;
     total_price?: number | null;
     shoeOrderStep: ShoeOrderStepApi[];
+    /** Wenn true: Produktion durch FeetF1rst (mit bodenkonstruktion) */
+    massschafterstellung?: boolean;
+    bodenkonstruktion?: boolean;
 }
 
 // Normalize API step name to match SHOE_STEPS (e.g. "Halbprobe_durchführen" -> "Halbprobe durchführen")
@@ -124,6 +127,7 @@ function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
         payment_status: order.payment_status,
         total_price: order.total_price ?? null,
         priority,
+        productionByFeetF1rst: Boolean(order.massschafterstellung || order.bodenkonstruktion),
     };
 }
 
@@ -163,6 +167,8 @@ export interface ProgressData {
     total_price?: number | null;
     notes?: string;
     priority?: string;
+    /** Mindestens eines von API: massschafterstellung | bodenkonstruktion */
+    productionByFeetF1rst?: boolean;
 }
 
 // Filter dropdown options: value (for API) and label (for display)
@@ -772,6 +778,9 @@ export default function MasschuProgressTable({
                             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 min-w-[200px]">
                                 Auftrag
                             </TableHead>
+                            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap">
+                                Produktion
+                            </TableHead>
                             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
                                 Aktueller Schritt
                             </TableHead>
@@ -798,7 +807,7 @@ export default function MasschuProgressTable({
                     <TableBody>
                         {filteredData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="py-8 text-center text-gray-500">
+                                <TableCell colSpan={10} className="py-8 text-center text-gray-500">
                                     Keine Daten für diesen Schritt verfügbar
                                 </TableCell>
                             </TableRow>
@@ -857,6 +866,15 @@ export default function MasschuProgressTable({
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
                                         <AuftragCell auftrag={row.auftrag} isUrgent={isDringend} />
+                                    </TableCell>
+                                    <TableCell className="py-4 px-6 align-middle">
+                                        {row.productionByFeetF1rst ? (
+                                            <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+                                                FeetF1rst
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-gray-400">—</span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
                                         <div className="font-medium text-gray-900 text-sm whitespace-nowrap">
