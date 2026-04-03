@@ -330,6 +330,7 @@ export default function MassschuhauftraegePage() {
     // Completed-by from API for current step (partner or employee who completed this step)
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
+    const [customerFullName, setCustomerFullName] = useState('');
     useEffect(() => {
         if (!id) {
             setLoading(false);
@@ -351,6 +352,10 @@ export default function MassschuhauftraegePage() {
                 if (data) {
                     setStepCompletedByPartner(data.partner ?? null);
                     setStepCompletedByEmployee(data.employee ?? null);
+                    // customer may be at data.customer (main order API) or data.order.customer (step API)
+                    const customerObj = data.customer ?? data.order?.customer;
+                    const fullName = [customerObj?.vorname, customerObj?.nachname].filter(Boolean).join(' ');
+                    if (fullName) setCustomerFullName(fullName);
                     setNotes(data.notes != null ? String(data.notes) : '');
                     if (data.material != null && data.material !== '') setMaterial(String(data.material));
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
@@ -1050,6 +1055,7 @@ export default function MassschuhauftraegePage() {
                                     {activeStepIndex === 4 && (
                                         <HalbprobeDurchfuehrungStepFields
                                             orderId={id}
+                                            redirectCustomerName={customerFullName || undefined}
                                             stepStatus="Halbprobe_durchführen"
                                             probenergebnis={probenergebnis}
                                             schafttyp={schafttyp}

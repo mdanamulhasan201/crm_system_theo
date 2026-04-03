@@ -30,17 +30,22 @@ import { parseEuroFromText } from "@/app/(dashboard)/dashboard/_components/Masss
 
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 import { updateMassschuheOrderStepBodenkonstruktion, getMassschuheOrderStepBodenkonstruktion } from "@/apis/MassschuheAddedApis"
+import { buildSohlenaufbauGlbBlob } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauExport"
+import { canExportSohlenaufbau3d, getSohlenaufbauPreviewDataFromForm } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauPreviewFromForm"
 
 const BODEN_STEP_STATUS = "Halbprobe_durchführen"
 
 type BodenkonstruktionCustomerOrderViewProps = {
     embeddedOrderId?: string | null
     onCloseEmbedded?: () => void
+    /** Pre-filled customer name shown immediately when modal opens */
+    defaultCustomerName?: string
 }
 
 export function BodenkonstruktionCustomerOrderView({
     embeddedOrderId,
     onCloseEmbedded,
+    defaultCustomerName = "",
 }: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -48,13 +53,14 @@ export function BodenkonstruktionCustomerOrderView({
     const handleCancel = onCloseEmbedded ?? (() => router.back())
     const prefillDoneRef = useRef(false)
 
-    // Customer name state
-    const [customerName, setCustomerName] = useState<string>("")
+    // Customer name state — initialize with defaultCustomerName so it shows immediately
+    const [customerName, setCustomerName] = useState<string>(defaultCustomerName)
 
     // Form states
     const [selected, setSelected] = useState<SelectedState>({
         hinterkappe: "kunststoff",
         sohlenversteifung: "nein",
+        verbindungsleder: "ja",
         Konstruktionsart: "geldakt",
     })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
@@ -148,7 +154,7 @@ export function BodenkonstruktionCustomerOrderView({
         }
         if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
         if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
-        if (typeof json.customerName === "string") setCustomerName(json.customerName)
+        if (typeof json.customerName === "string" && json.customerName.trim()) setCustomerName(json.customerName)
         if (json.heelWidthAdjustment != null) setHeelWidthAdjustment(json.heelWidthAdjustment as HeelWidthAdjustmentData | null)
         if (json.vorderkappeSide != null) setVorderkappeSide(json.vorderkappeSide as VorderkappeSideData | null)
         if (json.rahmen != null) setRahmen(json.rahmen as RahmenData | null)
@@ -311,42 +317,47 @@ export function BodenkonstruktionCustomerOrderView({
     })
 
     const handleWeiterClick = async () => {
-        // Validate customer name
-        if (!customerName.trim()) {
+        const isEmbedded = Boolean(orderId)
+
+        // Validate customer name (skip for embedded modal)
+        if (!isEmbedded && !customerName.trim()) {
             toast.error("Bitte geben Sie einen Kundennamen ein.")
             return
         }
 
-        if (!isAllCheckboxAnswered) {
-            setCheckboxError(true)
-            return
-        }
-        setCheckboxError(false)
-
-        // Validate sole selections
-        if (selectedSole?.id === "4") {
-            if (!sole4Thickness || !sole4Color) {
-                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+        // Validate required checkboxes (skip for embedded modal)
+        if (!isEmbedded) {
+            if (!isAllCheckboxAnswered) {
+                setCheckboxError(true)
                 return
+            }
+            setCheckboxError(false)
+        }
+
+        // Validate sole selections (skip for embedded modal)
+        if (!isEmbedded) {
+            if (selectedSole?.id === "4") {
+                if (!sole4Thickness || !sole4Color) {
+                    toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                    return
+                }
+            }
+            if (selectedSole?.id === "5") {
+                if (!sole5Thickness || !sole5Color) {
+                    toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                    return
+                }
+            }
+            if (selectedSole?.id === "6") {
+                if (!sole6Thickness || !sole6Color) {
+                    toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                    return
+                }
             }
         }
 
-        if (selectedSole?.id === "5") {
-            if (!sole5Thickness || !sole5Color) {
-                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
-                return
-            }
-        }
-
-        if (selectedSole?.id === "6") {
-            if (!sole6Thickness || !sole6Color) {
-                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
-                return
-            }
-        }
-
-        // When from order step (orderId): no modal – save directly and redirect to main page
-        if (orderId) {
+        // When from order step (orderId): save directly without modals
+        if (isEmbedded) {
             await handleFinalSubmit()
             return
         }
@@ -365,41 +376,311 @@ export function BodenkonstruktionCustomerOrderView({
         setTextAreas((prev) => ({ ...prev, [key]: value }))
     }
 
-    // Build bodenkonstruktion_json payload (all form data except image)
-    const buildBodenkonstruktionJson = () => ({
-        selected,
-        optionInputs,
-        textAreas,
-        customerName,
-        heelWidthAdjustment,
-        sohlenversteifung_detail: sohlenversteifung,
-        sohlenaufbau_detail: sohlenaufbau,
-        vorderkappeSide,
-        rahmen,
-        hinterkappeMusterSide,
-        hinterkappeSide,
-        brandsohleSide,
-        selectedSoleId: selectedSole?.id ?? null,
-        sole4Thickness,
-        sole4Color,
-        sole5Thickness,
-        sole5Color,
-        sole6Thickness,
-        sole6Color,
-    })
+    // Helper function to convert image to File
+    const convertImageToFile = async (imageString: string, fileName: string = 'custom_model.png'): Promise<File | null> => {
+        try {
+            if (!imageString) return null
+            if (imageString.startsWith('data:')) {
+                const response = await fetch(imageString)
+                const blob = await response.blob()
+                return new File([blob], fileName, { type: blob.type })
+            }
+            if (imageString.startsWith('http') || imageString.startsWith('/')) {
+                const response = await fetch(imageString)
+                if (response.ok) {
+                    const blob = await response.blob()
+                    return new File([blob], fileName, { type: blob.type })
+                }
+            }
+            return null
+        } catch {
+            return null
+        }
+    }
+
+    // Build full bodenkonstruktion FormData (same payload structure as bodenkonstruktion/page.tsx)
+    // isEmbedded=true skips threeDFile/staticImage (not accepted by order-step endpoint)
+    const prepareFullBodenkonstruktionFormData = async (isEmbedded = false): Promise<FormData> => {
+        const formData = new FormData()
+
+        if (orderId) formData.append("shoe_order_id", orderId)
+        if (customerName) formData.append("other_customer_name", customerName)
+
+        // Delivery date (14 days out)
+        const deliveryDateObj = new Date()
+        deliveryDateObj.setDate(deliveryDateObj.getDate() + 14)
+        formData.append("deliveryDate", deliveryDateObj.toISOString())
+        formData.append("totalPrice", grandTotal.toFixed(2))
+
+        if (bodenkonstruktionImageFile) formData.append("bodenkonstruktion_image", bodenkonstruktionImageFile)
+
+        const removeNulls = (obj: any): any => {
+            if (obj === null) return ""
+            if (Array.isArray(obj)) return obj.map(removeNulls)
+            if (typeof obj === "object") {
+                const cleaned: any = {}
+                for (const [k, v] of Object.entries(obj)) {
+                    const val = removeNulls(v)
+                    if (val !== undefined) cleaned[k] = val
+                }
+                return cleaned
+            }
+            return obj
+        }
+
+        const bodenkonstruktionJson: any = {
+            customerName: customerName || "",
+
+            Mehr_ansehen_image: selectedSole?.image || "",
+            Mehr_ansehen_title: selectedSole?.name || "",
+            Mehr_ansehen_description: selectedSole?.description || "",
+
+            hinterkappe_muster: {
+                mode: hinterkappeMusterSide?.mode ?? "",
+                sameValue: hinterkappeMusterSide?.sameValue ?? "",
+                leftValue: hinterkappeMusterSide?.leftValue ?? "",
+                rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                musterErstellung: hinterkappeMusterSide?.musterErstellung ?? "",
+                musterart: hinterkappeMusterSide?.musterart ?? "",
+                ...(hinterkappeMusterSide?.mode === "gleich" && { samePrice: 0 }),
+                ...(hinterkappeMusterSide?.mode === "unterschiedlich" && { leftPrice: 0, rightPrice: 0 }),
+            },
+
+            hinterkappe: hinterkappeSide && hinterkappeSide.mode ? {
+                mode: hinterkappeSide.mode,
+                sameValue: hinterkappeSide.sameValue ?? "",
+                sameSubValue: hinterkappeSide.sameSubValue ?? "",
+                leftValue: hinterkappeSide.leftValue ?? "",
+                leftSubValue: hinterkappeSide.leftSubValue ?? "",
+                rightValue: hinterkappeSide.rightValue ?? "",
+                rightSubValue: hinterkappeSide.rightSubValue ?? "",
+            } : (getSelectedValue(selected.hinterkappe) || ""),
+            leder_auswahl: "",
+            leder_auswahl_price: 0,
+            leder_auswahl_links: "",
+            leder_auswahl_links_price: 0,
+            leder_auswahl_rechts: "",
+            leder_auswahl_rechts_price: 0,
+
+            vorderkappe: {} as any,
+
+            brandsohle: "" as any,
+            brandsohle_price: 0,
+
+            verbindungsleder: getSelectedValue(selected.verbindungsleder) || "",
+
+            sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
+            Sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
+            sohlenversteifung_detail: sohlenversteifung,
+            sohlenaufbau_detail: sohlenaufbau,
+
+            Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
+            Konstruktionsart_price: 0,
+
+            rahmen: {} as any,
+            Rahmenfarbe: "",
+
+            absatz_form: getSelectedValue(selected.absatzform) || "",
+            absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
+            absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
+
+            abrollhilfe_Rolle: getSelectedValue(selected.abrollhilfe) || "",
+
+            Absatzbreite_anpassen: heelWidthAdjustment ? JSON.stringify(heelWidthAdjustment) : "",
+            Linker_Schuh_innen_medial: heelWidthAdjustment?.leftMedial ? `${heelWidthAdjustment.leftMedial.op || ""} ${heelWidthAdjustment.leftMedial.mm || 0}mm` : "",
+            Linker_Schuh_außen_lateral: heelWidthAdjustment?.leftLateral ? `${heelWidthAdjustment.leftLateral.op || ""} ${heelWidthAdjustment.leftLateral.mm || 0}mm` : "",
+            Rechter_Schuh_innen_medial: heelWidthAdjustment?.rightMedial ? `${heelWidthAdjustment.rightMedial.op || ""} ${heelWidthAdjustment.rightMedial.mm || 0}mm` : "",
+            Rechter_Schuh_außen_lateral: heelWidthAdjustment?.rightLateral ? `${heelWidthAdjustment.rightLateral.op || ""} ${heelWidthAdjustment.rightLateral.mm || 0}mm` : "",
+            heel_width_adjustment: heelWidthAdjustment || {},
+
+            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen: getSelectedValue(selected.laufsohle_lose_beilegen) || "",
+            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price: 0,
+
+            leisten_belassen: getSelectedValue(selected.leisten_belassen) || "",
+
+            besondere_hinweise: textAreas.besondere_hinweise || "",
+            Besondere_Hinweise: textAreas.besondere_hinweise || "",
+        }
+
+        const konstruktionsartValue = getSelectedValue(selected.Konstruktionsart)
+        if (konstruktionsartValue) {
+            bodenkonstruktionJson.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
+        }
+
+        const laufsohleValue = getSelectedValue(selected.laufsohle_lose_beilegen)
+        if (laufsohleValue) {
+            bodenkonstruktionJson.möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price = getOptionPrice("laufsohle_lose_beilegen", laufsohleValue)
+        }
+
+        if (selectedSole?.id === "4") {
+            if (sole4Thickness) bodenkonstruktionJson.sole4_thickness = sole4Thickness
+            if (sole4Color) bodenkonstruktionJson.sole4_color = sole4Color
+        }
+        if (selectedSole?.id === "5") {
+            if (sole5Thickness) bodenkonstruktionJson.sole5_thickness = sole5Thickness
+            if (sole5Color) bodenkonstruktionJson.sole5_color = sole5Color
+        }
+        if (selectedSole?.id === "6") {
+            if (sole6Thickness) bodenkonstruktionJson.sole6_thickness = sole6Thickness
+            if (sole6Color) bodenkonstruktionJson.sole6_color = sole6Color
+        }
+
+        if (hinterkappeSide && hinterkappeSide.mode) {
+            const leftVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.leftValue
+            const rightVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.rightValue
+            const leftSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.leftSubValue
+            const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
+            if (hinterkappeSide.mode === "gleich" && leftVal) {
+                bodenkonstruktionJson.hinterkappe_legacy = leftVal
+                bodenkonstruktionJson.Hinterkappe = leftVal
+            } else if (hinterkappeSide.mode === "unterschiedlich" && (leftVal || rightVal)) {
+                bodenkonstruktionJson.hinterkappe_legacy = [leftVal, rightVal].filter(Boolean).join(",")
+                bodenkonstruktionJson.Hinterkappe = [leftVal, rightVal].filter(Boolean).join(",")
+            }
+            if (leftVal === "leder" && leftSub) {
+                bodenkonstruktionJson.leder_auswahl_links = leftSub
+                const leftSubPrice = getSubOptionPrice("hinterkappe", leftSub)
+                bodenkonstruktionJson.leder_auswahl_links_price = leftSubPrice
+                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl || leftSub
+                bodenkonstruktionJson.leder_auswahl_price += leftSubPrice
+            }
+            if (rightVal === "leder" && rightSub) {
+                bodenkonstruktionJson.leder_auswahl_rechts = rightSub
+                if (hinterkappeSide.mode === "unterschiedlich") {
+                    const rightSubPrice = getSubOptionPrice("hinterkappe", rightSub)
+                    bodenkonstruktionJson.leder_auswahl_rechts_price = rightSubPrice
+                    bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl ? `${bodenkonstruktionJson.leder_auswahl},${rightSub}` : rightSub
+                    bodenkonstruktionJson.leder_auswahl_price += rightSubPrice
+                } else {
+                    bodenkonstruktionJson.leder_auswahl_rechts = leftSub
+                    bodenkonstruktionJson.leder_auswahl_rechts_price = bodenkonstruktionJson.leder_auswahl_links_price
+                    bodenkonstruktionJson.leder_auswahl_price = bodenkonstruktionJson.leder_auswahl_links_price * 2
+                }
+            }
+        } else if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
+            const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
+            if (hinterkappeSub) {
+                bodenkonstruktionJson.leder_auswahl = hinterkappeSub
+                bodenkonstruktionJson.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSub)
+            }
+        }
+
+        if (brandsohleSide && brandsohleSide.mode) {
+            bodenkonstruktionJson.Seite_wählen = brandsohleSide.mode
+            bodenkonstruktionJson.brandsohleSide = {
+                mode: brandsohleSide.mode,
+                sameValues: brandsohleSide.sameValues || [],
+                leftValues: brandsohleSide.leftValues || [],
+                rightValues: brandsohleSide.rightValues || [],
+                korkEnabled: Boolean(brandsohleSide.korkEnabled),
+                korkPosition: brandsohleSide.korkPosition || "",
+                korkDicke: brandsohleSide.korkDicke || "",
+                korkCustomMm: brandsohleSide.korkCustomMm || "",
+            }
+            let price = 0
+            if (brandsohleSide.mode === "gleich") {
+                for (const id of (brandsohleSide.sameValues || [])) {
+                    price += getOptionPrice("brandsohle", id) * 2
+                }
+            } else {
+                for (const id of (brandsohleSide.leftValues || [])) price += getOptionPrice("brandsohle", id)
+                for (const id of (brandsohleSide.rightValues || [])) price += getOptionPrice("brandsohle", id)
+            }
+            bodenkonstruktionJson.brandsohle_price = price
+            const firstVal = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues?.[0] : (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0] ?? null)
+            if (firstVal) bodenkonstruktionJson.brandsohle = firstVal
+            const legacyArr = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues : [...(brandsohleSide.leftValues || []), ...(brandsohleSide.rightValues || [])]
+            if (legacyArr?.length) bodenkonstruktionJson.brandsohle_legacy = legacyArr.join(',')
+        } else {
+            const brandsohleValue = getSelectedValue(selected.brandsohle)
+            if (brandsohleValue) {
+                bodenkonstruktionJson.brandsohle = brandsohleValue
+                bodenkonstruktionJson.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
+            }
+        }
+
+        if (vorderkappeSide && vorderkappeSide.mode) {
+            bodenkonstruktionJson.vorderkappe = {
+                mode: vorderkappeSide.mode,
+                sameMaterial: vorderkappeSide.sameMaterial || "",
+                leftMaterial: vorderkappeSide.leftMaterial || "",
+                rightMaterial: vorderkappeSide.rightMaterial || "",
+                laenge: vorderkappeSide.laenge ?? "normal",
+            }
+        }
+
+        if (rahmen && rahmen.type) {
+            bodenkonstruktionJson.rahmen = {
+                type: rahmen.type,
+                color: rahmen.color || "",
+                verschalungHoehe: rahmen.verschalungHoehe ?? "",
+                verschalungAusfuehrung: rahmen.verschalungAusfuehrung ?? "",
+            }
+            bodenkonstruktionJson.Rahmenfarbe = rahmen.color || ""
+        }
+
+        bodenkonstruktionJson.checklist_selected = removeNulls({ ...selected })
+        bodenkonstruktionJson.option_inputs = removeNulls(optionInputs)
+        bodenkonstruktionJson.text_areas = removeNulls(textAreas)
+        bodenkonstruktionJson.selected_sole = selectedSole
+            ? removeNulls({ id: selectedSole.id, name: selectedSole.name, image: selectedSole.image, description: selectedSole.description, des: selectedSole.des ?? "" })
+            : ""
+        bodenkonstruktionJson.sole_variant_options = removeNulls({ sole4Thickness, sole4Color, sole5Thickness, sole5Color, sole6Thickness, sole6Color })
+        bodenkonstruktionJson.pricing = removeNulls({ basePrice, grandTotal, currency: "EUR" })
+        bodenkonstruktionJson.form_data_v2 = removeNulls({
+            absatz_abrollhilfe: {
+                absatzform: getSelectedValue(selected.absatzform) || "",
+                abrollhilfe: selected.abrollhilfe ?? null,
+                absatzhoehe: getSelectedValue(selected.absatzhoehe) || "",
+                heel_width_adjustment: heelWidthAdjustment || null,
+            },
+            sohlenaufbau: sohlenaufbau,
+            sohlenversteifung: sohlenversteifung,
+            rahmen: rahmen || null,
+            vorderkappe: vorderkappeSide || null,
+            hinterkappe_muster: hinterkappeMusterSide || null,
+            hinterkappe: hinterkappeSide || null,
+            brandsohle: brandsohleSide || null,
+        })
+        bodenkonstruktionJson.delivery_date_display = deliveryDate
+        bodenkonstruktionJson.product_name = shoe2.name || ""
+
+        const cleanedJson = removeNulls(bodenkonstruktionJson)
+        formData.append("bodenkonstruktion_json", JSON.stringify(cleanedJson))
+
+        if (!isEmbedded && canExportSohlenaufbau3d(sohlenaufbau)) {
+            try {
+                const previewForGlb = getSohlenaufbauPreviewDataFromForm(sohlenaufbau)
+                const glbBlob = await buildSohlenaufbauGlbBlob(previewForGlb)
+                if (glbBlob) formData.append("threeDFile", glbBlob, "sohlenaufbau.glb")
+            } catch {
+                /* GLB optional */
+            }
+        }
+
+        if (!isEmbedded && selectedSole?.image) {
+            const staticImageFile = await convertImageToFile(selectedSole.image, 'sole_image.png')
+            if (staticImageFile) formData.append("staticImage", staticImageFile)
+            else formData.append("staticImage", selectedSole.image)
+        }
+
+        return formData
+    }
 
     // Handle final form submission: if orderId → POST order-step then redirect to order; else balance-dashboard
     const handleFinalSubmit = async (_deliveryDate?: string | null) => {
         setIsSubmitting(true)
         if (orderId) {
             try {
-                const formData = new FormData()
-                formData.append("bodenkonstruktion_json", JSON.stringify(buildBodenkonstruktionJson()))
-                if (bodenkonstruktionImageFile) formData.append("bodenkonstruktion_image", bodenkonstruktionImageFile)
+                const formData = await prepareFullBodenkonstruktionFormData(true)
                 await updateMassschuheOrderStepBodenkonstruktion(orderId, formData)
                 toast.success("Bodenkonstruktion gespeichert!", { id: "bodenkonstruktion-saved" })
                 setShowModal2(false)
-                router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(BODEN_STEP_STATUS)}`)
+                if (onCloseEmbedded) {
+                    onCloseEmbedded()
+                } else {
+                    router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(BODEN_STEP_STATUS)}`)
+                }
             } catch (e) {
                 console.error(e)
                 toast.error("Speichern fehlgeschlagen.")
@@ -591,10 +872,13 @@ export function BodenkonstruktionCustomerOrderView({
                 rahmen={rahmen}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
+                hinterkappeSplitConfigUi={true}
+                vorderkappeUnifiedConfigUi={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
+                brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
                 sohlenversteifungUnifiedConfigUi={true}
                 sohlenversteifung={sohlenversteifung}
@@ -602,11 +886,12 @@ export function BodenkonstruktionCustomerOrderView({
                 sohlenaufbauUnifiedConfigUi={true}
                 sohlenaufbau={sohlenaufbau}
                 onSohlenaufbauChange={setSohlenaufbau}
+                konstruktionsartUnifiedConfigUi={true}
+                rahmenUnifiedConfigUi={true}
                 hideBrandsohlePrice={true}
                 hideRahmenPrice={true}
-                hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
                 absatzAbrollhilfeUnifiedConfigUi={true}
-                laufsohleLeistenUnifiedConfigUi={true}
+                hideLaufsohleLeisten={true}
             />
 
             {/* PDF Popup */}

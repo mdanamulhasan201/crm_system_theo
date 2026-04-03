@@ -93,8 +93,17 @@ export default function BodenkonstruktionFiledText({
         }
     }, [isStep5, fetchActiveButtons]);
 
+    // Refetch active buttons whenever the modal closes so next open reflects saved state
+    useEffect(() => {
+        if (!internPopupOpen && isStep5) {
+            fetchActiveButtons();
+        }
+    }, [internPopupOpen, isStep5, fetchActiveButtons]);
+
     const handleErweitertClick = async () => {
-        if (isStep5 && orderId && activeButtons.intern) {
+        // Always fetch fresh prefill data on every click (regardless of activeButtons.intern)
+        // so saved data is visible immediately without a page reload
+        if (isStep5 && orderId) {
             setBodenLoading(true);
             try {
                 const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktion(orderId, 'intern');
@@ -104,13 +113,25 @@ export default function BodenkonstruktionFiledText({
                     ? (() => { try { return JSON.parse(internData.json); } catch { return undefined; } })()
                     : internData?.json;
 
+                // Always inject customer name — use saved value or fall back to prop
+                const mergedJson = {
+                    ...(parsedJson ?? {}),
+                    ...(!parsedJson?.customerName && redirectCustomerName
+                        ? { customerName: redirectCustomerName }
+                        : {}),
+                };
+
                 if (hasData && (parsedJson || internData?.image)) {
                     sessionStorage.setItem(
                         `bodenkonstruktion-embedded-prefill:${orderId}`,
-                        JSON.stringify({ json: parsedJson ?? null, image: internData?.image ?? null })
+                        JSON.stringify({ json: mergedJson, image: internData?.image ?? null })
                     );
                 } else {
-                    sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
+                    // No saved data yet — still prefill customer name
+                    sessionStorage.setItem(
+                        `bodenkonstruktion-embedded-prefill:${orderId}`,
+                        JSON.stringify({ json: redirectCustomerName ? { customerName: redirectCustomerName } : null, image: null })
+                    );
                 }
             } catch {
                 sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
@@ -265,17 +286,18 @@ export default function BodenkonstruktionFiledText({
             </Dialog>
 
             <Dialog open={internPopupOpen} onOpenChange={setInternPopupOpen}>
-                <DialogContent className="!max-w-4xl h-[92vh] p-0 overflow-hidden">
+                <DialogContent className="max-w-6xl! h-[95vh] p-0 overflow-hidden">
                     <DialogHeader className="sr-only">
                         <DialogTitle>Interne Bodenkonstruktion</DialogTitle>
                         <DialogDescription>
                             Bearbeiten Sie die interne Bodenkonstruktion im eingebetteten Bereich.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="h-full w-full bg-white overflow-y-auto p-2">
+                    <div className="h-full w-full bg-white overflow-y-auto px-6 py-2">
                         <BodenkonstruktionCustomerOrderView
                             embeddedOrderId={orderId}
                             onCloseEmbedded={() => setInternPopupOpen(false)}
+                            defaultCustomerName={redirectCustomerName || ""}
                         />
                     </div>
                 </DialogContent>

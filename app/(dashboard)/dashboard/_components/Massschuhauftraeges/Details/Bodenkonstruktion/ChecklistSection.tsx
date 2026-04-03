@@ -73,6 +73,8 @@ interface ChecklistSectionProps {
     onAbrollhilfeReplace?: (ids: string[] | null) => void
     /** When true: Laufsohle lose beilegen + Leisten belassen/ausleisten in einer ConfigCard. */
     laufsohleLeistenUnifiedConfigUi?: boolean
+    /** When true: hide the entire Laufsohle & Leisten section (e.g. embedded modal). */
+    hideLaufsohleLeisten?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -128,6 +130,7 @@ export default function ChecklistSection({
     absatzAbrollhilfeUnifiedConfigUi = false,
     onAbrollhilfeReplace,
     laufsohleLeistenUnifiedConfigUi = false,
+    hideLaufsohleLeisten = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -166,6 +169,9 @@ export default function ChecklistSection({
                     return <React.Fragment key={g.id} />
                 }
                 if (laufsohleLeistenUnifiedConfigUi && g.id === "leisten_belassen") {
+                    return <React.Fragment key={g.id} />
+                }
+                if (hideLaufsohleLeisten && (g.id === "laufsohle_lose_beilegen" || g.id === "leisten_belassen")) {
                     return <React.Fragment key={g.id} />
                 }
 
