@@ -42,9 +42,12 @@ export const createMassschuheWithoutOrderIdWithoutCustomModels = async (massschu
 // =================== Massschuhe Added APIs  Update v2 ======================
 
 // massschuhe order create v2/shoe-orders/create / update order status 
-export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
+export const createMassschuheOrderV2 = async (massschuheOrderData: any, options?: { externOrIntern?: boolean }) => {
     try {
-        const response = await axiosClient.post('/v2/shoe-orders/create', massschuheOrderData);
+        const url = options?.externOrIntern
+            ? '/v2/shoe-orders/create?extern-or-intern=true'
+            : '/v2/shoe-orders/create';
+        const response = await axiosClient.post(url, massschuheOrderData);
         return response.data;
     } catch (error: any) {
         throw error;

@@ -16,12 +16,12 @@ export const useCreateMassschuhe = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const createMassschuhe = async (data: MassschuheOrderV2Payload) => {
+    const createMassschuhe = async (data: MassschuheOrderV2Payload, options?: { externOrIntern?: boolean }) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await createMassschuheOrderV2(data);
+            const response = await createMassschuheOrderV2(data, options);
 
             if (response.success) {
                 toast.success(response.message || 'Massschuhe erfolgreich erstellt!');

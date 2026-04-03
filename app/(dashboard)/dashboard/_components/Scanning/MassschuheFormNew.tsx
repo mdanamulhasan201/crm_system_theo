@@ -119,6 +119,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [ärztlicheDiagnose, setÄrztlicheDiagnose] = useState<string>('');
     const [ausführlicheDiagnose, setAusführlicheDiagnose] = useState<string>('');
     const [versorgungNote, setVersorgungNote] = useState<string>('');
+    const [hasErweiterteDraftData, setHasErweiterteDraftData] = useState(false);
     const [erweiterteOptionen, setErweiterteOptionen] = useState<ErweiterteProduktionsoptionenData>({
         schafttyp: '',
         schafttypInternNote: '',
@@ -408,7 +409,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
 
     // Handle order submission from modal (orderData is v2 payload from MassschuheOrderModal)
     const handleOrderSubmit = async (orderData: any) => {
-        const result = await createMassschuhe(orderData);
+        const result = await createMassschuhe(orderData, { externOrIntern: hasErweiterteDraftData });
 
         if (result.success) {
             setShowOrderModal(false);
@@ -542,6 +543,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                 <ErweiterteProduktionsoptionenCard
                     data={erweiterteOptionen}
                     onChange={setErweiterteOptionen}
+                    onHasDraftDataChange={setHasErweiterteDraftData}
                 />
 
                 {/* Versorgungsnotiz Card */}

@@ -33,11 +33,14 @@ export interface ErweiterteProduktionsoptionenData {
 interface ErweiterteProduktionsoptionenCardProps {
     data: ErweiterteProduktionsoptionenData;
     onChange: (data: ErweiterteProduktionsoptionenData) => void;
+    /** Called whenever the card's internal hasDraftData state changes */
+    onHasDraftDataChange?: (hasData: boolean) => void;
 }
 
 export default function ErweiterteProduktionsoptionenCard({
     data,
     onChange,
+    onHasDraftDataChange,
 }: ErweiterteProduktionsoptionenCardProps) {
     const set = <K extends keyof ErweiterteProduktionsoptionenData>(
         key: K,
@@ -51,15 +54,31 @@ export default function ErweiterteProduktionsoptionenCard({
     const [isClearing, setIsClearing] = useState(false);
     const hasFetchedRef = useRef(false);
 
+    // Notify parent whenever hasDraftData changes
+    const setHasDraftDataWithNotify = useCallback((value: boolean) => {
+        setHasDraftData(value);
+        onHasDraftDataChange?.(value); // notify parent
+    }, [onHasDraftDataChange]);
+
     const fetchDraft = useCallback(async () => {
         try {
             const res: any = await getAllSchafttypAndBodenkonstruktion();
+
+            // API returns { success: false } when no draft exists — treat as empty, not an error
+            if (res?.success === false) {
+                setHasDraftDataWithNotify(false);
+                setSchafftypInitialData(null);
+                setSchafftypInitialImageUrl(null);
+                sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
+                return;
+            }
+
             const draft = res?.data ?? res;
 
             const schaft = draft?.massschafterstellung;
             const boden = draft?.bodenkonstruktion;
             const hasData = Boolean(schaft || boden);
-            setHasDraftData(hasData);
+            setHasDraftDataWithNotify(hasData);
 
             // Collect all note updates and apply in a single onChange call
             // to avoid stale-closure overwrites from multiple separate calls.
@@ -120,11 +139,16 @@ export default function ErweiterteProduktionsoptionenCard({
         e.stopPropagation(); // prevent accordion toggle
         setIsClearing(true);
         try {
-            await deleteSchafttypAndBodenkonstruktion();
+            const res: any = await deleteSchafttypAndBodenkonstruktion();
+            // success: false means draft was already gone — still clear the UI silently
+            if (res?.success === false && res?.message !== 'Draft not found') {
+                toast.error('Löschen fehlgeschlagen.');
+                return;
+            }
             // Reset all local draft state
             setSchafftypInitialData(null);
             setSchafftypInitialImageUrl(null);
-            setHasDraftData(false);
+            setHasDraftDataWithNotify(false);
             sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
             // Clear all note fields in parent state immediately
             onChange({
@@ -135,9 +159,22 @@ export default function ErweiterteProduktionsoptionenCard({
                 bodenkonstruktionExternNote: '',
             });
             toast.success('Entwurf gelöscht.');
-        } catch (e) {
-            console.error(e);
-            toast.error('Löschen fehlgeschlagen.');
+        } catch (e: any) {
+            // If the server 404s (draft already deleted), still clear local state
+            const isNotFound =
+                e?.response?.status === 404 ||
+                e?.response?.data?.message === 'Draft not found';
+            if (isNotFound) {
+                setSchafftypInitialData(null);
+                setSchafftypInitialImageUrl(null);
+                setHasDraftDataWithNotify(false);
+                sessionStorage.removeItem(BODEN_STANDALONE_PREFILL_KEY);
+                onChange({ ...data, schafttypInternNote: '', schafttypExternNote: '', bodenkonstruktionInternNote: '', bodenkonstruktionExternNote: '' });
+                toast.success('Entwurf gelöscht.');
+            } else {
+                console.error(e);
+                toast.error('Löschen fehlgeschlagen.');
+            }
         } finally {
             setIsClearing(false);
         }
@@ -151,7 +188,7 @@ export default function ErweiterteProduktionsoptionenCard({
         if (data.schafttypExternNote) formData.append('schafttyp_extem_note', data.schafttypExternNote);
         try {
             await createSchafttypAndBodenkonstruktion(formData);
-            setHasDraftData(true);
+            setHasDraftDataWithNotify(true);
         } catch (e) {
             console.error('Auto-save Schafttyp notes failed:', e);
         }
@@ -165,7 +202,7 @@ export default function ErweiterteProduktionsoptionenCard({
         if (data.bodenkonstruktionExternNote) formData.append('bodenkonstruktion_extem_note', data.bodenkonstruktionExternNote);
         try {
             await createSchafttypAndBodenkonstruktion(formData);
-            setHasDraftData(true);
+            setHasDraftDataWithNotify(true);
         } catch (e) {
             console.error('Auto-save Bodenkonstruktion notes failed:', e);
         }
