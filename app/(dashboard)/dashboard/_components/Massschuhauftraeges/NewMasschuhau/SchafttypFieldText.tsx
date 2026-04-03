@@ -48,6 +48,8 @@ export interface SchafttypFieldTextProps {
         imageFile?: File;
         linkerLeistenFile?: File | null;
         rechterLeistenFile?: File | null;
+        zipperImageFile?: File | null;
+        paintImageFile?: File | null;
         massschafterstellung_json: MassschafterstellungJson;
     }) => Promise<void>;
     /** Standalone prefill – used as initialData/initialImageUrl when not in step5 mode. */
@@ -180,13 +182,20 @@ export default function SchafttypFieldText({
         imageFile?: File;
         linkerLeistenFile?: File | null;
         rechterLeistenFile?: File | null;
+        zipperImageFile?: File | null;
+        paintImageFile?: File | null;
         massschafterstellung_json: MassschafterstellungJson;
     }) => {
         if (!orderId) return;
         const formData = new FormData();
-        if (payload.imageFile) formData.append('massschafterstellung_image', payload.imageFile);
+        if (payload.imageFile) {
+            formData.append('massschafterstellung_image', payload.imageFile);
+            formData.append('custom_models_image', payload.imageFile);
+        }
         if (payload.rechterLeistenFile) formData.append('massschafterstellung_threeDFile', payload.rechterLeistenFile);
         if (payload.linkerLeistenFile) formData.append('massschafterstellung_threeDFile_2', payload.linkerLeistenFile);
+        if (payload.zipperImageFile) formData.append('zipper_image', payload.zipperImageFile);
+        if (payload.paintImageFile) formData.append('paintImage', payload.paintImageFile);
         formData.append('massschafterstellung_json', JSON.stringify(payload.massschafterstellung_json));
         try {
             await MassschuheAddedApis.updateMassschuheOrderStepMassschafterstellung(orderId, formData);
@@ -345,6 +354,7 @@ export default function SchafttypFieldText({
                 initialData={isStep5 ? massschafterstellungData?.json : (standaloneInitialData ?? undefined)}
                 initialImageUrl={isStep5 ? massschafterstellungData?.imageUrl : (standaloneInitialImageUrl ?? undefined)}
                 onSubmit={isStep5 ? handleMassschafterstellungSubmit : onStandaloneSubmit}
+                enablePdfAfterSubmit={!isStep5}
             />
         </>
     );

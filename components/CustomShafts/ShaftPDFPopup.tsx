@@ -29,6 +29,8 @@ interface ShaftPDFPopupProps {
   /** When set (e.g. "Komplettfertigung" for JA BODEN KONFIGURIEREN), delivery date is calculated from API by category */
   deliveryCategory?: string | null
   shaftConfiguration: ShaftConfiguration
+  /** When true, hides the "Abschließen" button (download-only mode) */
+  hideAbschliessen?: boolean
 }
 
 const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
@@ -39,6 +41,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
   shaftImage,
   deliveryCategory,
   shaftConfiguration,
+  hideAbschliessen = false,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -91,16 +94,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     return mapping[nahtfarbe || ''] || nahtfarbe || '';
   }
 
-  // ⭐ Store formatted price in state
-  const [displayPrice, setDisplayPrice] = React.useState<string>('€0.00')
-
-  // Update price whenever orderData changes
-  React.useEffect(() => {
-    const totalPrice = orderData?.totalPrice || 0
-    const formattedPrice = `€${totalPrice.toFixed(2)}`
-    setDisplayPrice(formattedPrice)
-  }, [orderData?.totalPrice])
-
   // Default values if orderData is not provided
   const displayOrderNumber = orderData?.orderNumber || "#000000"
   const displayCustomerName = orderData?.customerName || "Kunde"
@@ -130,25 +123,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     const footer = clone.querySelector(".pdf-info-footer")
     if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
     
-    // Update price values with current state
-    const priceValues = clone.querySelectorAll('.pdf-price-value');
-    priceValues.forEach((priceEl) => {
-      priceEl.textContent = displayPrice;
-      const htmlPriceEl = priceEl as HTMLElement;
-      htmlPriceEl.setAttribute('style', 
-        'font-size: 22px !important; ' +
-        'font-weight: bold !important; ' +
-        'color: #000000 !important; ' +
-        'font-family: Arial, sans-serif !important; ' +
-        'visibility: visible !important; ' +
-        'display: table-cell !important; ' +
-        'text-align: left !important; ' +
-        'padding: 0 !important; ' +
-        'vertical-align: middle !important; ' +
-        'white-space: nowrap !important;'
-      );
-    });
-
     const opt = {
       margin: [40, 40, 45, 40], // Smaller bottom margin to avoid blank second page
       filename: "document.pdf",
@@ -201,25 +175,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
             }
           });
           
-          // Force price values to be visible
-          const priceValues = clonedDoc.querySelectorAll('.pdf-price-value');
-          priceValues.forEach((el: Element) => {
-            const htmlEl = el as HTMLElement;
-            htmlEl.textContent = displayPrice;
-            htmlEl.setAttribute('style', 
-              'font-size: 22px !important; ' +
-              'font-weight: bold !important; ' +
-              'color: #000000 !important; ' +
-              'font-family: Arial, sans-serif !important; ' +
-              'visibility: visible !important; ' +
-              'display: table-cell !important; ' +
-              'text-align: left !important; ' +
-              'padding: 0 !important; ' +
-              'vertical-align: middle !important; ' +
-              'white-space: nowrap !important; ' +
-              'opacity: 1 !important;'
-            );
-          });
         }
       },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
@@ -788,17 +743,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
 
-                  {/* Total Price */}
-                  <div style={{ marginTop: '24px', paddingTop: '16px', paddingBottom: '16px', borderTop: '2px solid #1e293b' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>
-                        Gesamtpreis:
-                      </div>
-                      <div style={{ fontSize: '22px', fontWeight: 700, color: '#22c55e' }}>
-                        {displayPrice}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1207,57 +1151,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
 
-                {/* Total Price */}
-                <div className="pdf-total-price-section" style={{ 
-                  marginTop: '12px', 
-                  marginBottom: '12px',
-                  paddingTop: '10px', 
-                  paddingBottom: '10px',
-                  borderTop: '3px solid #000000', 
-                  pageBreakInside: 'avoid',
-                  pageBreakAfter: 'avoid', // Prevent page break after this section
-                  backgroundColor: '#ffffff',
-                  width: '100%',
-                  maxWidth: '100%',
-                  overflow: 'visible'
-                }}>
-                  <table style={{ 
-                    width: 'auto', 
-                    borderCollapse: 'collapse'
-                  }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ 
-                          fontSize: '18px', 
-                          fontWeight: 'bold', 
-                          color: '#000000',
-                          fontFamily: 'Arial, sans-serif',
-                          padding: '0 30px 0 0',
-                          textAlign: 'left',
-                          verticalAlign: 'middle',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          Gesamtpreis:
-                        </td>
-                        <td 
-                          className="pdf-price-value"
-                          style={{ 
-                            fontSize: '22px', 
-                            fontWeight: 'bold', 
-                            color: '#000000',
-                            fontFamily: 'Arial, sans-serif',
-                            padding: '0',
-                            textAlign: 'left',
-                            verticalAlign: 'middle',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {displayPrice}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
                 </div>
               </div>
             </div>
@@ -1297,19 +1190,21 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
               </button>
               
               {/* Abschließen button */}
-              <button 
-                className="py-3 md:py-4 px-6 md:px-10 rounded-lg bg-[#36a866] text-white text-sm font-semibold cursor-pointer transition-colors hover:bg-[#2e8b5e] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto" 
-                onClick={handleAbschließen}
-                disabled={isAbschließenLoading}
-              >
-                {isAbschließenLoading && (
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                Abschließen
-              </button>
+              {!hideAbschliessen && (
+                <button 
+                  className="py-3 md:py-4 px-6 md:px-10 rounded-lg bg-[#36a866] text-white text-sm font-semibold cursor-pointer transition-colors hover:bg-[#2e8b5e] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto" 
+                  onClick={handleAbschließen}
+                  disabled={isAbschließenLoading}
+                >
+                  {isAbschließenLoading && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  Abschließen
+                </button>
+              )}
             </div>
           </div>
         </div>

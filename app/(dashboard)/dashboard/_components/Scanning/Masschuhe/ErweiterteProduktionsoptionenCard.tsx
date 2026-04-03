@@ -213,18 +213,28 @@ export default function ErweiterteProduktionsoptionenCard({
         imageFile?: File;
         linkerLeistenFile?: File | null;
         rechterLeistenFile?: File | null;
+        zipperImageFile?: File | null;
+        paintImageFile?: File | null;
         massschafterstellung_json: MassschafterstellungJson;
     }) => {
         const formData = new FormData();
         if (payload.imageFile) {
             formData.append('massschafterstellung_image', payload.imageFile);
+            formData.append('custom_models_image', payload.imageFile);
         }
-        // 3D Leisten files — rechter = image3d_1, linker = image3d_2 (matches page naming)
+        // 3D Leisten files
         if (payload.rechterLeistenFile) {
             formData.append('massschafterstellung_threeDFile', payload.rechterLeistenFile);
         }
         if (payload.linkerLeistenFile) {
             formData.append('massschafterstellung_threeDFile_2', payload.linkerLeistenFile);
+        }
+        // Extra images
+        if (payload.zipperImageFile) {
+            formData.append('zipper_image', payload.zipperImageFile);
+        }
+        if (payload.paintImageFile) {
+            formData.append('paintImage', payload.paintImageFile);
         }
         formData.append('massschafterstellung_json', JSON.stringify(payload.massschafterstellung_json));
         if (data.schafttypInternNote) formData.append('schafttyp_intem_note', data.schafttypInternNote);
