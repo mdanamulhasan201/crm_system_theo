@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -93,6 +93,16 @@ export default function SchafttypFieldText({
     } | null>(null);
     const [massschafterstellungLoading, setMassschafterstellungLoading] = useState(false);
     const isStep5 = Boolean(orderId && stepStatus);
+    const internNoteRef = useRef(schafttypInternNote);
+    const externNoteRef = useRef(schafttypExternNote);
+
+    useEffect(() => {
+        internNoteRef.current = schafttypInternNote;
+    }, [schafttypInternNote]);
+
+    useEffect(() => {
+        externNoteRef.current = schafttypExternNote;
+    }, [schafttypExternNote]);
 
     const fetchMassschafterstellung = useCallback(async () => {
         if (!orderId || !stepStatus) return null;
@@ -134,14 +144,14 @@ export default function SchafttypFieldText({
             if (
                 typeof internNoteFromApi === 'string' &&
                 internNoteFromApi.trim() &&
-                !schafttypInternNote.trim()
+                !internNoteRef.current.trim()
             ) {
                 onSchafttypInternNoteChange(internNoteFromApi);
             }
             if (
                 typeof externNoteFromApi === 'string' &&
                 externNoteFromApi.trim() &&
-                !schafttypExternNote.trim()
+                !externNoteRef.current.trim()
             ) {
                 onSchafttypExternNoteChange(externNoteFromApi);
             }
@@ -152,8 +162,6 @@ export default function SchafttypFieldText({
         }
     }, [
         orderId,
-        schafttypInternNote,
-        schafttypExternNote,
         onSchafttypInternNoteChange,
         onSchafttypExternNoteChange,
     ]);

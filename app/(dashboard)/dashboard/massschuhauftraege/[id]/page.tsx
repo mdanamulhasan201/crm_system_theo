@@ -22,7 +22,9 @@ import BettungserstellungStepFields, {
 } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
+import SchaftFertigenSchafttypSection from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/SchaftFertigenSchafttypSection';
 import BodenerstellenBodenkonstruktionSection from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BodenerstellenBodenkonstruktionSection';
+import AuftragserstellungNotesDetailModal from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/AuftragserstellungNotesDetailModal';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -332,6 +334,30 @@ export default function MassschuhauftraegePage() {
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
     const [customerFullName, setCustomerFullName] = useState('');
+    /** Step 1: from GET /shoe-orders/get-notes/:id */
+    const [orderNoteDetail, setOrderNoteDetail] = useState('');
+    const [supplyNoteDetail, setSupplyNoteDetail] = useState('');
+    const [stepOneNoteDetail, setStepOneNoteDetail] = useState('');
+    const [auftragNotesModalOpen, setAuftragNotesModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (!id) return;
+        MassschuheAddedApis.getMassschuheOrderNote(id)
+            .then((res: any) => {
+                const on = res?.orderNote ?? {};
+                setOrderNoteDetail(on?.order_note != null ? String(on.order_note) : '');
+                setSupplyNoteDetail(on?.supply_note != null ? String(on.supply_note) : '');
+                const list = Array.isArray(res?.notes) ? res.notes : [];
+                const stepOne = list.find((n: any) => String(n?.status || '').trim() === 'Auftragserstellung');
+                setStepOneNoteDetail(stepOne?.note != null ? String(stepOne.note) : '');
+            })
+            .catch(() => {
+                setOrderNoteDetail('');
+                setSupplyNoteDetail('');
+                setStepOneNoteDetail('');
+            });
+    }, [id]);
+
     useEffect(() => {
         if (!id) {
             setLoading(false);
@@ -584,6 +610,11 @@ export default function MassschuhauftraegePage() {
             if (statusFromUrl === 'Bodenerstellen') {
                 if (bodenkonstruktionInternNote) formData.append('bodenkonstruktion_intem_note', bodenkonstruktionInternNote);
                 if (bodenkonstruktionExternNote) formData.append('bodenkonstruktion_extem_note', bodenkonstruktionExternNote);
+            }
+            if (statusFromUrl === 'Schaft_fertigen') {
+                if (schafttyp) formData.append('schafttyp', schafttyp);
+                if (schafttypInternNote) formData.append('schafttyp_intem_note', schafttypInternNote);
+                if (schafttypExternNote) formData.append('schafttyp_extem_note', schafttypExternNote);
             }
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
@@ -1009,7 +1040,22 @@ export default function MassschuhauftraegePage() {
                                         )}
                                     </div>
 
-                                    {/* Step 7 (Bodenerstellen): Bodenkonstruktion – above Notiz, same behaviour as in step 5 */}
+                                    {/* Step 6 (Schaft_fertigen): Schafttyp – above Notiz */}
+                                    {activeStepIndex === 5 && id && (
+                                        <SchaftFertigenSchafttypSection
+                                            orderId={id}
+                                            redirectOrderId={id}
+                                            redirectCustomerName={customerFullName || undefined}
+                                            schafttyp={schafttyp}
+                                            schafttypInternNote={schafttypInternNote}
+                                            schafttypExternNote={schafttypExternNote}
+                                            onSchafttypChange={setSchafttyp}
+                                            onSchafttypInternNoteChange={setSchafttypInternNote}
+                                            onSchafttypExternNoteChange={setSchafttypExternNote}
+                                        />
+                                    )}
+
+                                    {/* Step 7 (Bodenerstellen): Bodenkonstruktion – above Notiz */}
                                     {activeStepIndex === 6 && id && (
                                         <BodenerstellenBodenkonstruktionSection
                                             orderId={id}
@@ -1024,7 +1070,20 @@ export default function MassschuhauftraegePage() {
 
                                     {/* Notiz Section */}
                                     <div className="mb-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Notiz</h3>
+                                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                            <h3 className="text-lg font-semibold text-gray-900">Notiz</h3>
+                                            {activeStepIndex === 0 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="shrink-0"
+                                                    onClick={() => setAuftragNotesModalOpen(true)}
+                                                >
+                                                    Notizen anzeigen
+                                                </Button>
+                                            )}
+                                        </div>
                                         <textarea
                                             value={notes}
                                             onChange={(e) => setNotes(e.target.value)}
@@ -1032,6 +1091,16 @@ export default function MassschuhauftraegePage() {
                                             className="w-full min-h-[120px] p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                                         />
                                     </div>
+
+                                    {activeStepIndex === 0 && (
+                                        <AuftragserstellungNotesDetailModal
+                                            open={auftragNotesModalOpen}
+                                            onOpenChange={setAuftragNotesModalOpen}
+                                            orderNote={orderNoteDetail}
+                                            supplyNote={supplyNoteDetail}
+                                            stepNote={stepOneNoteDetail}
+                                        />
+                                    )}
                                     {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
                                     {activeStepIndex === 1 && (
                                         <LeistenerstellungStepFields

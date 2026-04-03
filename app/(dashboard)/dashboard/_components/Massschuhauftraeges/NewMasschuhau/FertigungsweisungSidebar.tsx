@@ -384,12 +384,12 @@ export default function FertigungsweisungSidebar({ orderId, statusParam }: Ferti
                             </div>
 
                             {/* 3. Lieferhinweis (supply_note) */}
-                            <div>
+                            {/* <div>
                                 <div className="font-semibold text-gray-600 mb-1">Lieferhinweis</div>
                                 <div className="text-gray-700">
                                     {orderDetails.supply_note || '–'}
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* 4. Ärztliche Diagnose (medical_diagnosis) */}
                             <div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,7 @@ export default function BodenkonstruktionFiledText({
     const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [internPopupOpen, setInternPopupOpen] = useState(false);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
+    const wasInternPopupOpenRef = useRef(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
     const internNote = internControlled ? (bodenkonstruktionInternNote ?? '') : internNoteLocal;
@@ -84,6 +85,16 @@ export default function BodenkonstruktionFiledText({
     const setInternNote = internControlled ? (v: string) => onBodenkonstruktionInternNoteChange?.(v) : setInternNoteLocal;
     const setExternNote = externControlled ? (v: string) => onBodenkonstruktionExternNoteChange?.(v) : setExternNoteLocal;
     const isStep5 = Boolean(orderId && stepStatus);
+    const internNoteRef = useRef(internNote);
+    const externNoteRef = useRef(externNote);
+
+    useEffect(() => {
+        internNoteRef.current = internNote;
+    }, [internNote]);
+
+    useEffect(() => {
+        externNoteRef.current = externNote;
+    }, [externNote]);
 
     const fetchActiveButtons = useCallback(async () => {
         if (!orderId) return;
@@ -99,23 +110,31 @@ export default function BodenkonstruktionFiledText({
             if (
                 typeof internNoteFromApi === 'string' &&
                 internNoteFromApi.trim() &&
-                !internNote.trim()
+                !internNoteRef.current.trim()
             ) {
-                setInternNote(internNoteFromApi);
+                if (internControlled) onBodenkonstruktionInternNoteChange?.(internNoteFromApi);
+                else setInternNoteLocal(internNoteFromApi);
             }
             if (
                 typeof externNoteFromApi === 'string' &&
                 externNoteFromApi.trim() &&
-                !externNote.trim()
+                !externNoteRef.current.trim()
             ) {
-                setExternNote(externNoteFromApi);
+                if (externControlled) onBodenkonstruktionExternNoteChange?.(externNoteFromApi);
+                else setExternNoteLocal(externNoteFromApi);
             }
         } catch {
             setActiveButtons({ intern: false, extern: false });
         } finally {
             setActiveButtonsLoading(false);
         }
-    }, [orderId, internNote, externNote, setInternNote, setExternNote]);
+    }, [
+        orderId,
+        internControlled,
+        externControlled,
+        onBodenkonstruktionInternNoteChange,
+        onBodenkonstruktionExternNoteChange,
+    ]);
 
     useEffect(() => {
         if (isStep5) {
@@ -123,11 +142,12 @@ export default function BodenkonstruktionFiledText({
         }
     }, [isStep5, fetchActiveButtons]);
 
-    // Refetch active buttons whenever the modal closes so next open reflects saved state
+    // Refetch active buttons only when intern modal transitions open -> closed
     useEffect(() => {
-        if (!internPopupOpen && isStep5) {
+        if (isStep5 && wasInternPopupOpenRef.current && !internPopupOpen) {
             fetchActiveButtons();
         }
+        wasInternPopupOpenRef.current = internPopupOpen;
     }, [internPopupOpen, isStep5, fetchActiveButtons]);
 
     useEffect(() => {
