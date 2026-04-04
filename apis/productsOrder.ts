@@ -32,17 +32,27 @@ export const createOrder = async (
 }
 
 
-/** Call suggest-supply-and-stock. Backend expects param footLengthMm; we pass requiredLength (from suggestParams.requiredLength) as the value. */
-export const suggestSupplyAndStock = async (requiredLength: number) => {
+/** Call suggest-supply-and-stock. Backend expects param footLengthMm; we pass requiredLength (from suggestParams.requiredLength) as the value. For ⚙️ Einmalige Versorgung, pass `einmaligeVersorgungKey` so the backend can scope `supply` (shadow) suggestions. */
+export const suggestSupplyAndStock = async (
+    requiredLength: number,
+    einmaligeVersorgungKey?: string | null,
+) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/create-order/suggest-supply-and-stock?footLengthMm=${requiredLength}`);
+        const params = new URLSearchParams();
+        params.set('footLengthMm', String(requiredLength));
+        if (einmaligeVersorgungKey != null && String(einmaligeVersorgungKey).trim() !== '') {
+            params.set('key', String(einmaligeVersorgungKey).trim());
+        }
+        const response = await axiosClient.get(
+            `/customer-orders/create-order/suggest-supply-and-stock?${params.toString()}`,
+        );
         return response.data;
     } catch (error) {
         throw error;
     }
 };
 
-/** Alias for Einlagen flow: same as suggestSupplyAndStock(requiredLength). */
+/** Alias for Einlagen flow: same as suggestSupplyAndStock(requiredLength, einmaligeVersorgungKey?). */
 export const suggestSupplyAndStockByRequiredLength = suggestSupplyAndStock;
 
 

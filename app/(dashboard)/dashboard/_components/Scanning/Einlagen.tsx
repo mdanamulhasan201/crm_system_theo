@@ -1063,11 +1063,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 };
 
                 // Add versorgungId OR key based on active tab
-                if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
-                    // For Einmalige Versorgung, use "key" field instead of "versorgungId"
+                if (suggestedVersorgungIdOverride) {
+                    // User picked a row from suggest modal → supply.id is a real Versorgung id; body must use versorgungId (not shadow key)
+                    orderPayload.versorgungId = suggestedVersorgungIdOverride;
+                } else if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+                    // Einmalige Versorgung before a supply is chosen: shadow key from Fertig
                     orderPayload.key = customVersorgungId;
                 } else {
-                    // For Standard-Vorlage and others, use "versorgungId"
                     orderPayload.versorgungId = versorgungIdToUse;
                 }
 
@@ -1136,7 +1138,14 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setSuggestSupplyModalData(null);
                     setSuggestSupplyModalLoading(true);
                     try {
-                        const res = await suggestSupplyAndStockByRequiredLength(requiredLength);
+                        const einmaligeKey =
+                            activeVersorgungTab === 'einmalig' && customVersorgungId
+                                ? customVersorgungId
+                                : undefined;
+                        const res = await suggestSupplyAndStockByRequiredLength(
+                            requiredLength,
+                            einmaligeKey,
+                        );
                         const data = (res as any)?.data ?? res;
                         setSuggestSupplyModalData({
                             supply: (data?.supply ?? []) as SuggestSupplyAndStockData['supply'],
