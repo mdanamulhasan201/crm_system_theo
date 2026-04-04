@@ -375,9 +375,9 @@ export default function FertigungsweisungSidebar({ orderId, statusParam }: Ferti
                             {/* 2. Standort (branch_location) */}
                             <div>
                                 <div className="font-semibold text-gray-600 mb-1">Standort</div>
-                                <div className="text-gray-700">
+                                {/* <div className="text-gray-700">
                                     {orderDetails.branch_location?.title || '–'}
-                                </div>
+                                </div> */}
                                 <div className="text-gray-500 mt-0.5">
                                     {orderDetails.branch_location?.description || '–'}
                                 </div>
@@ -442,19 +442,19 @@ export default function FertigungsweisungSidebar({ orderId, statusParam }: Ferti
                                                 <div className="space-y-1">
                                                     {on.supply_note ? (
                                                         <div className="text-xs">
-                                                            <span className="text-gray-500">Lieferhinweis:</span>{' '}
+                                                            <span className="text-gray-500"></span>{' '}
                                                             {on.supply_note}
                                                         </div>
                                                     ) : null}
                                                     {on.order_note ? (
                                                         <div className="text-xs">
-                                                            <span className="text-gray-500">Auftragsnotiz:</span>{' '}
+                                                            <span className="text-gray-500"></span>{' '}
                                                             {on.order_note}
                                                         </div>
                                                     ) : null}
                                                     {on.status_note ? (
                                                         <div className="text-xs">
-                                                            <span className="text-gray-500">Statusnotiz:</span>{' '}
+                                                            <span className="text-gray-500"></span>{' '}
                                                             {on.status_note}
                                                         </div>
                                                     ) : null}

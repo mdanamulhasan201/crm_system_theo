@@ -24,7 +24,7 @@ import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
 import SchaftFertigenSchafttypSection from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/SchaftFertigenSchafttypSection';
 import BodenerstellenBodenkonstruktionSection from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BodenerstellenBodenkonstruktionSection';
-import AuftragserstellungNotesDetailModal from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/AuftragserstellungNotesDetailModal';
+import MasschuhauNoteModal from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuhauNoteModal';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -334,29 +334,7 @@ export default function MassschuhauftraegePage() {
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
     const [customerFullName, setCustomerFullName] = useState('');
-    /** Step 1: from GET /shoe-orders/get-notes/:id */
-    const [orderNoteDetail, setOrderNoteDetail] = useState('');
-    const [supplyNoteDetail, setSupplyNoteDetail] = useState('');
-    const [stepOneNoteDetail, setStepOneNoteDetail] = useState('');
     const [auftragNotesModalOpen, setAuftragNotesModalOpen] = useState(false);
-
-    useEffect(() => {
-        if (!id) return;
-        MassschuheAddedApis.getMassschuheOrderNote(id)
-            .then((res: any) => {
-                const on = res?.orderNote ?? {};
-                setOrderNoteDetail(on?.order_note != null ? String(on.order_note) : '');
-                setSupplyNoteDetail(on?.supply_note != null ? String(on.supply_note) : '');
-                const list = Array.isArray(res?.notes) ? res.notes : [];
-                const stepOne = list.find((n: any) => String(n?.status || '').trim() === 'Auftragserstellung');
-                setStepOneNoteDetail(stepOne?.note != null ? String(stepOne.note) : '');
-            })
-            .catch(() => {
-                setOrderNoteDetail('');
-                setSupplyNoteDetail('');
-                setStepOneNoteDetail('');
-            });
-    }, [id]);
 
     useEffect(() => {
         if (!id) {
@@ -1092,13 +1070,13 @@ export default function MassschuhauftraegePage() {
                                         />
                                     </div>
 
-                                    {activeStepIndex === 0 && (
-                                        <AuftragserstellungNotesDetailModal
-                                            open={auftragNotesModalOpen}
-                                            onOpenChange={setAuftragNotesModalOpen}
-                                            orderNote={orderNoteDetail}
-                                            supplyNote={supplyNoteDetail}
-                                            stepNote={stepOneNoteDetail}
+
+
+                                    {auftragNotesModalOpen && id && (
+                                        <MasschuhauNoteModal
+                                            isOpen={auftragNotesModalOpen}
+                                            onClose={() => setAuftragNotesModalOpen(false)}
+                                            orderId={id}
                                         />
                                     )}
                                     {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
