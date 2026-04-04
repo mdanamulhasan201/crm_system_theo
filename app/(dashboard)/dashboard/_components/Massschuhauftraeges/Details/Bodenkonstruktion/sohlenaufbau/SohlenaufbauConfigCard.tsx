@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import { useCallback, useMemo, useState } from "react"
 import { Download, Layers } from "lucide-react"
 import toast from "react-hot-toast"
+import { useFeatureAccess } from "@/contexts/FeatureAccessContext"
 import ConfigCard from "../shared/ConfigCard"
 import { RadioOption } from "../shared/RadioOption"
 import type { SohlenaufbauData, SohlenaufbauFarbModus } from "../FormFields"
@@ -29,6 +30,9 @@ const SolePreview3D = dynamic(() => import("./SolePreview3D"), {
   ),
 })
 
+/** Feature access: „Biomechanical Calculation“ — same API path as sidebar / Navbar CRM pattern */
+const BIOMECHANICAL_CALCULATION_PATH = "/dashboard/biomechanical_calculation"
+
 export default function SohlenaufbauConfigCard({
   value,
   onChange,
@@ -36,6 +40,9 @@ export default function SohlenaufbauConfigCard({
   value: SohlenaufbauData
   onChange: (next: SohlenaufbauData) => void
 }) {
+  const { isPathAllowed } = useFeatureAccess()
+  const showBiomechanicalCalculation = isPathAllowed(BIOMECHANICAL_CALCULATION_PATH)
+
   const apply = useCallback(
     (partial: Partial<SohlenaufbauData>) => {
       let next: SohlenaufbauData = { ...value, ...partial }
@@ -424,7 +431,7 @@ export default function SohlenaufbauConfigCard({
           </div>
         ) : null}
 
-        {hasValues && calc.valid ? (
+        {hasValues && calc.valid && showBiomechanicalCalculation ? (
           <SohlenaufbauBiomechanicsPanel
             ferseHeight={calc.ferse}
             ballenHeight={calc.ballen}
