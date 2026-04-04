@@ -167,7 +167,7 @@ export interface ProgressData {
     total_price?: number | null;
     notes?: string;
     priority?: string;
-    /** Mindestens eines von API: massschafterstellung | bodenkonstruktion */
+    /** true wenn massschafterstellung oder bodenkonstruktion; sonst Eigenfertigung (Partner) */
     productionByFeetF1rst?: boolean;
 }
 
@@ -873,7 +873,9 @@ export default function MasschuProgressTable({
                                                 FeetF1rst
                                             </span>
                                         ) : (
-                                            <span className="text-sm text-gray-400">—</span>
+                                            <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+                                                Eigenfertigung
+                                            </span>
                                         )}
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
