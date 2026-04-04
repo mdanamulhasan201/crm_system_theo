@@ -140,7 +140,7 @@ export default function OrderTableRow({
     const [isGettingKvaNumber, setIsGettingKvaNumber] = useState(false);
     // Prefer API `u_orderType` for the small type badge beside the checkbox.
     const rawOrderType = (order.uOrderType ?? order.orderType ?? selectedType ?? '').toString().trim();
-    const normalizedOrderType = rawOrderType.toLowerCase();
+    const normalizedOrderType = rawOrderType.toLowerCase().replace(/\s+/g, '_');
     const typeLetter =
         normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'R'
             : normalizedOrderType === 'milling_block' ? 'F'
@@ -151,15 +151,22 @@ export default function OrderTableRow({
             : normalizedOrderType === 'milling_block' ? 'Milling Block'
                 : normalizedOrderType === 'sonstiges' ? 'Sonstiges'
                     : rawOrderType || 'Unbekannter Typ';
+    /** Einlage / Fräsblock rows: show standards whenever the order is that type, not only when the table filter is Einlage/Fräsblock (fixes "Alle"). */
+    const orderIsInsoleOrMillingType =
+        normalizedOrderType === 'rady_insole' ||
+        normalizedOrderType === 'insole' ||
+        normalizedOrderType === 'milling_block';
     const shouldShowInsoleStandards =
-        (selectedType === 'rady_insole' || selectedType === 'milling_block') &&
+        orderIsInsoleOrMillingType &&
         Array.isArray(order.insoleStandards) &&
         order.insoleStandards.length > 0;
-    const shouldHideBeschreibung =
-        selectedType === 'rady_insole' || selectedType === 'milling_block';
     const visibleInsoleStandards = shouldShowInsoleStandards
         ? order.insoleStandards!.filter((item) => (item.left ?? 0) !== 0 || (item.right ?? 0) !== 0)
         : [];
+    const shouldHideBeschreibung =
+        selectedType === 'rady_insole' ||
+        selectedType === 'milling_block' ||
+        (selectedType === 'alle' && visibleInsoleStandards.length > 0);
     const formatInsoleStandard = (name: string, left: number, right: number) => {
         const formatValue = (value: number) =>
             Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
