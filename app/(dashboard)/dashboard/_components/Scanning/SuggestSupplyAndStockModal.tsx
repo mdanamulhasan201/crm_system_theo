@@ -55,8 +55,11 @@ interface SuggestSupplyAndStockModalProps {
     /** From create-order error (`storeType`); parent sends as `u_orderType` when Überspringen. */
     storeType?: string | null;
     loading?: boolean;
-    /** When user selects a supply or milling_block card, call with that item's id (used as versorgungId in order) */
-    onSelectVersorgung?: (id: string) => void;
+    /**
+     * When user selects a card: `supply` → id is used as versorgungId override.
+     * `milling_block` → id is the store row id sent as query param `another-store-same-supply` on create-order (not versorgungId).
+     */
+    onSelectVersorgung?: (id: string, source: 'supply' | 'milling_block') => void;
     /** Called when user clicks Skip. Parent sends full order payload to without-supply-or-store API. */
     onSkip?: () => void | Promise<void>;
 }
@@ -242,7 +245,7 @@ export default function SuggestSupplyAndStockModal({
                                                         size="sm"
                                                         className="shrink-0 bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer"
                                                         onClick={() => {
-                                                            onSelectVersorgung(item.id);
+                                                            onSelectVersorgung(item.id, 'supply');
                                                             onOpenChange(false);
                                                         }}
                                                     >
@@ -322,7 +325,7 @@ export default function SuggestSupplyAndStockModal({
                                                     size="sm"
                                                     className="mt-3 w-full bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer"
                                                     onClick={() => {
-                                                        onSelectVersorgung(item.id);
+                                                        onSelectVersorgung(item.id, 'milling_block');
                                                         onOpenChange(false);
                                                     }}
                                                 >

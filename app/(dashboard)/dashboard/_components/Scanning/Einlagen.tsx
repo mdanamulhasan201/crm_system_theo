@@ -364,8 +364,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [suggestSupplyModalLoading, setSuggestSupplyModalLoading] = useState(false);
     const [suggestSupplyRequiredLength, setSuggestSupplyRequiredLength] = useState<number | undefined>(undefined);
     const [suggestSupplyErrorMessage, setSuggestSupplyErrorMessage] = useState<string | null>(null);
-    /** When user selects a supply/milling_block from suggest modal, this overrides versorgungId in the next order */
+    /** When user selects a supply from suggest modal, this overrides versorgungId in the next order */
     const [suggestedVersorgungIdOverride, setSuggestedVersorgungIdOverride] = useState<string | null>(null);
+    /** Fräsblock store row id → sent as `?another-store-same-supply=` on create-order (not versorgungId) */
+    const [anotherStoreSameSupplyId, setAnotherStoreSameSupplyId] = useState<string | null>(null);
     /** Full order payload when order failed with suggestSupplyAndStock (for Skip = create without supply/store) */
     const [suggestSupplyOrderPayload, setSuggestSupplyOrderPayload] = useState<Record<string, any> | null>(null);
     /** From create-order error (`storeType` / `suggestParams.storeType`); sent as `u_orderType` on Überspringen. */
@@ -1088,7 +1090,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     customer.id,
                     versorgungIdToUse || customVersorgungId || '', // Fallback to customVersorgungId if needed
                     autoSendToCustomer,
-                    orderPayload
+                    orderPayload,
+                    anotherStoreSameSupplyId,
                 );
                 const orderId = (result as any)?.data?.id ?? (result as any)?.id ?? result?.orderId;
                 if (orderId) {
@@ -1096,6 +1099,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setCurrentOrderId(orderId);
                     setShowPdfModal(true);
                     setSuggestedVersorgungIdOverride(null);
+                    setAnotherStoreSameSupplyId(null);
                     // Close Werkstattzettel modal only after successful order creation
                     setShowUserInfoUpdateModal(false);
                     
@@ -1119,6 +1123,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 if (suggestSupply && requiredLength != null && !Number.isNaN(requiredLength)) {
                     setShowConfirmModal(false);
                     setSuggestedVersorgungIdOverride(null);
+                    setAnotherStoreSameSupplyId(null);
                     const storeTypeRaw = errData?.storeType ?? errData?.suggestParams?.storeType;
                     setSuggestSupplyStoreType(
                         typeof storeTypeRaw === 'string' && storeTypeRaw.trim()
@@ -1670,6 +1675,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                             setCurrentOrderId(orderId);
                             setShowPdfModal(true);
                             setSuggestedVersorgungIdOverride(null);
+                            setAnotherStoreSameSupplyId(null);
                             setSuggestSupplyOrderPayload(null);
                             setSuggestSupplyStoreType(null);
                             setSuggestSupplyModalOpen(false);
@@ -1684,10 +1690,21 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         throw err;
                     }
                 }}
-                onSelectVersorgung={(id) => {
-                    setSuggestedVersorgungIdOverride(id);
+                onSelectVersorgung={(id, source) => {
                     setSuggestSupplyModalOpen(false);
-                    toast.success('Versorgung ausgewählt. Bitte erneut auf "Weiter" klicken und Bestellung bestätigen.');
+                    if (source === 'milling_block') {
+                        setAnotherStoreSameSupplyId(id);
+                        setSuggestedVersorgungIdOverride(null);
+                        toast.success(
+                            'Fräsblock ausgewählt. Bitte Bestellung erneut bestätigen — der Lager-Eintrag wird mit der Bestellung verknüpft.',
+                        );
+                    } else {
+                        setSuggestedVersorgungIdOverride(id);
+                        setAnotherStoreSameSupplyId(null);
+                        toast.success(
+                            'Versorgung ausgewählt. Bitte erneut auf "Weiter" klicken und Bestellung bestätigen.',
+                        );
+                    }
                 }}
             />
 

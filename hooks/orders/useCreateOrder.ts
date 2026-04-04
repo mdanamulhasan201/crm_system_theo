@@ -8,11 +8,16 @@ export const useCreateOrder = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
-    const createOrder = useCallback(async (customerId: string, versorgungId: string, werkstattzettelId?: string) => {
+    const createOrder = useCallback(async (
+        customerId: string,
+        versorgungId: string,
+        werkstattzettelId?: string,
+        anotherStoreSameSupplyId?: string | null,
+    ) => {
         setIsCreating(true);
         setLastOrderId(null);
         try {
-            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId);
+            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId, undefined, anotherStoreSameSupplyId);
             setLastOrderId((response as any)?.data?.id ?? (response as any)?.id ?? response?.orderId);
             try { if (typeof window !== 'undefined') localStorage.removeItem('werkstattzettelId'); } catch { }
             toast.success('Order created successfully');
@@ -32,13 +37,19 @@ export const useCreateOrder = () => {
         }
     }, []);
 
-    const createOrderAndGeneratePdf = useCallback(async (customerId: string, versorgungId: string, autoSendToCustomer: boolean = false, formData?: Record<string, any>) => {
+    const createOrderAndGeneratePdf = useCallback(async (
+        customerId: string,
+        versorgungId: string,
+        autoSendToCustomer: boolean = false,
+        formData?: Record<string, any>,
+        anotherStoreSameSupplyId?: string | null,
+    ) => {
         setIsCreating(true);
         setLastOrderId(null);
         try {
             const werkstattzettelId = typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
             // Include formData in the API call if provided
-            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId, formData);
+            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId, formData, anotherStoreSameSupplyId);
             const orderId = (response as any)?.data?.id ?? (response as any)?.id ?? response?.orderId;
             if (!orderId) {
                 throw new Error('Order ID not received from API');

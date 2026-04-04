@@ -1,6 +1,13 @@
 import axiosClient from "@/lib/axiosClient";
-// create order  /customer-orders/create-order/please?another-store-same-supply=4709b1b4-b0d0-43f6-96e6-e71f7faa4326
-export const createOrder = async (customerId: string, versorgungId: string, werkstattzettelId?: string, formData?: Record<string, any>) => {
+
+/** Store / milling-block row id when ordering from another store’s stock (Fräsblock Auswählen). */
+export const createOrder = async (
+    customerId: string,
+    versorgungId: string,
+    werkstattzettelId?: string,
+    formData?: Record<string, any>,
+    anotherStoreSameSupplyId?: string | null,
+) => {
     try {
         const payload: any = { customerId, versorgungId };
         if (werkstattzettelId) {
@@ -9,7 +16,15 @@ export const createOrder = async (customerId: string, versorgungId: string, werk
         if (formData) {
             Object.assign(payload, formData);
         }
-        const response = await axiosClient.post('/customer-orders/create-order/please', payload);
+        const params = new URLSearchParams();
+        if (anotherStoreSameSupplyId && String(anotherStoreSameSupplyId).trim()) {
+            params.set('another-store-same-supply', String(anotherStoreSameSupplyId).trim());
+        }
+        const qs = params.toString();
+        const url = qs
+            ? `/customer-orders/create-order/please?${qs}`
+            : '/customer-orders/create-order/please';
+        const response = await axiosClient.post(url, payload);
         return response.data;
     } catch (error) {
         throw error;
