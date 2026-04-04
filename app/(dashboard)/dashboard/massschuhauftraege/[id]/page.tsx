@@ -497,25 +497,6 @@ export default function MassschuhauftraegePage() {
         }
     };
 
-    const handleSkipStep4And5 = async () => {
-        if (!id) return;
-        try {
-            const res: any = await MassschuheAddedApis.manageMassschuheOrderStep4and5(id, {});
-            if (res?.success) {
-                toast.success(res?.message || 'Schritte 4 und 5 wurden übersprungen.');
-                const refetch: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
-                const steps = refetch?.shoeOrderStep ?? null;
-                setShoeOrderStep(Array.isArray(steps) ? steps : null);
-                setOrderData(mapApiOrderToDetailData(refetch));
-            } else if (res?.message) {
-                toast(res.message);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Fehler beim Überspringen von Schritt 4 und 5.');
-        }
-    };
-
     const handleDeleteStepFile = async (fileId: string) => {
         if (!fileId) return;
         setDeletingFileId(fileId);
@@ -535,6 +516,26 @@ export default function MassschuhauftraegePage() {
         setConfirmOpen(false);
         setSubmitting(true);
         try {
+            // Schritt 4: „Überspringen“ nur Auswahl — API erst bei „Schritt abschließen & weiterleiten“ (überspringt 4+5)
+            if (activeStepIndex === 3 && halbprobe_durchfuehrung === 'Überspringen') {
+                const res: any = await MassschuheAddedApis.manageMassschuheOrderStep4and5(id, {});
+                if (res?.success) {
+                    toast.success(res?.message || 'Schritte 4 und 5 wurden übersprungen.');
+                    const refetch: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
+                    const steps = refetch?.shoeOrderStep ?? null;
+                    setShoeOrderStep(Array.isArray(steps) ? steps : null);
+                    const updated = mapApiOrderToDetailData(refetch);
+                    setOrderData(updated);
+                    if (updated && updated.currentStepIndex < SHOE_STEPS.length) {
+                        const nextStatus = getStatusParamFromStepIndex(updated.currentStepIndex);
+                        router.push(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(nextStatus)}`);
+                    }
+                } else if (res?.message) {
+                    toast(res.message);
+                }
+                return;
+            }
+
             const formData = new FormData();
             formData.append('notes', notes);
             uploadedFiles.forEach((file) => {
@@ -1127,7 +1128,6 @@ export default function MassschuhauftraegePage() {
                                             onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
                                             onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
                                             onChecklisteHalbprobeChange={setCheckliste_halbprobe}
-                                            onSkipHalbprobe={handleSkipStep4And5}
                                         />
                                     )}
 
