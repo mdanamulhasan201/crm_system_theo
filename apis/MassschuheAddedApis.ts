@@ -111,6 +111,28 @@ export const getMassschuheOrderTrackActiveButtonBodenkonstruktion = async (order
 }
 
 
+// pdf donwnlaod  Schafttyp
+export const getMassschuheOrderTrackActiveButtonSchafttypPdfDownload = async (orderId: string, schafttyp: 'extern') => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}?schafttyp=${schafttyp}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// pdf donwnlaod  Bodenkonstruktion
+export const getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload = async (orderId: string, bodenkonstruktion: 'extern') => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}?bodenkonstruktion=${bodenkonstruktion}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
 
 
 

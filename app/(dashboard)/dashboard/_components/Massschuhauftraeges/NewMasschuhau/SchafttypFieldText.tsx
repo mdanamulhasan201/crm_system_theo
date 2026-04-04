@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, FileText, Loader2 } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -16,6 +16,37 @@ import {
 } from '@/components/ui/dialog';
 import SchafttypCustomModal, { type MassschafterstellungJson } from './SchafttypCustomModal';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
+
+/** Track API: legacy booleans or { active: { intern, extern } } or extern: { customShafts, hasData } */
+function isSchafttypExternActive(schafttypBlock: any): boolean {
+    if (!schafttypBlock || typeof schafttypBlock !== 'object') return false;
+    if (typeof schafttypBlock.active?.extern === 'boolean') return schafttypBlock.active.extern;
+    if (typeof schafttypBlock.extern === 'boolean') return schafttypBlock.extern;
+    const ex = schafttypBlock.extern;
+    if (ex && typeof ex === 'object') {
+        return Boolean(ex.hasData || (Array.isArray(ex.customShafts) && ex.customShafts.length > 0));
+    }
+    return false;
+}
+
+function isSchafttypInternActive(schafttypBlock: any): boolean {
+    if (!schafttypBlock || typeof schafttypBlock !== 'object') return false;
+    if (typeof schafttypBlock.active?.intern === 'boolean') return schafttypBlock.active.intern;
+    return Boolean(schafttypBlock.intern);
+}
+
+function collectInvoiceUrlsFromExternBlock(externBlock: unknown): string[] {
+    const urls: string[] = [];
+    if (!externBlock || typeof externBlock !== 'object') return urls;
+    const ex = externBlock as { customShafts?: Array<{ invoice?: string | null; invoice2?: string | null }> };
+    if (Array.isArray(ex.customShafts)) {
+        for (const cs of ex.customShafts) {
+            if (cs?.invoice) urls.push(cs.invoice);
+            if (cs?.invoice2) urls.push(cs.invoice2);
+        }
+    }
+    return urls;
+}
 
 export const SCHAFTTYP_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
@@ -87,6 +118,10 @@ export default function SchafttypFieldText({
         extern: false,
     });
     const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
+    const [externPdfUrls, setExternPdfUrls] = useState<string[]>([]);
+    const [externPdfLoading, setExternPdfLoading] = useState(false);
+    const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [massschafterstellungData, setMassschafterstellungData] = useState<{
         json?: MassschafterstellungJson;
         imageUrl?: string;
@@ -135,12 +170,13 @@ export default function SchafttypFieldText({
         setActiveButtonsLoading(true);
         try {
             const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp(orderId);
+            const st = res?.data?.schafttyp;
             setActiveButtons({
-                intern: Boolean(res?.data?.schafttyp?.intern),
-                extern: Boolean(res?.data?.schafttyp?.extern),
+                intern: isSchafttypInternActive(st),
+                extern: isSchafttypExternActive(st),
             });
-            const internNoteFromApi = res?.data?.schafttyp?.note?.intern;
-            const externNoteFromApi = res?.data?.schafttyp?.note?.extern;
+            const internNoteFromApi = st?.note?.intern;
+            const externNoteFromApi = st?.note?.extern;
             if (
                 typeof internNoteFromApi === 'string' &&
                 internNoteFromApi.trim() &&
@@ -208,6 +244,12 @@ export default function SchafttypFieldText({
         setExternOrderDialogOpen(true);
     };
 
+    const openSchafttypExternPdfPreview = () => {
+        if (externPdfUrls.length === 0) return;
+        setPdfPreviewUrl(externPdfUrls[0]);
+        setPdfPreviewOpen(true);
+    };
+
     const handleMassschafterstellungSubmit = async (payload: {
         imageFile?: File;
         linkerLeistenFile?: File | null;
@@ -243,6 +285,36 @@ export default function SchafttypFieldText({
             fetchActiveButtons();
         }
     }, [isStep5, fetchActiveButtons]);
+
+    // Bei „Extern“: einmal PDF-Track-API → URLs aus customShafts (leer = kein PDF-Button)
+    useEffect(() => {
+        if (!isStep5 || !orderId || schafttyp !== 'Extern') {
+            setExternPdfUrls([]);
+            setExternPdfLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setExternPdfLoading(true);
+        MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttypPdfDownload(orderId, 'extern')
+            .then((res: any) => {
+                if (cancelled) return;
+                const st = res?.data?.schafttyp ?? res?.schafttyp;
+                const ext = st?.extern;
+                const urls = collectInvoiceUrlsFromExternBlock(
+                    typeof ext === 'object' && ext !== null ? ext : null
+                );
+                setExternPdfUrls(urls);
+            })
+            .catch(() => {
+                if (!cancelled) setExternPdfUrls([]);
+            })
+            .finally(() => {
+                if (!cancelled) setExternPdfLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isStep5, orderId, schafttyp]);
 
     return (
         <>
@@ -315,23 +387,43 @@ export default function SchafttypFieldText({
                             <Label className="text-sm font-medium text-gray-800">
                                 Hinweise zur externen Schaftfertigung
                             </Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className={cn(
-                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                    isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
-                                    disableExternErweitert && 'opacity-50 cursor-not-allowed'
-                                )}
-                                onClick={handleExternErweitertClick}
-                                disabled={disableExternErweitert || activeButtonsLoading}
-                            >
-                                {isStep5 && activeButtons.extern ? (
-                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                {isStep5 && activeButtons.extern && externPdfUrls.length > 0 ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                                        onClick={openSchafttypExternPdfPreview}
+                                    >
+                                        <FileText className="w-4 h-4 mr-1.5" />
+                                        PDF Vorschau
+                                        {externPdfUrls.length > 1 ? ` (${externPdfUrls.length})` : ''}
+                                    </Button>
+                                ) : isStep5 && activeButtons.extern && externPdfLoading ? (
+                                    <span className="inline-flex items-center text-xs text-gray-500">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                        PDF wird geladen…
+                                    </span>
                                 ) : null}
-                                erweitert
-                            </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={cn(
+                                        'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                        isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                        disableExternErweitert && 'opacity-50 cursor-not-allowed'
+                                    )}
+                                    onClick={handleExternErweitertClick}
+                                    disabled={disableExternErweitert || activeButtonsLoading}
+                                >
+                                    {isStep5 && activeButtons.extern ? (
+                                        <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                    ) : null}
+                                    erweitert
+                                </Button>
+                            </div>
                         </div>
                         <textarea
                             value={schafttypExternNote}
@@ -344,6 +436,52 @@ export default function SchafttypFieldText({
                     </div>
                 )}
             </div>
+            <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
+                <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 py-3 border-b shrink-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
+                            <DialogTitle className="m-0">PDF Vorschau — Schaft extern</DialogTitle>
+                            {pdfPreviewUrl ? (
+                                <a
+                                    href={pdfPreviewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    In neuem Tab öffnen / Download
+                                </a>
+                            ) : null}
+                        </div>
+                        <DialogDescription className="sr-only">
+                            Vorschau der externen Schaft-Rechnungen (PDF)
+                        </DialogDescription>
+                        {externPdfUrls.length > 1 ? (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {externPdfUrls.map((url, idx) => (
+                                    <Button
+                                        key={url + idx}
+                                        type="button"
+                                        variant={pdfPreviewUrl === url ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={() => setPdfPreviewUrl(url)}
+                                    >
+                                        {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
+                                    </Button>
+                                ))}
+                            </div>
+                        ) : null}
+                    </DialogHeader>
+                    {pdfPreviewUrl ? (
+                        <iframe
+                            title="PDF Vorschau"
+                            src={pdfPreviewUrl}
+                            className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
+                        />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>

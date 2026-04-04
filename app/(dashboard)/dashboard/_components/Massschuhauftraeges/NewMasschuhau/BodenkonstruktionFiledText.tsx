@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, FileText, Loader2 } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -16,6 +16,36 @@ import {
 } from '@/components/ui/dialog';
 import { BodenkonstruktionCustomerOrderView } from '@/components/Bodenkonstruktion/BodenkonstruktionCustomerOrderView';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
+
+function isBodenExternActive(bk: any): boolean {
+    if (!bk || typeof bk !== 'object') return false;
+    if (typeof bk.active?.extern === 'boolean') return bk.active.extern;
+    if (typeof bk.extern === 'boolean') return bk.extern;
+    const ex = bk.extern;
+    if (ex && typeof ex === 'object') {
+        return Boolean(ex.hasData || (Array.isArray(ex.customShafts) && ex.customShafts.length > 0));
+    }
+    return false;
+}
+
+function isBodenInternActive(bk: any): boolean {
+    if (!bk || typeof bk !== 'object') return false;
+    if (typeof bk.active?.intern === 'boolean') return bk.active.intern;
+    return Boolean(bk.intern);
+}
+
+function collectBodenInvoiceUrlsFromExternBlock(externBlock: unknown): string[] {
+    const urls: string[] = [];
+    if (!externBlock || typeof externBlock !== 'object') return urls;
+    const ex = externBlock as { customShafts?: Array<{ invoice?: string | null; invoice2?: string | null }> };
+    if (Array.isArray(ex.customShafts)) {
+        for (const cs of ex.customShafts) {
+            if (cs?.invoice) urls.push(cs.invoice);
+            if (cs?.invoice2) urls.push(cs.invoice2);
+        }
+    }
+    return urls;
+}
 
 const BODEN_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
@@ -77,6 +107,10 @@ export default function BodenkonstruktionFiledText({
     const [activeButtonsLoading, setActiveButtonsLoading] = useState(false);
     const [internPopupOpen, setInternPopupOpen] = useState(false);
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
+    const [bodenExternPdfUrls, setBodenExternPdfUrls] = useState<string[]>([]);
+    const [bodenExternPdfLoading, setBodenExternPdfLoading] = useState(false);
+    const [bodenPdfPreviewOpen, setBodenPdfPreviewOpen] = useState(false);
+    const [bodenPdfPreviewUrl, setBodenPdfPreviewUrl] = useState<string | null>(null);
     const wasInternPopupOpenRef = useRef(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -101,12 +135,13 @@ export default function BodenkonstruktionFiledText({
         setActiveButtonsLoading(true);
         try {
             const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp(orderId);
+            const bk = res?.data?.bodenkonstruktion;
             setActiveButtons({
-                intern: Boolean(res?.data?.bodenkonstruktion?.intern),
-                extern: Boolean(res?.data?.bodenkonstruktion?.extern),
+                intern: isBodenInternActive(bk),
+                extern: isBodenExternActive(bk),
             });
-            const internNoteFromApi = res?.data?.bodenkonstruktion?.note?.intern;
-            const externNoteFromApi = res?.data?.bodenkonstruktion?.note?.extern;
+            const internNoteFromApi = bk?.note?.intern;
+            const externNoteFromApi = bk?.note?.extern;
             if (
                 typeof internNoteFromApi === 'string' &&
                 internNoteFromApi.trim() &&
@@ -141,6 +176,35 @@ export default function BodenkonstruktionFiledText({
             fetchActiveButtons();
         }
     }, [isStep5, fetchActiveButtons]);
+
+    useEffect(() => {
+        if (!isStep5 || !orderId || bodenOption !== 'Extern') {
+            setBodenExternPdfUrls([]);
+            setBodenExternPdfLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setBodenExternPdfLoading(true);
+        MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload(orderId, 'extern')
+            .then((res: any) => {
+                if (cancelled) return;
+                const bk = res?.data?.bodenkonstruktion ?? res?.bodenkonstruktion;
+                const ext = bk?.extern;
+                const urls = collectBodenInvoiceUrlsFromExternBlock(
+                    typeof ext === 'object' && ext !== null ? ext : null
+                );
+                setBodenExternPdfUrls(urls);
+            })
+            .catch(() => {
+                if (!cancelled) setBodenExternPdfUrls([]);
+            })
+            .finally(() => {
+                if (!cancelled) setBodenExternPdfLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isStep5, orderId, bodenOption]);
 
     // Refetch active buttons only when intern modal transitions open -> closed
     useEffect(() => {
@@ -227,6 +291,12 @@ export default function BodenkonstruktionFiledText({
         setExternOrderDialogOpen(true);
     };
 
+    const openBodenExternPdfPreview = () => {
+        if (bodenExternPdfUrls.length === 0) return;
+        setBodenPdfPreviewUrl(bodenExternPdfUrls[0]);
+        setBodenPdfPreviewOpen(true);
+    };
+
     return (
         <div>
             <Label className="text-sm font-medium text-gray-800 mb-3 block">
@@ -297,23 +367,43 @@ export default function BodenkonstruktionFiledText({
                         <Label className="text-sm font-medium text-gray-800">
                             Hinweise zur externen Bodenkonstruktion
                         </Label>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                                'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
-                                disableExternErweitert && 'opacity-50 cursor-not-allowed'
-                            )}
-                            onClick={handleExternErweitertClick}
-                            disabled={disableExternErweitert || activeButtonsLoading}
-                        >
-                            {isStep5 && activeButtons.extern ? (
-                                <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            {isStep5 && activeButtons.extern && bodenExternPdfUrls.length > 0 ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                                    onClick={openBodenExternPdfPreview}
+                                >
+                                    <FileText className="w-4 h-4 mr-1.5" />
+                                    PDF Vorschau
+                                    {bodenExternPdfUrls.length > 1 ? ` (${bodenExternPdfUrls.length})` : ''}
+                                </Button>
+                            ) : isStep5 && activeButtons.extern && bodenExternPdfLoading ? (
+                                <span className="inline-flex items-center text-xs text-gray-500">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                    PDF wird geladen…
+                                </span>
                             ) : null}
-                            erweitert
-                        </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={cn(
+                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                    isStep5 && activeButtons.extern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                    disableExternErweitert && 'opacity-50 cursor-not-allowed'
+                                )}
+                                onClick={handleExternErweitertClick}
+                                disabled={disableExternErweitert || activeButtonsLoading}
+                            >
+                                {isStep5 && activeButtons.extern ? (
+                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                ) : null}
+                                erweitert
+                            </Button>
+                        </div>
                     </div>
                     <textarea
                         value={externNote}
@@ -325,6 +415,52 @@ export default function BodenkonstruktionFiledText({
                     />
                 </div>
             )}
+
+            <Dialog open={bodenPdfPreviewOpen} onOpenChange={setBodenPdfPreviewOpen}>
+                <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 py-3 border-b shrink-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
+                            <DialogTitle className="m-0">PDF Vorschau — Bodenkonstruktion extern</DialogTitle>
+                            {bodenPdfPreviewUrl ? (
+                                <a
+                                    href={bodenPdfPreviewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    In neuem Tab öffnen / Download
+                                </a>
+                            ) : null}
+                        </div>
+                        <DialogDescription className="sr-only">
+                            Vorschau der externen Bodenkonstruktion-Rechnungen (PDF)
+                        </DialogDescription>
+                        {bodenExternPdfUrls.length > 1 ? (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {bodenExternPdfUrls.map((url, idx) => (
+                                    <Button
+                                        key={url + idx}
+                                        type="button"
+                                        variant={bodenPdfPreviewUrl === url ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={() => setBodenPdfPreviewUrl(url)}
+                                    >
+                                        {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
+                                    </Button>
+                                ))}
+                            </div>
+                        ) : null}
+                    </DialogHeader>
+                    {bodenPdfPreviewUrl ? (
+                        <iframe
+                            title="PDF Vorschau Boden"
+                            src={bodenPdfPreviewUrl}
+                            className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
+                        />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
                 <DialogContent className="sm:max-w-md">
