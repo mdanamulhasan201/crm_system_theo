@@ -25,6 +25,18 @@ import {
   type PolsterungMmFields,
 } from '@/components/CustomShafts/polsterungPayload';
 
+/** Readable name from ?customerName= (handles + and encoded segments) */
+function normalizeCustomerNameParam(raw: string | null): string {
+  if (raw == null) return '';
+  const t = raw.trim();
+  if (!t) return '';
+  try {
+    return decodeURIComponent(t.replace(/\+/g, ' '));
+  } catch {
+    return t.replace(/\+/g, ' ');
+  }
+}
+
 interface Customer {
   id: string;
   name: string;
@@ -61,6 +73,11 @@ export default function CustomShoeOrderPage() {
 
   // Get orderId from URL (for existing order customization)
   const existingOrderId = searchParams.get('orderId');
+  const prefilledCustomerId = searchParams.get('customerId');
+  const prefilledCustomerName = searchParams.get('customerName');
+  const hasPrefilledCustomer = Boolean(
+    prefilledCustomerId?.trim() || prefilledCustomerName?.trim()
+  );
 
   // Customer selection
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -167,6 +184,28 @@ export default function CustomShoeOrderPage() {
   useEffect(() => {
     if (linkerLeistenFile && rechterLeistenFile) setHighlight3dUploads(false);
   }, [linkerLeistenFile, rechterLeistenFile]);
+
+  // Pre-fill customer from Massschuhauftrag redirect (same rules as details page)
+  useEffect(() => {
+    const cid = prefilledCustomerId?.trim();
+    const cname = normalizeCustomerNameParam(prefilledCustomerName);
+    if (!cid && !cname) return;
+
+    if (cid) {
+      setSelectedCustomer({
+        id: cid,
+        name: cname || cid,
+        email: '',
+        phone: null,
+        location: '',
+        createdAt: '',
+      });
+      setOtherCustomerNumber('');
+    } else if (cname) {
+      setSelectedCustomer(null);
+      setOtherCustomerNumber(cname);
+    }
+  }, [prefilledCustomerId, prefilledCustomerName]);
 
   // Determine delivery method for PDF display
   const getDeliveryMethod = (): string => {
@@ -311,9 +350,11 @@ export default function CustomShoeOrderPage() {
     totalPrice: orderPrice,
   };
 
-  // Validate customer selection
+  // Validate customer selection (registered customer must have a non-empty id)
   const validateCustomer = (): boolean => {
-    if (!selectedCustomer && !otherCustomerNumber.trim()) {
+    const hasRegisteredId = !!selectedCustomer?.id?.trim();
+    const hasOtherName = !!otherCustomerNumber.trim();
+    if (!hasRegisteredId && !hasOtherName) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
       return false;
     }
@@ -324,7 +365,7 @@ export default function CustomShoeOrderPage() {
   const prepareCustomShaftData = () => {
     return {
       // Customer info
-      customerId: selectedCustomer?.id,
+      customerId: selectedCustomer?.id?.trim() || undefined,
       other_customer_name: otherCustomerNumber.trim() || null,
       customerName: selectedCustomer?.name || otherCustomerNumber.trim(),
 
@@ -532,6 +573,8 @@ export default function CustomShoeOrderPage() {
         orderId={null}
         highlightDeliveryChoice={highlightDeliveryChoice}
         highlight3dUploads={highlight3dUploads}
+        lockCustomerSelection={hasPrefilledCustomer}
+        hideExternalCustomer={hasPrefilledCustomer}
       />
 
       <div className="flex flex-col border-2 border-gray-200 rounded-lg p-4 sm:p-6 lg:p-8 shadow-md">

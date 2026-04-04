@@ -227,20 +227,27 @@ export default function CustomShafts() {
         }
     }
 
-    // Handle custom order 3D Upload - navigate to product-order page
+    // Handle custom order 3D Upload - navigate to product-order page (same query params as details flow)
     const handleCustomOrder3DUpload = () => {
-        const url = orderId
-            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}`
+        const params = new URLSearchParams();
+        if (orderId) params.set('orderId', orderId);
+        if (customerId) params.set('customerId', customerId);
+        if (customerName) params.set('customerName', customerName);
+        const qs = params.toString();
+        const url = qs
+            ? `/dashboard/custom-shafts/product-order/new?${qs}`
             : `/dashboard/custom-shafts/product-order/new`;
         router.push(url);
     }
 
     // Handle custom order Abholung - navigate to product-order page
     const handleCustomOrderAbholung = () => {
-        const url = orderId
-            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}&type=abholung`
-            : `/dashboard/custom-shafts/product-order/new?type=abholung`;
-        router.push(url);
+        const params = new URLSearchParams();
+        params.set('type', 'abholung');
+        if (orderId) params.set('orderId', orderId);
+        if (customerId) params.set('customerId', customerId);
+        if (customerName) params.set('customerName', customerName);
+        router.push(`/dashboard/custom-shafts/product-order/new?${params.toString()}`);
     }
 
     return (

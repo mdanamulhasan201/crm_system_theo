@@ -29,6 +29,17 @@ import {
 } from '@/components/CustomShafts/polsterungPayload';
 import { buildUmfangmasseWithTitles } from '@/utils/customShoeOrderHelpers';
 
+function normalizeCustomerNameParam(raw: string | null): string {
+  if (raw == null) return '';
+  const t = raw.trim();
+  if (!t) return '';
+  try {
+    return decodeURIComponent(t.replace(/\+/g, ' '));
+  } catch {
+    return t.replace(/\+/g, ' ');
+  }
+}
+
 interface Customer {
   id: string;
   name: string;
@@ -68,7 +79,9 @@ export default function CollectionShaftDetailsPage() {
   const source = searchParams.get('source');
   const isAbholung = type === 'abholung';
   const isFrom3DUpload = source === '3dupload';
-  const hasPrefilledCustomer = Boolean(prefilledCustomerId || prefilledCustomerName);
+  const hasPrefilledCustomer = Boolean(
+    prefilledCustomerId?.trim() || prefilledCustomerName?.trim()
+  );
 
   const isUuidOrderId = typeof orderId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId);
 
@@ -182,18 +195,26 @@ export default function CollectionShaftDetailsPage() {
     if (linkerLeistenFile && rechterLeistenFile) setHighlight3dUploads(false);
   }, [linkerLeistenFile, rechterLeistenFile]);
 
-  // Pre-fill customer from order
+  // Pre-fill customer from URL or linked Massschuh order (never use empty id — API needs customerId or other_customer_name)
   useEffect(() => {
-    if (hasPrefilledCustomer) {
-      setSelectedCustomer({
-        id: prefilledCustomerId || '',
-        name: prefilledCustomerName || prefilledCustomerId || '',
-        email: '',
-        phone: null,
-        location: '',
-        createdAt: '',
-      });
-      setOtherCustomerNumber('');
+    const urlId = prefilledCustomerId?.trim();
+    const urlName = normalizeCustomerNameParam(prefilledCustomerName);
+
+    if (urlId || urlName) {
+      if (urlId) {
+        setSelectedCustomer({
+          id: urlId,
+          name: urlName || urlId,
+          email: '',
+          phone: null,
+          location: '',
+          createdAt: '',
+        });
+        setOtherCustomerNumber('');
+      } else {
+        setSelectedCustomer(null);
+        setOtherCustomerNumber(urlName || '');
+      }
       return;
     }
     if (massschuheOrder) {
@@ -219,7 +240,7 @@ export default function CollectionShaftDetailsPage() {
         });
       }
     }
-  }, [hasPrefilledCustomer, prefilledCustomerId, prefilledCustomerName, massschuheOrder]);
+  }, [prefilledCustomerId, prefilledCustomerName, massschuheOrder]);
 
   // Pre-fill category from shaft
   useEffect(() => {
@@ -400,9 +421,11 @@ export default function CollectionShaftDetailsPage() {
     totalPrice: orderPrice,
   };
 
-  // Validate customer selection
+  // Validate customer selection (registered customer must have a non-empty id)
   const validateCustomer = (): boolean => {
-    if (!selectedCustomer && !otherCustomerNumber.trim()) {
+    const hasRegisteredId = !!selectedCustomer?.id?.trim();
+    const hasOtherName = !!otherCustomerNumber.trim();
+    if (!hasRegisteredId && !hasOtherName) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
       return false;
     }
@@ -413,7 +436,7 @@ export default function CollectionShaftDetailsPage() {
   const prepareCollectionShaftData = () => {
     return {
       // Customer info
-      customerId: selectedCustomer?.id,
+      customerId: selectedCustomer?.id?.trim() || undefined,
       other_customer_name: otherCustomerNumber.trim() || null,
       customerName: selectedCustomer?.name || otherCustomerNumber.trim(),
 
@@ -513,10 +536,11 @@ export default function CollectionShaftDetailsPage() {
     const formData = new FormData();
 
     // Customer info (customerId OR other_customer_name)
-    if (data.customerId) {
-      formData.append('customerId', data.customerId);
-    } else if (data.other_customer_name) {
-      formData.append('other_customer_name', data.other_customer_name);
+    const cid = typeof data.customerId === 'string' ? data.customerId.trim() : '';
+    if (cid) {
+      formData.append('customerId', cid);
+    } else if (data.other_customer_name?.trim()) {
+      formData.append('other_customer_name', data.other_customer_name.trim());
     }
 
     // Add PDF invoice if available

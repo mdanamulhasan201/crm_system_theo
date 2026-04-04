@@ -158,6 +158,12 @@ export default function FileUploadSection({
     onSelectCustomer(null);
   };
 
+  /** Show name from search/API; fall back to ID so the field is never blank when a customer is selected */
+  const kundeAuswaehlenDisplay =
+    selectedCustomer != null
+      ? (selectedCustomer.name?.trim() || selectedCustomer.id || '—')
+      : '';
+
   return (
     <div className="w-full mb-8">
       {/* Header with Title and History Icon */}
@@ -186,7 +192,7 @@ export default function FileUploadSection({
                 <Input
                   type="text"
                   placeholder="Suche..."
-                  value={selectedCustomer ? selectedCustomer.name : ''}
+                  value={kundeAuswaehlenDisplay}
                   readOnly
                   disabled={isCustomerSelectDisabled}
                   onClick={() => {
@@ -211,6 +217,12 @@ export default function FileUploadSection({
                   </button>
                 )}
               </div>
+              {/* {selectedCustomer?.id?.trim() ? (
+                <p className="text-xs text-gray-500 mt-1.5 leading-snug">
+                  Kunden-ID:{' '}
+                  <span className="font-mono text-gray-700 select-all">{selectedCustomer.id}</span>
+                </p>
+              ) : null} */}
             </div>
           )}
 
@@ -218,8 +230,11 @@ export default function FileUploadSection({
           {hideCustomerSearch && selectedCustomer && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Kunde</label>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md h-12 flex items-center">
-                <div className="text-base text-gray-900">{selectedCustomer.name}</div>
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md min-h-12 flex flex-col justify-center gap-1">
+                <div className="text-base text-gray-900">{kundeAuswaehlenDisplay}</div>
+                {selectedCustomer.id?.trim() ? (
+                  <div className="text-xs text-gray-500 font-mono select-all">ID: {selectedCustomer.id}</div>
+                ) : null}
               </div>
             </div>
           )}

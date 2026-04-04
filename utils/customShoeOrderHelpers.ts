@@ -249,11 +249,13 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
 export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormData> => {
   const formData = new FormData();
 
-  // Customer info
-  if (data.customerId) {
-    formData.append('customerId', data.customerId);
-  } else if (data.other_customer_name) {
-    formData.append('other_customer_name', data.other_customer_name);
+  // Customer info (ignore empty-string customerId so API gets other_customer_name or a real id)
+  const customerIdTrimmed =
+    typeof data.customerId === 'string' ? data.customerId.trim() : '';
+  if (customerIdTrimmed) {
+    formData.append('customerId', customerIdTrimmed);
+  } else if (data.other_customer_name?.trim()) {
+    formData.append('other_customer_name', data.other_customer_name.trim());
   }
 
   // 3D model files

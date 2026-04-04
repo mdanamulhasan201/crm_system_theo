@@ -334,6 +334,8 @@ export default function MassschuhauftraegePage() {
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
     const [customerFullName, setCustomerFullName] = useState('');
+    /** For custom-shafts redirect query (?customerId=) */
+    const [redirectCustomerId, setRedirectCustomerId] = useState<string | undefined>(undefined);
     const [auftragNotesModalOpen, setAuftragNotesModalOpen] = useState(false);
 
     useEffect(() => {
@@ -359,8 +361,19 @@ export default function MassschuhauftraegePage() {
                     setStepCompletedByEmployee(data.employee ?? null);
                     // customer may be at data.customer (main order API) or data.order.customer (step API)
                     const customerObj = data.customer ?? data.order?.customer;
-                    const fullName = [customerObj?.vorname, customerObj?.nachname].filter(Boolean).join(' ');
-                    if (fullName) setCustomerFullName(fullName);
+                    const fullName = [customerObj?.vorname, customerObj?.nachname].filter(Boolean).join(' ').trim();
+                    const kundeFallback =
+                        (data.kunde != null && String(data.kunde).trim()) ||
+                        (data.order?.kunde != null && String(data.order.kunde).trim()) ||
+                        '';
+                    const displayCustomerName = fullName || kundeFallback;
+                    if (displayCustomerName) setCustomerFullName(displayCustomerName);
+                    const cid =
+                        customerObj?.id ??
+                        data.customerId ??
+                        data.order?.customerId ??
+                        data.order?.customer?.id;
+                    setRedirectCustomerId(cid != null && String(cid).trim() ? String(cid).trim() : undefined);
                     setNotes(data.notes != null ? String(data.notes) : '');
                     if (data.material != null && data.material !== '') setMaterial(String(data.material));
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
@@ -1023,6 +1036,7 @@ export default function MassschuhauftraegePage() {
                                         <SchaftFertigenSchafttypSection
                                             orderId={id}
                                             redirectOrderId={id}
+                                            redirectCustomerId={redirectCustomerId}
                                             redirectCustomerName={customerFullName || undefined}
                                             schafttyp={schafttyp}
                                             schafttypInternNote={schafttypInternNote}
@@ -1038,6 +1052,7 @@ export default function MassschuhauftraegePage() {
                                         <BodenerstellenBodenkonstruktionSection
                                             orderId={id}
                                             redirectOrderId={id}
+                                            redirectCustomerId={redirectCustomerId}
                                             redirectCustomerName={customerFullName || undefined}
                                             bodenkonstruktionInternNote={bodenkonstruktionInternNote}
                                             bodenkonstruktionExternNote={bodenkonstruktionExternNote}
@@ -1120,6 +1135,7 @@ export default function MassschuhauftraegePage() {
                                     {activeStepIndex === 4 && (
                                         <HalbprobeDurchfuehrungStepFields
                                             orderId={id}
+                                            redirectCustomerId={redirectCustomerId}
                                             redirectCustomerName={customerFullName || undefined}
                                             stepStatus="Halbprobe_durchführen"
                                             probenergebnis={probenergebnis}
