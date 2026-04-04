@@ -294,6 +294,19 @@ export const getPicture2324 = async (orderId: string) => {
     }
 }
 
+
+
+// }customer-orders/track/get-excldata/074b6aff-a88c-43fc-b565-a227a6da2058
+
+export const getExcldata = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/get-excldata/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response.data.message || 'Failed to fetch excldata');
+    }
+}
+
 // //customer-orders/payment-status
 
 

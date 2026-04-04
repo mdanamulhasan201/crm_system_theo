@@ -4,10 +4,11 @@ import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { getKvaNumber } from "@/apis/productsOrder";
+import { getExcldata, getKvaNumber } from "@/apis/productsOrder";
 import {
     AlertTriangle,
     ClipboardEdit,
+    FileSpreadsheet,
     FileText,
     History,
     Loader2,
@@ -16,6 +17,7 @@ import {
     Scan,
     Trash2,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import {
     Tooltip,
@@ -138,6 +140,7 @@ export default function OrderTableRow({
 }: OrderTableRowProps) {
     const { selectedType, refreshOrderData } = useOrders();
     const [isGettingKvaNumber, setIsGettingKvaNumber] = useState(false);
+    const [isExcelDownloading, setIsExcelDownloading] = useState(false);
     // Prefer API `u_orderType` for the small type badge beside the checkbox.
     const rawOrderType = (order.uOrderType ?? order.orderType ?? selectedType ?? '').toString().trim();
     const normalizedOrderType = rawOrderType.toLowerCase().replace(/\s+/g, '_');
@@ -268,8 +271,11 @@ export default function OrderTableRow({
     };
 
     const normalizedStatus = order.displayStatus?.replace(/_/g, " ") || "";
-    const isAbholbereit = normalizedStatus === "Abholbereit/Versandt";
+    const isAbholbereit =
+        normalizedStatus === "Abholbereit/Versandt" ||
+        normalizedStatus.trim().toLowerCase() === "abholbereit versandt";
     const isAusgefuehrt = normalizedStatus === "Ausgeführt";
+    const showExcelExport = isAbholbereit;
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
     const shouldShowVerordnungsvorschlag = !!onKvaDownload && order.kva === true;
@@ -401,6 +407,48 @@ export default function OrderTableRow({
         isAusgefuehrt && order.deliveryDate && order.deliveryDate !== '—'
             ? `Ausgeführt am ${order.deliveryDate}`
             : null;
+
+    const handleExcelDownload = async () => {
+        setIsExcelDownloading(true);
+        try {
+            const res = await getExcldata(order.id);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || "Excel-Daten konnten nicht geladen werden");
+                return;
+            }
+            const d = res.data as {
+                id?: string;
+                orderNumber?: number;
+                fertigstellungBis?: string;
+                product?: { name?: string };
+            };
+            const fertig =
+                d.fertigstellungBis &&
+                !Number.isNaN(new Date(d.fertigstellungBis).getTime())
+                    ? new Date(d.fertigstellungBis).toLocaleString("de-DE", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                      })
+                    : "";
+            const row = {
+                Auftragsnummer: d.orderNumber ?? order.bestellnummer,
+                Versorgung: d.product?.name ?? "",
+                "Fertigstellung bis": fertig,
+            };
+            const workbook = XLSX.utils.book_new();
+            const sheet = XLSX.utils.json_to_sheet([row]);
+            XLSX.utils.book_append_sheet(workbook, sheet, "Auftrag");
+            const rawName = `Auftrag_${d.orderNumber ?? order.bestellnummer}_Excel.xlsx`;
+            const safeName = rawName.replace(/[/\\?%*:|"<>]/g, "-");
+            XLSX.writeFile(workbook, safeName);
+            toast.success("Excel-Datei wurde heruntergeladen");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Download fehlgeschlagen";
+            toast.error(message);
+        } finally {
+            setIsExcelDownloading(false);
+        }
+    };
 
     return (
         <TableRow
@@ -767,7 +815,7 @@ export default function OrderTableRow({
                                 ) : (
                                     <ClipboardEdit className="h-4 w-4 text-gray-700" />
                                 )}
-                                <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel A4 (Vorschau + Download)"}</span>
+                                <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel A4"}</span>
                             </DropdownMenuItem>
                         )}
                         {shouldShowVerordnungsvorschlag && (
@@ -834,6 +882,26 @@ export default function OrderTableRow({
                                     <FileText className="h-4 w-4 text-gray-700" />
                                 )}
                                 <span>{halbprobeLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                            </DropdownMenuItem>
+                        )}
+                        {showExcelExport && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={isExcelDownloading}
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await handleExcelDownload();
+                                }}
+                            >
+                                {isExcelDownloading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                ) : (
+                                    <FileSpreadsheet className="h-4 w-4 text-gray-700" />
+                                )}
+                                <span>
+                                    {isExcelDownloading ? "Export wird vorbereitet…" : "Als Excel exportieren"}
+                                </span>
                             </DropdownMenuItem>
                         )}
                         {onWerkstattzettelA3Download && (
