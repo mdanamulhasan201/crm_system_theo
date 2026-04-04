@@ -29,6 +29,8 @@ export interface ProductCadCategoryFieldsProps {
   allowCategoryEdit?: boolean;
   /** `card` = two columns in hero (Select + Kategorie); `stacked` = original radios + rows */
   layout?: 'card' | 'stacked';
+  /** When true, omit CAD surcharge text (e.g. „+6,99 €“) — e.g. Maßschuhauftrag step 5 intern modal */
+  hideCadPriceSuffix?: boolean;
 }
 
 export default function ProductCadCategoryFields({
@@ -40,6 +42,7 @@ export default function ProductCadCategoryFields({
   category,
   allowCategoryEdit = false,
   layout = 'stacked',
+  hideCadPriceSuffix = false,
 }: ProductCadCategoryFieldsProps) {
   const isCategoryEditable = allowCategoryEdit;
 
@@ -89,7 +92,9 @@ export default function ProductCadCategoryFields({
                 1× CAD-Modellierung (Standard)
               </SelectItem>
               <SelectItem value="2x" className="cursor-pointer">
-                2× CAD-Modellierung (separat) (+6,99 €)
+                {hideCadPriceSuffix
+                  ? '2× CAD-Modellierung (separat)'
+                  : '2× CAD-Modellierung (separat) (+6,99 €)'}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -168,7 +173,10 @@ export default function ProductCadCategoryFields({
               className="h-4 w-4 text-green-500 focus:ring-green-500"
             />
             <span className="text-base text-gray-700">
-              2× CAD-Modellierung (separat) <span className="font-semibold text-green-600">+6,99 €</span>
+              2× CAD-Modellierung (separat)
+              {!hideCadPriceSuffix ? (
+                <span className="font-semibold text-green-600"> +6,99 €</span>
+              ) : null}
             </span>
           </label>
         </div>

@@ -21,6 +21,8 @@ export type ZusaetzeOptionenCardProps = {
   zipperJaDisabled?: boolean;
   /** true = beide Optionen gesperrt (API `is_zipper === false`) — nur „Nein“ sichtbar, keine Umschaltung */
   zipperLocked?: boolean;
+  /** Maßschuh step-5 intern modal: omit +9,99 € / +19,99 € on zipper Ja and summary */
+  hideShopPriceLabels?: boolean;
 };
 
 function ZipperNeinJaPills({
@@ -68,7 +70,7 @@ function ZipperNeinJaPills({
           jaOff && 'cursor-not-allowed opacity-50'
         )}
       >
-        Ja, zusätzlichen Reißverschluss {jaPriceLabel}
+        Ja, zusätzlichen Reißverschluss{jaPriceLabel ? ` ${jaPriceLabel}` : ''}
       </button>
     </div>
   );
@@ -84,9 +86,13 @@ export default function ZusaetzeOptionenCard({
   onEditZipperPosition,
   zipperJaDisabled = false,
   zipperLocked = false,
+  hideShopPriceLabels = false,
 }: ZusaetzeOptionenCardProps) {
-  const jaPriceLabel =
-    effectiveZipperPosition === 'both' ? '+19,99 €' : '+9,99 €';
+  const jaPriceLabel = hideShopPriceLabels
+    ? ''
+    : effectiveZipperPosition === 'both'
+      ? '+19,99 €'
+      : '+9,99 €';
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -127,9 +133,12 @@ export default function ZusaetzeOptionenCard({
           <div className="min-w-0 flex-1 space-y-3">
             {effectiveZipperPosition && (
               <p className="text-sm text-gray-700">
-                {effectiveZipperPosition === 'inside' && 'Innen (+9,99 €)'}
-                {effectiveZipperPosition === 'outside' && 'Außen (+9,99 €)'}
-                {effectiveZipperPosition === 'both' && 'Beide Seiten (+19,99 €)'}
+                {effectiveZipperPosition === 'inside' &&
+                  (hideShopPriceLabels ? 'Innen' : 'Innen (+9,99 €)')}
+                {effectiveZipperPosition === 'outside' &&
+                  (hideShopPriceLabels ? 'Außen' : 'Außen (+9,99 €)')}
+                {effectiveZipperPosition === 'both' &&
+                  (hideShopPriceLabels ? 'Beide Seiten' : 'Beide Seiten (+19,99 €)')}
               </p>
             )}
             <div className="relative inline-block max-w-full">

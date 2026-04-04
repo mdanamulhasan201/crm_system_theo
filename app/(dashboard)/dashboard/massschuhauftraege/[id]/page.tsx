@@ -1138,6 +1138,7 @@ export default function MassschuhauftraegePage() {
                                             redirectCustomerId={redirectCustomerId}
                                             redirectCustomerName={customerFullName || undefined}
                                             stepStatus="Halbprobe_durchführen"
+                                            hideSchafttypModalPrices
                                             probenergebnis={probenergebnis}
                                             schafttyp={schafttyp}
                                             fitting_date={fitting_date}

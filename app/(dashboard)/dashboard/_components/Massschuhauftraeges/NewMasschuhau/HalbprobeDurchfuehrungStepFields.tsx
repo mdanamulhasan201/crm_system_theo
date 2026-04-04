@@ -74,6 +74,8 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     onApproveMinorRework?: () => void;
     /** Called when user clicks "Komplett neu" in ChecklisteHalbprobeModal */
     onCompletelyNew?: () => void;
+    /** Maßschuhauftrag [id] step 5 only: Schafttyp Intern → erweitert ohne Preise im Konfigurator-Modal */
+    hideSchafttypModalPrices?: boolean;
 }
 
 function parseChecklisteHalbprobe(json: string | undefined): ChecklisteHalbprobeData | undefined {
@@ -114,6 +116,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     onChecklisteHalbprobeChange,
     onApproveMinorRework,
     onCompletelyNew,
+    hideSchafttypModalPrices = false,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const initialChecklistData = parseChecklisteHalbprobe(checklisteHalbprobe);
@@ -293,6 +296,7 @@ export default function HalbprobeDurchfuehrungStepFields({
                 onSchafttypChange={onSchafttypChange}
                 onSchafttypInternNoteChange={onSchafttypInternNoteChange}
                 onSchafttypExternNoteChange={onSchafttypExternNoteChange}
+                hideInternModalPrices={hideSchafttypModalPrices}
             />
 
             {/* Bodenkonstruktion */}

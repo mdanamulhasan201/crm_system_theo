@@ -102,6 +102,8 @@ export type VerschlussCardProps = {
   onPassendenSchnursenkelChange: (v: boolean | undefined) => void;
   osenEinsetzen: boolean | undefined;
   onOsenEinsetzenChange: (v: boolean | undefined) => void;
+  /** Maßschuh step-5 intern modal: omit +4,49 € / +8,99 € on Ja labels */
+  hideShopPriceLabels?: boolean;
 };
 
 export default function VerschlussCard({
@@ -121,6 +123,7 @@ export default function VerschlussCard({
   onPassendenSchnursenkelChange,
   osenEinsetzen,
   onOsenEinsetzenChange,
+  hideShopPriceLabels = false,
 }: VerschlussCardProps) {
   const [advancedEyeletsOpen, setAdvancedEyeletsOpen] = useState(false);
   const [advancedVelcroOpen, setAdvancedVelcroOpen] = useState(false);
@@ -188,17 +191,21 @@ export default function VerschlussCard({
                 onChange={onPassendenSchnursenkelChange}
                 labelNein="Nein"
                 labelJa={
-                  <>
-                    Ja, mit passenden Schnürsenkel{' '}
-                    <span
-                      className={cn(
-                        'font-semibold',
-                        passendenSchnursenkel === true ? 'text-white' : PRICE_ACCENT_CLASS
-                      )}
-                    >
-                      +4,49 €
-                    </span>
-                  </>
+                  hideShopPriceLabels ? (
+                    'Ja, mit passenden Schnürsenkel'
+                  ) : (
+                    <>
+                      Ja, mit passenden Schnürsenkel{' '}
+                      <span
+                        className={cn(
+                          'font-semibold',
+                          passendenSchnursenkel === true ? 'text-white' : PRICE_ACCENT_CLASS
+                        )}
+                      >
+                        +4,49 €
+                      </span>
+                    </>
+                  )
                 }
               />
             </div>
@@ -211,17 +218,21 @@ export default function VerschlussCard({
                 onChange={onOsenEinsetzenChange}
                 labelNein="Nein"
                 labelJa={
-                  <>
-                    Ja, Ösen einsetzen{' '}
-                    <span
-                      className={cn(
-                        'font-semibold',
-                        osenEinsetzen === true ? 'text-white' : PRICE_ACCENT_CLASS
-                      )}
-                    >
-                      +8,99 €
-                    </span>
-                  </>
+                  hideShopPriceLabels ? (
+                    'Ja, Ösen einsetzen'
+                  ) : (
+                    <>
+                      Ja, Ösen einsetzen{' '}
+                      <span
+                        className={cn(
+                          'font-semibold',
+                          osenEinsetzen === true ? 'text-white' : PRICE_ACCENT_CLASS
+                        )}
+                      >
+                        +8,99 €
+                      </span>
+                    </>
+                  )
                 }
               />
             </div>

@@ -253,6 +253,8 @@ interface ProductConfigurationProps {
   hideCadAndCategory?: boolean;
   /** Kollektion details: API `ziernaht === false` — „Ziernaht vorhanden?“ deaktivieren */
   disableZiernahtVorhanden?: boolean;
+  /** Maßschuh step-5 intern modal: hide € suffixes on Verschluss / Reißverschluss UI */
+  hideShopPriceLabels?: boolean;
 }
 
 export type ProductConfigurationHandle = {
@@ -353,6 +355,7 @@ const ProductConfiguration = forwardRef<ProductConfigurationHandle, ProductConfi
   setAdditionalNotes,
   hideCadAndCategory = false,
   disableZiernahtVorhanden = false,
+  hideShopPriceLabels = false,
 }: ProductConfigurationProps,
 ref: React.Ref<ProductConfigurationHandle>
 ) {
@@ -912,6 +915,7 @@ ref: React.Ref<ProductConfigurationHandle>
           setAnzahlKlettstreifen={setAnzahlKlettstreifen}
           breiteKlettstreifenMm={breiteKlettstreifenMm}
           setBreiteKlettstreifenMm={setBreiteKlettstreifenMm}
+          hideShopPriceLabels={hideShopPriceLabels}
         />
 
         <PolsterungCard
@@ -958,6 +962,7 @@ ref: React.Ref<ProductConfigurationHandle>
           zipperPlacementImage={zipperPlacementImage}
           shoeImage={shoeImage}
           onEditZipperPosition={() => setShowZipperPlacementModal(true)}
+          hideShopPriceLabels={hideShopPriceLabels}
         />
 
         <ConfigCard icon={ClipboardList} title="Notizen" subtitle="Optional — erscheinen in Rechnung/PDF">
@@ -1005,6 +1010,7 @@ ref: React.Ref<ProductConfigurationHandle>
           savedDrawing={zipperPlacementImage}
           zipperPosition={effectiveZipperPosition}
           onZipperPositionChange={(position) => updateZipperPosition(position)}
+          hideShopPriceLabels={hideShopPriceLabels}
         />
       </div>
     </TooltipProvider>

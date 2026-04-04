@@ -91,6 +91,8 @@ export interface SchafttypCustomModalProps {
     }) => void | Promise<void>;
     /** If false, do not open PDF popup after successful save */
     enablePdfAfterSubmit?: boolean;
+    /** Maßschuhauftrag step 5: hide CAD surcharge labels and keep hero without shop pricing */
+    hideConfiguratorPrices?: boolean;
 }
 
 async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
@@ -106,6 +108,7 @@ export default function SchafttypCustomModal({
     initialImageUrl,
     onSubmit,
     enablePdfAfterSubmit = true,
+    hideConfiguratorPrices = false,
 }: SchafttypCustomModalProps) {
     const productConfigRef = useRef<ProductConfigurationHandle>(null);
 
@@ -455,6 +458,7 @@ export default function SchafttypCustomModal({
                                     setCustomCategoryPrice={setCustomCategoryPrice}
                                     category={customCategory}
                                     allowCategoryEdit
+                                    hideCadPriceSuffix={hideConfiguratorPrices}
                                 />
                             }
                         />
@@ -463,6 +467,7 @@ export default function SchafttypCustomModal({
                         <ProductConfiguration
                             ref={productConfigRef}
                             hideCadAndCategory
+                            hideShopPriceLabels={hideConfiguratorPrices}
                             cadModeling={cadModeling}
                             setCadModeling={setCadModeling}
                             customCategory={customCategory}

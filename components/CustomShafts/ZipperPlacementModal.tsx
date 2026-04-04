@@ -18,6 +18,8 @@ interface ZipperPlacementModalProps {
   /** Current zipper position (single selection, radio-style). Required before drawing. */
   zipperPosition: ZipperPosition | null;
   onZipperPositionChange: (position: ZipperPosition) => void;
+  /** Maßschuh step-5 intern modal: radio labels without +9,99 € / +19,99 € */
+  hideShopPriceLabels?: boolean;
 }
 
 export default function ZipperPlacementModal({
@@ -28,6 +30,7 @@ export default function ZipperPlacementModal({
   savedDrawing,
   zipperPosition,
   onZipperPositionChange,
+  hideShopPriceLabels = false,
 }: ZipperPlacementModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null); // Canvas overlay for drawing only
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -401,7 +404,12 @@ export default function ZipperPlacementModal({
                   onChange={() => onZipperPositionChange('inside')}
                   className="w-4 h-4 text-green-500 focus:ring-green-500"
                 />
-                <span className="text-sm text-gray-700">Innen <span className="text-green-600 font-medium">+9,99 €</span></span>
+                <span className="text-sm text-gray-700">
+                  Innen
+                  {!hideShopPriceLabels ? (
+                    <span className="text-green-600 font-medium"> +9,99 €</span>
+                  ) : null}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -412,7 +420,12 @@ export default function ZipperPlacementModal({
                   onChange={() => onZipperPositionChange('outside')}
                   className="w-4 h-4 text-green-500 focus:ring-green-500"
                 />
-                <span className="text-sm text-gray-700">Außen <span className="text-green-600 font-medium">+9,99 €</span></span>
+                <span className="text-sm text-gray-700">
+                  Außen
+                  {!hideShopPriceLabels ? (
+                    <span className="text-green-600 font-medium"> +9,99 €</span>
+                  ) : null}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -423,7 +436,12 @@ export default function ZipperPlacementModal({
                   onChange={() => onZipperPositionChange('both')}
                   className="w-4 h-4 text-green-500 focus:ring-green-500"
                 />
-                <span className="text-sm text-gray-700">Beide Seiten <span className="text-green-600 font-medium">+19,99 €</span></span>
+                <span className="text-sm text-gray-700">
+                  Beide Seiten
+                  {!hideShopPriceLabels ? (
+                    <span className="text-green-600 font-medium"> +19,99 €</span>
+                  ) : null}
+                </span>
               </label>
             </div>
             {zipperPosition === 'both' && (

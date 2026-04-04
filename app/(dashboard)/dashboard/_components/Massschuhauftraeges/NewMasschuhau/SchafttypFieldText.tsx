@@ -111,6 +111,8 @@ export interface SchafttypFieldTextProps {
     /** Called on textarea blur – use for auto-save in standalone context. */
     onSchafttypInternNoteBlur?: () => void;
     onSchafttypExternNoteBlur?: () => void;
+    /** Maßschuhauftrag detail step 5: Intern → erweitert modal ohne CAD-/Shop-Preisanzeige */
+    hideInternModalPrices?: boolean;
 }
 
 export default function SchafttypFieldText({
@@ -131,6 +133,7 @@ export default function SchafttypFieldText({
     standaloneInitialImageUrl,
     onSchafttypInternNoteBlur,
     onSchafttypExternNoteBlur,
+    hideInternModalPrices = false,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -702,6 +705,7 @@ export default function SchafttypFieldText({
                 initialImageUrl={isStep5 ? massschafterstellungData?.imageUrl : (standaloneInitialImageUrl ?? undefined)}
                 onSubmit={isStep5 ? handleMassschafterstellungSubmit : onStandaloneSubmit}
                 enablePdfAfterSubmit={!isStep5}
+                hideConfiguratorPrices={hideInternModalPrices}
             />
         </>
     );
