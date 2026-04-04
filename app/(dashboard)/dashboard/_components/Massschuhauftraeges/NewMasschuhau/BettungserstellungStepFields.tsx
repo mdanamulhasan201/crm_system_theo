@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Pencil, Check } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export interface BettungserstellungStepFieldsProps {
     values: BettungStep3InputData;
@@ -51,12 +54,43 @@ export default function BettungserstellungStepFields({
     values,
     onChange,
 }: BettungserstellungStepFieldsProps) {
+    const [editing, setEditing] = useState(false);
+
     const setField = (key: keyof BettungStep3InputData, value: string) => {
         onChange({ ...values, [key]: value });
     };
 
     return (
         <div className="mb-6 rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100">
+                <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Bettungserstellung</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                        {editing
+                            ? 'Felder bearbeiten und abschließend „Fertig“ wählen.'
+                            : 'Zur Bearbeitung „Bearbeiten“ wählen.'}
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-1.5 cursor-pointer"
+                    onClick={() => setEditing((v) => !v)}
+                >
+                    {editing ? (
+                        <>
+                            <Check className="w-4 h-4" />
+                            Fertig
+                        </>
+                    ) : (
+                        <>
+                            <Pencil className="w-4 h-4" />
+                            Bearbeiten
+                        </>
+                    )}
+                </Button>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
                 {(
                     [
@@ -77,6 +111,7 @@ export default function BettungserstellungStepFields({
                     <div key={key} className="space-y-2">
                         <Label className="text-sm font-medium text-gray-800">{label}</Label>
                         <Input
+                            readOnly={!editing}
                             value={values[key]}
                             onChange={(e) => setField(key, e.target.value)}
                             placeholder={
@@ -90,12 +125,17 @@ export default function BettungserstellungStepFields({
                                       ? 'mm'
                                       : ''
                             }
-                            className="h-10 w-full rounded-lg border-gray-300 bg-gray-50/80"
+                            className={cn(
+                                'h-10 w-full rounded-lg border-gray-300',
+                                editing
+                                    ? 'bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/30'
+                                    : 'bg-gray-100/90 text-gray-900 cursor-default select-text',
+                            )}
                         />
                     </div>
                 ))}
                 <div className="sm:col-span-2">
-                    <p className="text-xs text-gray-500">Step 3 data shown as input fields. No value = blank field.</p>
+                    <p className="text-xs text-gray-500">Leeres Feld = kein Wert übermittelt.</p>
                 </div>
             </div>
         </div>
