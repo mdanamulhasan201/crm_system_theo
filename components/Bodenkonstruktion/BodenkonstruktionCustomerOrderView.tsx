@@ -54,6 +54,8 @@ type BodenkonstruktionCustomerOrderViewProps = {
      * this component reads and applies it once on mount.
      */
     standalonePrefillKey?: string
+    /** Maßschuh intern „erweitert“ modal: hide € in checklist / unified cards (not the public bodenkonstruktion page) */
+    hideAllShopPrices?: boolean
 }
 
 export function BodenkonstruktionCustomerOrderView({
@@ -63,6 +65,7 @@ export function BodenkonstruktionCustomerOrderView({
     onStandaloneSave,
     standalonePrefillKey,
     orderStepStatusForApi = DEFAULT_BODEN_ORDER_STEP_STATUS,
+    hideAllShopPrices = false,
 }: BodenkonstruktionCustomerOrderViewProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -1002,6 +1005,7 @@ export function BodenkonstruktionCustomerOrderView({
                 hideRahmenPrice={true}
                 absatzAbrollhilfeUnifiedConfigUi={true}
                 hideLaufsohleLeisten={true}
+                hideAllShopPrices={hideAllShopPrices}
             />
 
             {/* PDF Popup */}

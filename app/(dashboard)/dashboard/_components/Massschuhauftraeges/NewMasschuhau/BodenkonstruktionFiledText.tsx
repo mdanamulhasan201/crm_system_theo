@@ -744,6 +744,7 @@ export default function BodenkonstruktionFiledText({
                             onStandaloneSave={onStandaloneSave}
                             standalonePrefillKey={standalonePrefillKey}
                             orderStepStatusForApi={stepStatus ?? 'Halbprobe_durchführen'}
+                            hideAllShopPrices
                         />
                     </div>
                 </DialogContent>

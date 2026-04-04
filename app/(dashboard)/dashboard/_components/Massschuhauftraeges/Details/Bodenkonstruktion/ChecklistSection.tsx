@@ -17,6 +17,8 @@ import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 
+const ALL_CHECKLIST_GROUP_IDS = GROUPS2.map((g) => g.id)
+
 interface ChecklistSectionProps {
     selected: SelectedState
     optionInputs: OptionInputsState
@@ -85,6 +87,8 @@ interface ChecklistSectionProps {
     hideRahmenPrice?: boolean
     /** Group IDs for which option labels are shown without price (e.g. ["laufsohle_lose_beilegen"] on customer-order page) */
     hideOptionPricesForGroupIds?: string[]
+    /** Maßschuh intern Bodenkonstruktion modal: strip € from all checklist / unified cards */
+    hideAllShopPrices?: boolean
 }
 
 export default function ChecklistSection({
@@ -138,7 +142,13 @@ export default function ChecklistSection({
     hideBrandsohlePrice = false,
     hideRahmenPrice = false,
     hideOptionPricesForGroupIds,
+    hideAllShopPrices = false,
 }: ChecklistSectionProps) {
+    const mergedHideOptionPricesForGroupIds = hideAllShopPrices
+        ? ALL_CHECKLIST_GROUP_IDS
+        : hideOptionPricesForGroupIds
+    const effectiveHideBrandsohlePrice = hideBrandsohlePrice || hideAllShopPrices
+    const effectiveHideRahmenPrice = hideRahmenPrice || hideAllShopPrices
     // Orthopedic field IDs that should only show when showOrthopedicFields is true
     const orthopedicFieldIds = [
         "orthopaedic_section",
@@ -283,6 +293,7 @@ export default function ChecklistSection({
                                     materialValue={hinterkappeSide || null}
                                     onMusterChange={onHinterkappeMusterChange || (() => {})}
                                     onMaterialChange={onHinterkappeChange || (() => {})}
+                                    hidePrice={hideAllShopPrices}
                                 />
                             ) : hinterkappeMusterSimple ? (
                                 <HinterkappeMusterSimpleField
@@ -310,14 +321,14 @@ export default function ChecklistSection({
                                 <BrandsohleUnifiedConfigCard
                                     value={brandsohleSide || null}
                                     onChange={onBrandsohleChange || (() => {})}
-                                    hidePrice={hideBrandsohlePrice}
+                                    hidePrice={effectiveHideBrandsohlePrice}
                                 />
                             ) : (
                                 <BrandsohleSideField
                                     def={g}
                                     value={brandsohleSide || null}
                                     onChange={onBrandsohleChange || (() => {})}
-                                    hidePrice={hideBrandsohlePrice}
+                                    hidePrice={effectiveHideBrandsohlePrice}
                                 />
                             )
                         ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
@@ -325,6 +336,7 @@ export default function ChecklistSection({
                                 <VorderkappeUnifiedConfigCard
                                     value={vorderkappeSide || null}
                                     onChange={onVorderkappeChange || (() => {})}
+                                    hidePrice={hideAllShopPrices}
                                 />
                             ) : (
                                 <VorderkappeSideField
@@ -338,14 +350,14 @@ export default function ChecklistSection({
                                 <RahmenUnifiedConfigCard
                                     value={rahmen || null}
                                     onChange={onRahmenChange || (() => {})}
-                                    hidePrice={hideRahmenPrice}
+                                    hidePrice={effectiveHideRahmenPrice}
                                 />
                             ) : (
                                 <RahmenField
                                     def={g}
                                     value={rahmen || null}
                                     onChange={onRahmenChange || (() => {})}
-                                    hidePrice={hideRahmenPrice}
+                                    hidePrice={effectiveHideRahmenPrice}
                                 />
                             )
                         ) : laufsohleLeistenUnifiedConfigUi &&
@@ -360,7 +372,8 @@ export default function ChecklistSection({
                                 onLaufsohleSelect={(optId) => onSetGroup("laufsohle_lose_beilegen", optId)}
                                 onLeistenSelect={(optId) => onSetGroup("leisten_belassen", optId)}
                                 hideLaufsohlePrices={
-                                    hideOptionPricesForGroupIds?.includes("laufsohle_lose_beilegen") ?? false
+                                    hideAllShopPrices ||
+                                    (hideOptionPricesForGroupIds?.includes("laufsohle_lose_beilegen") ?? false)
                                 }
                             />
                         ) : g.id === "Konstruktionsart" &&
@@ -370,6 +383,7 @@ export default function ChecklistSection({
                                 options={g.options}
                                 selected={normalizedSelected}
                                 onSelect={(optId) => onSetGroup(g.id, optId)}
+                                hidePrice={hideAllShopPrices}
                             />
                         ) : (
                             <OptionGroup
@@ -381,7 +395,7 @@ export default function ChecklistSection({
                                 onOptionClick={onAbsatzFormClick}
                                 selectedSole={selectedSole}
                                 tooltipText={(g as any).tooltipText}
-                                hidePriceForGroupIds={hideOptionPricesForGroupIds}
+                                hidePriceForGroupIds={mergedHideOptionPricesForGroupIds}
                             />
                         )}
                         {!(

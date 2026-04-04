@@ -84,6 +84,7 @@ const MaterialRow = ({
   def,
   onMaterial,
   onSub,
+  hidePrice,
 }: {
   sideLabel?: string
   material: string | null | undefined
@@ -91,6 +92,7 @@ const MaterialRow = ({
   def: GroupDef2
   onMaterial: (id: string | null) => void
   onSub: (id: string | null) => void
+  hidePrice?: boolean
 }) => {
   const lederOpts = def.subOptions?.leder || []
 
@@ -127,7 +129,7 @@ const MaterialRow = ({
                   key={opt.id}
                   label={title}
                   desc={desc}
-                  price={formatEuroPerSeite(opt.price)}
+                  price={hidePrice ? undefined : formatEuroPerSeite(opt.price)}
                   selected={subValue === opt.id}
                   onClick={() => onSub(subValue === opt.id ? null : opt.id)}
                 />
@@ -147,6 +149,7 @@ export default function HinterkappeUnifiedConfigCard({
   materialValue,
   onMusterChange,
   onMaterialChange,
+  hidePrice = false,
 }: {
   musterDef: GroupDef2
   materialDef: GroupDef2
@@ -154,6 +157,7 @@ export default function HinterkappeUnifiedConfigCard({
   materialValue: HinterkappeSideData | null
   onMusterChange: (v: HinterkappeMusterSideData | null) => void
   onMaterialChange: (v: HinterkappeSideData | null) => void
+  hidePrice?: boolean
 }) {
   const erstellung = resolveErstellung(musterValue)
   const musterart = musterValue?.musterart ?? null
@@ -316,6 +320,7 @@ export default function HinterkappeUnifiedConfigCard({
                         material={sameValue}
                         subValue={sameSubValue}
                         def={materialDef}
+                        hidePrice={hidePrice}
                         onMaterial={(id) => {
                           if (id === null) patchGleich({ sameValue: null, sameSubValue: null })
                           else if (id !== "leder") patchGleich({ sameValue: id, sameSubValue: null })
@@ -331,6 +336,7 @@ export default function HinterkappeUnifiedConfigCard({
                         material={leftValue}
                         subValue={leftSubValue}
                         def={materialDef}
+                        hidePrice={hidePrice}
                         onMaterial={(id) => {
                           if (id === null) patchLinks({ leftValue: null, leftSubValue: null })
                           else if (id !== "leder") patchLinks({ leftValue: id, leftSubValue: null })
@@ -343,6 +349,7 @@ export default function HinterkappeUnifiedConfigCard({
                         material={rightValue}
                         subValue={rightSubValue}
                         def={materialDef}
+                        hidePrice={hidePrice}
                         onMaterial={(id) => {
                           if (id === null) patchRechts({ rightValue: null, rightSubValue: null })
                           else if (id !== "leder") patchRechts({ rightValue: id, rightSubValue: null })

@@ -23,10 +23,12 @@ const SelectionRow = ({
   sideLabel,
   value,
   onChange,
+  hidePrice,
 }: {
   sideLabel?: string
   value: VorderkappeMatSel
   onChange: (v: VorderkappeMatSel) => void
+  hidePrice?: boolean
 }) => (
   <div className="space-y-2">
     {sideLabel ? (
@@ -38,7 +40,7 @@ const SelectionRow = ({
           key={opt.value}
           label={opt.label}
           desc={opt.desc}
-          price={opt.price}
+          price={hidePrice ? undefined : opt.price}
           selected={value === opt.value}
           onClick={() => onChange(value === opt.value ? null : opt.value)}
         />
@@ -50,9 +52,11 @@ const SelectionRow = ({
 export default function VorderkappeUnifiedConfigCard({
   value,
   onChange,
+  hidePrice = false,
 }: {
   value: VorderkappeSideData | null
   onChange: (v: VorderkappeSideData | null) => void
+  hidePrice?: boolean
 }) {
   const mode = value?.mode ?? null
   const sameMaterial = value?.sameMaterial ?? null
@@ -146,12 +150,12 @@ export default function VorderkappeUnifiedConfigCard({
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
           {mode === "gleich" ? (
             <div className="mt-3">
-              <SelectionRow value={sameMaterial} onChange={patchGleichMaterial} />
+              <SelectionRow value={sameMaterial} onChange={patchGleichMaterial} hidePrice={hidePrice} />
             </div>
           ) : (
             <div className="mt-3 space-y-6">
-              <SelectionRow sideLabel="LINKS" value={leftMaterial} onChange={patchLeft} />
-              <SelectionRow sideLabel="RECHTS" value={rightMaterial} onChange={patchRight} />
+              <SelectionRow sideLabel="LINKS" value={leftMaterial} onChange={patchLeft} hidePrice={hidePrice} />
+              <SelectionRow sideLabel="RECHTS" value={rightMaterial} onChange={patchRight} hidePrice={hidePrice} />
             </div>
           )}
         </div>
