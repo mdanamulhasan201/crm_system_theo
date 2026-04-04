@@ -24,11 +24,11 @@ export default function Krankenkasse() {
             <PriceCardData />
      
 
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Umsatzverteilung />
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-1">
+                {/* <Umsatzverteilung /> */}
                 <Produktverteilung />
             </section>
-            <KrankenkassenTable />
+            {/* <KrankenkassenTable /> */}
         </div>
     )
 }
