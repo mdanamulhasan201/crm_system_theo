@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { MapPin, Edit, Trash2, Plus } from 'lucide-react'
+import { MapPin, Edit, Trash2, Plus, Clock } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -95,6 +95,13 @@ function TimeInput24({
 }
 
 type Location = StoreLocation
+
+function formatShopHoursDisplay(shopOpen?: string | null, shopClose?: string | null): string | null {
+  const open = shopOpen?.trim()
+  const close = shopClose?.trim()
+  if (!open && !close) return null
+  return `${open ?? '—'} – ${close ?? '—'}`
+}
 
 export default function AddressesLocations() {
   const [locations, setLocations] = useState<Location[]>([])
@@ -425,6 +432,17 @@ export default function AddressesLocations() {
                       )}
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 break-words">{location.address}</p>
+                    {formatShopHoursDisplay(location.shop_open, location.shop_close) && (
+                      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500">
+                        <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden />
+                        <span>
+                          <span className="text-gray-500">Öffnungszeiten: </span>
+                          <span className="font-medium text-gray-700">
+                            {formatShopHoursDisplay(location.shop_open, location.shop_close)}
+                          </span>
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <button 
