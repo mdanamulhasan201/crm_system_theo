@@ -48,6 +48,26 @@ function collectInvoiceUrlsFromExternBlock(externBlock: unknown): string[] {
     return urls;
 }
 
+/** Intern-Block: Rechnungs-URLs falls vorhanden (zusätzlich zu json/image) */
+function collectInvoiceUrlsFromInternBlock(internBlock: unknown): string[] {
+    const urls: string[] = [];
+    if (!internBlock || typeof internBlock !== 'object') return urls;
+    const ib = internBlock as {
+        invoice?: string | null;
+        invoice2?: string | null;
+        customShafts?: Array<{ invoice?: string | null; invoice2?: string | null }>;
+    };
+    if (ib.invoice) urls.push(ib.invoice);
+    if (ib.invoice2) urls.push(ib.invoice2);
+    if (Array.isArray(ib.customShafts)) {
+        for (const cs of ib.customShafts) {
+            if (cs?.invoice) urls.push(cs.invoice);
+            if (cs?.invoice2) urls.push(cs.invoice2);
+        }
+    }
+    return urls;
+}
+
 export const SCHAFTTYP_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
     { value: 'Extern', label: 'Extern' },
@@ -122,6 +142,19 @@ export default function SchafttypFieldText({
     const [externPdfLoading, setExternPdfLoading] = useState(false);
     const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [schafttypInternTrack, setSchafttypInternTrack] = useState<{
+        json?: MassschafterstellungJson;
+        imageUrl?: string;
+        hasData: boolean;
+        pdfUrls: string[];
+    } | null>(null);
+    const [internPdfLoading, setInternPdfLoading] = useState(false);
+    const [internPreviewOpen, setInternPreviewOpen] = useState(false);
+    const [internPreviewMode, setInternPreviewMode] = useState<'pdf' | 'content'>('content');
+    const [internPreviewPdfUrls, setInternPreviewPdfUrls] = useState<string[]>([]);
+    const [internPreviewPdfUrl, setInternPreviewPdfUrl] = useState<string | null>(null);
+    const [internPreviewImageUrl, setInternPreviewImageUrl] = useState<string | null>(null);
+    const [internPreviewJsonText, setInternPreviewJsonText] = useState('');
     const [massschafterstellungData, setMassschafterstellungData] = useState<{
         json?: MassschafterstellungJson;
         imageUrl?: string;
@@ -202,30 +235,19 @@ export default function SchafttypFieldText({
         onSchafttypExternNoteChange,
     ]);
 
-    const handleErweitertClick = async () => {
+    const handleErweitertClick = () => {
         if (isStep5) {
             if (activeButtons.intern && orderId) {
-                setMassschafterstellungLoading(true);
-                try {
-                    const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttyp2(orderId, 'intern');
-                    const internData = res?.data?.schafttyp?.intern;
-                    const hasData = Boolean(internData?.hasData);
-                    const json = typeof internData?.json === 'string'
-                        ? (() => { try { return JSON.parse(internData.json); } catch { return undefined; } })()
-                        : internData?.json;
-
-                    if (hasData && (json || internData?.image)) {
-                        setMassschafterstellungData({
-                            json: json ?? undefined,
-                            imageUrl: internData?.image ?? undefined,
-                        });
-                    } else {
-                        setMassschafterstellungData(null);
-                    }
-                } catch {
+                if (
+                    schafttypInternTrack?.hasData &&
+                    (schafttypInternTrack.json || schafttypInternTrack.imageUrl)
+                ) {
+                    setMassschafterstellungData({
+                        json: schafttypInternTrack.json,
+                        imageUrl: schafttypInternTrack.imageUrl,
+                    });
+                } else {
                     setMassschafterstellungData(null);
-                } finally {
-                    setMassschafterstellungLoading(false);
                 }
             } else {
                 setMassschafterstellungData(null);
@@ -248,6 +270,22 @@ export default function SchafttypFieldText({
         if (externPdfUrls.length === 0) return;
         setPdfPreviewUrl(externPdfUrls[0]);
         setPdfPreviewOpen(true);
+    };
+
+    const openSchafttypInternPdfPreview = () => {
+        if (!schafttypInternTrack?.hasData) return;
+        const { pdfUrls, imageUrl, json } = schafttypInternTrack;
+        if (pdfUrls.length > 0) {
+            setInternPreviewPdfUrls(pdfUrls);
+            setInternPreviewPdfUrl(pdfUrls[0]);
+            setInternPreviewMode('pdf');
+            setInternPreviewOpen(true);
+            return;
+        }
+        setInternPreviewImageUrl(imageUrl ?? null);
+        setInternPreviewJsonText(json ? JSON.stringify(json, null, 2) : '');
+        setInternPreviewMode('content');
+        setInternPreviewOpen(true);
     };
 
     const handleMassschafterstellungSubmit = async (payload: {
@@ -316,6 +354,61 @@ export default function SchafttypFieldText({
         };
     }, [isStep5, orderId, schafttyp]);
 
+    // Bei „Intern“: Track-PDF-API → gleiche Daten wie für erweitert / Vorschau
+    useEffect(() => {
+        if (!isStep5 || !orderId || schafttyp !== 'Intern') {
+            setSchafttypInternTrack(null);
+            setInternPdfLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setInternPdfLoading(true);
+        MassschuheAddedApis.getMassschuheOrderTrackActiveButtonSchafttypPdfDownload(orderId, 'intern')
+            .then((res: any) => {
+                if (cancelled) return;
+                const st = res?.data?.schafttyp ?? res?.schafttyp;
+                const internData = st?.intern;
+                if (!internData || typeof internData !== 'object') {
+                    setSchafttypInternTrack(null);
+                    return;
+                }
+                const hasData = Boolean(internData.hasData);
+                const json = typeof internData.json === 'string'
+                    ? (() => {
+                          try {
+                              return JSON.parse(internData.json) as MassschafterstellungJson;
+                          } catch {
+                              return undefined;
+                          }
+                      })()
+                    : (internData.json as MassschafterstellungJson | undefined);
+                const pdfUrls = collectInvoiceUrlsFromInternBlock(internData);
+                setSchafttypInternTrack({
+                    json,
+                    imageUrl: internData.image ?? undefined,
+                    hasData,
+                    pdfUrls,
+                });
+            })
+            .catch(() => {
+                if (!cancelled) setSchafttypInternTrack(null);
+            })
+            .finally(() => {
+                if (!cancelled) setInternPdfLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isStep5, orderId, schafttyp]);
+
+    const showInternPdfVorschau =
+        isStep5 &&
+        activeButtons.intern &&
+        schafttypInternTrack?.hasData &&
+        (schafttypInternTrack.pdfUrls.length > 0 ||
+            Boolean(schafttypInternTrack.imageUrl) ||
+            Boolean(schafttypInternTrack.json));
+
     return (
         <>
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
@@ -348,25 +441,45 @@ export default function SchafttypFieldText({
                             <Label className="text-sm font-medium text-gray-800">
                                 Hinweise zur internen Schaftfertigung
                             </Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className={cn(
-                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                    isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
-                                    isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
-                                )}
-                                onClick={handleErweitertClick}
-                                disabled={massschafterstellungLoading || activeButtonsLoading}
-                            >
-                                {massschafterstellungLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                                ) : isStep5 && activeButtons.intern ? (
-                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                {showInternPdfVorschau ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                                        onClick={openSchafttypInternPdfPreview}
+                                    >
+                                        <FileText className="w-4 h-4 mr-1.5" />
+                                        PDF Vorschau
+                                        {schafttypInternTrack && schafttypInternTrack.pdfUrls.length > 1
+                                            ? ` (${schafttypInternTrack.pdfUrls.length})`
+                                            : ''}
+                                    </Button>
+                                ) : isStep5 && activeButtons.intern && internPdfLoading ? (
+                                    <span className="inline-flex items-center text-xs text-gray-500">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                        PDF wird geladen…
+                                    </span>
                                 ) : null}
-                                erweitert
-                            </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={cn(
+                                        'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                        isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                        isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
+                                    )}
+                                    onClick={handleErweitertClick}
+                                    disabled={activeButtonsLoading}
+                                >
+                                    {isStep5 && activeButtons.intern ? (
+                                        <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                    ) : null}
+                                    erweitert
+                                </Button>
+                            </div>
                         </div>
                         <textarea
                             value={schafttypInternNote}
@@ -478,6 +591,83 @@ export default function SchafttypFieldText({
                             src={pdfPreviewUrl}
                             className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
                         />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={internPreviewOpen} onOpenChange={setInternPreviewOpen}>
+                <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 py-3 border-b shrink-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
+                            <DialogTitle className="m-0">
+                                {internPreviewMode === 'pdf'
+                                    ? 'PDF Vorschau — Schaft intern'
+                                    : 'Vorschau — Schaft intern'}
+                            </DialogTitle>
+                            {internPreviewMode === 'pdf' && internPreviewPdfUrl ? (
+                                <a
+                                    href={internPreviewPdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    In neuem Tab öffnen / Download
+                                </a>
+                            ) : internPreviewMode === 'content' && internPreviewImageUrl ? (
+                                <a
+                                    href={internPreviewImageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    Bild in neuem Tab
+                                </a>
+                            ) : null}
+                        </div>
+                        <DialogDescription className="sr-only">
+                            Vorschau interner Schaft-Daten (PDF oder Konfiguration)
+                        </DialogDescription>
+                        {internPreviewMode === 'pdf' && internPreviewPdfUrls.length > 1 ? (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {internPreviewPdfUrls.map((url, idx) => (
+                                    <Button
+                                        key={url + idx}
+                                        type="button"
+                                        variant={internPreviewPdfUrl === url ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={() => setInternPreviewPdfUrl(url)}
+                                    >
+                                        {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
+                                    </Button>
+                                ))}
+                            </div>
+                        ) : null}
+                    </DialogHeader>
+                    {internPreviewMode === 'pdf' && internPreviewPdfUrl ? (
+                        <iframe
+                            title="PDF Vorschau Schaft intern"
+                            src={internPreviewPdfUrl}
+                            className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
+                        />
+                    ) : internPreviewMode === 'content' ? (
+                        <div className="flex flex-1 flex-col gap-3 overflow-auto p-4 min-h-[50vh]">
+                            {internPreviewImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={internPreviewImageUrl}
+                                    alt=""
+                                    className="max-h-[45vh] w-full object-contain rounded-lg border border-gray-200 bg-gray-50"
+                                />
+                            ) : null}
+                            {internPreviewJsonText ? (
+                                <pre className="max-h-[40vh] overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 whitespace-pre-wrap wrap-break-word">
+                                    {internPreviewJsonText}
+                                </pre>
+                            ) : (
+                                <p className="text-sm text-gray-500">Keine Vorschaudaten.</p>
+                            )}
+                        </div>
                     ) : null}
                 </DialogContent>
             </Dialog>

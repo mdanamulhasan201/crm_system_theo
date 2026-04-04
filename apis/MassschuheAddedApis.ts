@@ -112,7 +112,7 @@ export const getMassschuheOrderTrackActiveButtonBodenkonstruktion = async (order
 
 
 // pdf donwnlaod  Schafttyp
-export const getMassschuheOrderTrackActiveButtonSchafttypPdfDownload = async (orderId: string, schafttyp: 'extern') => {
+export const getMassschuheOrderTrackActiveButtonSchafttypPdfDownload = async (orderId: string, schafttyp: 'extern' | 'intern') => {
     try {
         const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}?schafttyp=${schafttyp}`);
         return response.data;
@@ -122,7 +122,7 @@ export const getMassschuheOrderTrackActiveButtonSchafttypPdfDownload = async (or
 }
 
 // pdf donwnlaod  Bodenkonstruktion
-export const getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload = async (orderId: string, bodenkonstruktion: 'extern') => {
+export const getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload = async (orderId: string, bodenkonstruktion: 'extern' | 'intern') => {
     try {
         const response = await axiosClient.get(`/v2/shoe-orders/track/active-button/${orderId}?bodenkonstruktion=${bodenkonstruktion}`);
         return response.data;

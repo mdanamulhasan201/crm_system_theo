@@ -47,6 +47,54 @@ function collectBodenInvoiceUrlsFromExternBlock(externBlock: unknown): string[] 
     return urls;
 }
 
+function collectBodenInvoiceUrlsFromInternBlock(internBlock: unknown): string[] {
+    const urls: string[] = [];
+    if (!internBlock || typeof internBlock !== 'object') return urls;
+    const ib = internBlock as {
+        invoice?: string | null;
+        invoice2?: string | null;
+        customShafts?: Array<{ invoice?: string | null; invoice2?: string | null }>;
+    };
+    if (ib.invoice) urls.push(ib.invoice);
+    if (ib.invoice2) urls.push(ib.invoice2);
+    if (Array.isArray(ib.customShafts)) {
+        for (const cs of ib.customShafts) {
+            if (cs?.invoice) urls.push(cs.invoice);
+            if (cs?.invoice2) urls.push(cs.invoice2);
+        }
+    }
+    return urls;
+}
+
+function parseBodenInternFromPdfApiResponse(res: any): {
+    json?: Record<string, unknown>;
+    image: string | null;
+    hasData: boolean;
+    pdfUrls: string[];
+} | null {
+    const bk = res?.data?.bodenkonstruktion ?? res?.bodenkonstruktion;
+    const internData = bk?.intern;
+    if (!internData || typeof internData !== 'object') return null;
+    const hasData = Boolean(internData.hasData);
+    const parsedJson =
+        typeof internData.json === 'string'
+            ? (() => {
+                  try {
+                      return JSON.parse(internData.json) as Record<string, unknown>;
+                  } catch {
+                      return undefined;
+                  }
+              })()
+            : (internData.json as Record<string, unknown> | undefined);
+    const pdfUrls = collectBodenInvoiceUrlsFromInternBlock(internData);
+    return {
+        json: parsedJson,
+        image: internData.image ?? null,
+        hasData,
+        pdfUrls,
+    };
+}
+
 const BODEN_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
     { value: 'Extern', label: 'Extern' },
@@ -111,6 +159,19 @@ export default function BodenkonstruktionFiledText({
     const [bodenExternPdfLoading, setBodenExternPdfLoading] = useState(false);
     const [bodenPdfPreviewOpen, setBodenPdfPreviewOpen] = useState(false);
     const [bodenPdfPreviewUrl, setBodenPdfPreviewUrl] = useState<string | null>(null);
+    const [bodenInternTrack, setBodenInternTrack] = useState<{
+        json?: Record<string, unknown>;
+        image: string | null;
+        hasData: boolean;
+        pdfUrls: string[];
+    } | null>(null);
+    const [bodenInternPdfLoading, setBodenInternPdfLoading] = useState(false);
+    const [bodenInternPreviewOpen, setBodenInternPreviewOpen] = useState(false);
+    const [bodenInternPreviewMode, setBodenInternPreviewMode] = useState<'pdf' | 'content'>('content');
+    const [bodenInternPreviewPdfUrls, setBodenInternPreviewPdfUrls] = useState<string[]>([]);
+    const [bodenInternPreviewPdfUrl, setBodenInternPreviewPdfUrl] = useState<string | null>(null);
+    const [bodenInternPreviewImageUrl, setBodenInternPreviewImageUrl] = useState<string | null>(null);
+    const [bodenInternPreviewJsonText, setBodenInternPreviewJsonText] = useState('');
     const wasInternPopupOpenRef = useRef(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -206,6 +267,30 @@ export default function BodenkonstruktionFiledText({
         };
     }, [isStep5, orderId, bodenOption]);
 
+    useEffect(() => {
+        if (!isStep5 || !orderId || bodenOption !== 'Intern') {
+            setBodenInternTrack(null);
+            setBodenInternPdfLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setBodenInternPdfLoading(true);
+        MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload(orderId, 'intern')
+            .then((res: any) => {
+                if (cancelled) return;
+                setBodenInternTrack(parseBodenInternFromPdfApiResponse(res));
+            })
+            .catch(() => {
+                if (!cancelled) setBodenInternTrack(null);
+            })
+            .finally(() => {
+                if (!cancelled) setBodenInternPdfLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isStep5, orderId, bodenOption]);
+
     // Refetch active buttons only when intern modal transitions open -> closed
     useEffect(() => {
         if (isStep5 && wasInternPopupOpenRef.current && !internPopupOpen) {
@@ -229,38 +314,54 @@ export default function BodenkonstruktionFiledText({
         bodenOption,
     ]);
 
+    const applyBodenInternPrefillToSession = (
+        source: {
+            json?: Record<string, unknown>;
+            image: string | null;
+            hasData: boolean;
+        } | null
+    ) => {
+        if (!orderId) return;
+        if (!source) {
+            sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
+            return;
+        }
+        const parsedJson = source.json;
+        const mergedJson = {
+            ...(parsedJson ?? {}),
+            ...(!(parsedJson as { customerName?: string } | undefined)?.customerName && redirectCustomerName
+                ? { customerName: redirectCustomerName }
+                : {}),
+        };
+
+        if (source.hasData && (parsedJson || source.image)) {
+            sessionStorage.setItem(
+                `bodenkonstruktion-embedded-prefill:${orderId}`,
+                JSON.stringify({ json: mergedJson, image: source.image ?? null })
+            );
+        } else {
+            sessionStorage.setItem(
+                `bodenkonstruktion-embedded-prefill:${orderId}`,
+                JSON.stringify({
+                    json: redirectCustomerName ? { customerName: redirectCustomerName } : null,
+                    image: null,
+                })
+            );
+        }
+    };
+
     const handleErweitertClick = async () => {
-        // Always fetch fresh prefill data on every click (regardless of activeButtons.intern)
-        // so saved data is visible immediately without a page reload
         if (isStep5 && orderId) {
             setBodenLoading(true);
             try {
-                const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktion(orderId, 'intern');
-                const internData = res?.data?.bodenkonstruktion?.intern;
-                const hasData = Boolean(internData?.hasData);
-                const parsedJson = typeof internData?.json === 'string'
-                    ? (() => { try { return JSON.parse(internData.json); } catch { return undefined; } })()
-                    : internData?.json;
-
-                // Always inject customer name — use saved value or fall back to prop
-                const mergedJson = {
-                    ...(parsedJson ?? {}),
-                    ...(!parsedJson?.customerName && redirectCustomerName
-                        ? { customerName: redirectCustomerName }
-                        : {}),
-                };
-
-                if (hasData && (parsedJson || internData?.image)) {
-                    sessionStorage.setItem(
-                        `bodenkonstruktion-embedded-prefill:${orderId}`,
-                        JSON.stringify({ json: mergedJson, image: internData?.image ?? null })
-                    );
+                if (bodenInternTrack) {
+                    applyBodenInternPrefillToSession(bodenInternTrack);
                 } else {
-                    // No saved data yet — still prefill customer name
-                    sessionStorage.setItem(
-                        `bodenkonstruktion-embedded-prefill:${orderId}`,
-                        JSON.stringify({ json: redirectCustomerName ? { customerName: redirectCustomerName } : null, image: null })
+                    const res: any = await MassschuheAddedApis.getMassschuheOrderTrackActiveButtonBodenkonstruktionPdfDownload(
+                        orderId,
+                        'intern'
                     );
+                    applyBodenInternPrefillToSession(parseBodenInternFromPdfApiResponse(res));
                 }
             } catch {
                 sessionStorage.removeItem(`bodenkonstruktion-embedded-prefill:${orderId}`);
@@ -297,6 +398,30 @@ export default function BodenkonstruktionFiledText({
         setBodenPdfPreviewOpen(true);
     };
 
+    const openBodenInternPdfPreview = () => {
+        if (!bodenInternTrack?.hasData) return;
+        const { pdfUrls, image, json } = bodenInternTrack;
+        if (pdfUrls.length > 0) {
+            setBodenInternPreviewPdfUrls(pdfUrls);
+            setBodenInternPreviewPdfUrl(pdfUrls[0]);
+            setBodenInternPreviewMode('pdf');
+            setBodenInternPreviewOpen(true);
+            return;
+        }
+        setBodenInternPreviewImageUrl(image);
+        setBodenInternPreviewJsonText(json ? JSON.stringify(json, null, 2) : '');
+        setBodenInternPreviewMode('content');
+        setBodenInternPreviewOpen(true);
+    };
+
+    const showBodenInternPdfVorschau =
+        isStep5 &&
+        activeButtons.intern &&
+        bodenInternTrack?.hasData &&
+        (bodenInternTrack.pdfUrls.length > 0 ||
+            Boolean(bodenInternTrack.image) ||
+            Boolean(bodenInternTrack.json));
+
     return (
         <div>
             <Label className="text-sm font-medium text-gray-800 mb-3 block">
@@ -328,25 +453,47 @@ export default function BodenkonstruktionFiledText({
                         <Label className="text-sm font-medium text-gray-800">
                             Hinweise zur internen Bodenkonstruktion
                         </Label>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                                'text-gray-700 border-gray-400 hover:bg-gray-100',
-                                isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
-                                isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
-                            )}
-                            onClick={handleErweitertClick}
-                            disabled={bodenLoading || activeButtonsLoading}
-                        >
-                            {bodenLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                            ) : isStep5 && activeButtons.intern ? (
-                                <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            {showBodenInternPdfVorschau ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                                    onClick={openBodenInternPdfPreview}
+                                >
+                                    <FileText className="w-4 h-4 mr-1.5" />
+                                    PDF Vorschau
+                                    {bodenInternTrack && bodenInternTrack.pdfUrls.length > 1
+                                        ? ` (${bodenInternTrack.pdfUrls.length})`
+                                        : ''}
+                                </Button>
+                            ) : isStep5 && activeButtons.intern && bodenInternPdfLoading ? (
+                                <span className="inline-flex items-center text-xs text-gray-500">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                    PDF wird geladen…
+                                </span>
                             ) : null}
-                            erweitert
-                        </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={cn(
+                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                    isStep5 && activeButtons.intern && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
+                                    isStep5 && !activeButtons.intern && 'border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
+                                )}
+                                onClick={handleErweitertClick}
+                                disabled={bodenLoading || activeButtonsLoading}
+                            >
+                                {bodenLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                                ) : isStep5 && activeButtons.intern ? (
+                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                ) : null}
+                                erweitert
+                            </Button>
+                        </div>
                     </div>
                     <textarea
                         value={internNote}
@@ -458,6 +605,83 @@ export default function BodenkonstruktionFiledText({
                             src={bodenPdfPreviewUrl}
                             className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
                         />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={bodenInternPreviewOpen} onOpenChange={setBodenInternPreviewOpen}>
+                <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 py-3 border-b shrink-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
+                            <DialogTitle className="m-0">
+                                {bodenInternPreviewMode === 'pdf'
+                                    ? 'PDF Vorschau — Bodenkonstruktion intern'
+                                    : 'Vorschau — Bodenkonstruktion intern'}
+                            </DialogTitle>
+                            {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrl ? (
+                                <a
+                                    href={bodenInternPreviewPdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    In neuem Tab öffnen / Download
+                                </a>
+                            ) : bodenInternPreviewMode === 'content' && bodenInternPreviewImageUrl ? (
+                                <a
+                                    href={bodenInternPreviewImageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
+                                >
+                                    Bild in neuem Tab
+                                </a>
+                            ) : null}
+                        </div>
+                        <DialogDescription className="sr-only">
+                            Vorschau interner Bodenkonstruktion (PDF oder Konfiguration)
+                        </DialogDescription>
+                        {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrls.length > 1 ? (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {bodenInternPreviewPdfUrls.map((url, idx) => (
+                                    <Button
+                                        key={url + idx}
+                                        type="button"
+                                        variant={bodenInternPreviewPdfUrl === url ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={() => setBodenInternPreviewPdfUrl(url)}
+                                    >
+                                        {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
+                                    </Button>
+                                ))}
+                            </div>
+                        ) : null}
+                    </DialogHeader>
+                    {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrl ? (
+                        <iframe
+                            title="PDF Vorschau Boden intern"
+                            src={bodenInternPreviewPdfUrl}
+                            className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
+                        />
+                    ) : bodenInternPreviewMode === 'content' ? (
+                        <div className="flex flex-1 flex-col gap-3 overflow-auto p-4 min-h-[50vh]">
+                            {bodenInternPreviewImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={bodenInternPreviewImageUrl}
+                                    alt=""
+                                    className="max-h-[45vh] w-full object-contain rounded-lg border border-gray-200 bg-gray-50"
+                                />
+                            ) : null}
+                            {bodenInternPreviewJsonText ? (
+                                <pre className="max-h-[40vh] overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 whitespace-pre-wrap wrap-break-word">
+                                    {bodenInternPreviewJsonText}
+                                </pre>
+                            ) : (
+                                <p className="text-sm text-gray-500">Keine Vorschaudaten.</p>
+                            )}
+                        </div>
                     ) : null}
                 </DialogContent>
             </Dialog>
