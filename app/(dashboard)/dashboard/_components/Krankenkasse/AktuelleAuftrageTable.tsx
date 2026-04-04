@@ -29,8 +29,12 @@ import {
     bulkInsuranceStatus,
     getAllKrankenkasseData,
     getDoctorInfo,
+    getInsurancePrice,
     mapInsuranceTypeToDoctorInfoApiType,
     type DoctorInfoData,
+    type InsurancePriceData,
+    type InsurancePriceInsoleOrder,
+    type InsurancePriceShoeOrder,
     type KrankenkasseOrderItem,
     type KrankenkassePrescriptionListItem,
 } from '@/apis/krankenkasseApis'
@@ -92,6 +96,41 @@ function formatLeistungsdatum(iso: string): string {
 
 function formatBetrag(value: number): string {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+}
+
+function formatEurNullable(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '–'
+    return formatBetrag(value)
+}
+
+function insuranceApiTypeLabel(t: string): string {
+    const x = (t || '').toLowerCase()
+    if (x === 'shoe') return 'Schuh'
+    if (x === 'insole') return 'Einlage'
+    return t
+}
+
+function insuranceLineDescriptionLabel(desc: Record<string, unknown>): string {
+    if (!desc || typeof desc !== 'object') return '–'
+    /** Einlage: title + positionsnummer + Seite */
+    if ('title' in desc && desc.title != null) {
+        const title = String(desc.title)
+        const pos =
+            'positionsnummer' in desc && desc.positionsnummer != null
+                ? ` · ${String(desc.positionsnummer)}`
+                : ''
+        const seite =
+            'Seite' in desc && desc.Seite != null ? ` · Seite ${String(desc.Seite)}` : ''
+        return `${title}${pos}${seite}`
+    }
+    if ('item' in desc && desc.item != null) {
+        return String(desc.item)
+    }
+    try {
+        return JSON.stringify(desc)
+    } catch {
+        return '–'
+    }
 }
 
 function mapOrderToRow(item: KrankenkasseOrderItem): OrderRow {
@@ -177,6 +216,12 @@ export default function AktuelleAuftrage() {
         insuranceType: string
         label: string
     } | null>(null)
+
+    const [priceInfoOpen, setPriceInfoOpen] = useState(false)
+    const [priceInfoLoading, setPriceInfoLoading] = useState(false)
+    const [priceInfoError, setPriceInfoError] = useState<string | null>(null)
+    const [priceInfoData, setPriceInfoData] = useState<InsurancePriceData | null>(null)
+    const [priceInfoBetragLabel, setPriceInfoBetragLabel] = useState('')
 
     const fetchOrders = useCallback(
         (cursorValue: string, append: boolean) => {
@@ -305,6 +350,33 @@ export default function AktuelleAuftrage() {
             })
             .finally(() => {
                 setDoctorInfoLoading(false)
+            })
+    }
+
+    const openInsurancePriceModal = (order: OrderRow) => {
+        setPriceInfoBetragLabel(order.betrag)
+        setPriceInfoData(null)
+        setPriceInfoError(null)
+        setPriceInfoOpen(true)
+        setPriceInfoLoading(true)
+        const apiType = mapInsuranceTypeToDoctorInfoApiType(order.insuranceType)
+        getInsurancePrice(apiType, order.id)
+            .then((res) => {
+                if (res?.data) {
+                    setPriceInfoData(res.data)
+                } else {
+                    setPriceInfoError('Keine Preisdaten erhalten.')
+                }
+            })
+            .catch((err: any) => {
+                const msg =
+                    err?.response?.data?.message ??
+                    err?.message ??
+                    'Preisdetails konnten nicht geladen werden.'
+                setPriceInfoError(typeof msg === 'string' ? msg : 'Preisdetails konnten nicht geladen werden.')
+            })
+            .finally(() => {
+                setPriceInfoLoading(false)
             })
     }
 
@@ -542,7 +614,19 @@ export default function AktuelleAuftrage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-gray-600">{order.leistungsdatum}</TableCell>
-                                        <TableCell className="text-gray-600">{order.betrag}</TableCell>
+                                        <TableCell className="text-gray-600">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    openInsurancePriceModal(order)
+                                                }}
+                                                className="text-left font-medium text-sky-700 hover:text-sky-900 hover:underline underline-offset-2 cursor-pointer transition-colors tabular-nums"
+                                                title="Preisdetails anzeigen"
+                                            >
+                                                {order.betrag}
+                                            </button>
+                                        </TableCell>
                                         <TableCell className="text-gray-600">{order.auftrag}</TableCell>
                                         <TableCell className="text-gray-600">{order.importlauf}</TableCell>
                                         <TableCell className="text-center">
@@ -654,6 +738,376 @@ export default function AktuelleAuftrage() {
                                         </dd>
                                     </div>
                                 </dl>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={priceInfoOpen}
+                    onOpenChange={(open) => {
+                        setPriceInfoOpen(open)
+                        if (!open) {
+                            setPriceInfoData(null)
+                            setPriceInfoError(null)
+                            setPriceInfoBetragLabel('')
+                        }
+                    }}
+                >
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="text-lg font-semibold text-gray-900">
+                                Preisdetails
+                            </DialogTitle>
+                            {priceInfoBetragLabel && (
+                                <p className="text-sm text-gray-500 font-normal pt-1">
+                                    KV-Betrag (Liste): <span className="font-medium text-gray-700">{priceInfoBetragLabel}</span>
+                                </p>
+                            )}
+                        </DialogHeader>
+                        <div className="mt-2 min-h-[100px]">
+                            {priceInfoLoading && (
+                                <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+                                    <Loader2 className="size-8 animate-spin text-sky-600 mb-2" />
+                                    <p className="text-sm">Laden…</p>
+                                </div>
+                            )}
+                            {!priceInfoLoading && priceInfoError && (
+                                <p className="text-sm text-red-600 py-4">{priceInfoError}</p>
+                            )}
+                            {!priceInfoLoading && !priceInfoError && priceInfoData && (
+                                <div className="space-y-4 text-sm">
+                                    <div className="rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            Auftragstyp
+                                        </p>
+                                        <p className="text-gray-900 font-medium mt-0.5">
+                                            {insuranceApiTypeLabel(priceInfoData.type)}
+                                            <span className="ml-2 text-xs font-mono text-gray-500">
+                                                ({priceInfoData.type})
+                                            </span>
+                                        </p>
+                                    </div>
+                                    {priceInfoData.type?.toLowerCase() === 'insole' ? (
+                                        <>
+                                            {(() => {
+                                                const o = priceInfoData.order as InsurancePriceInsoleOrder
+                                                return (
+                                                    <>
+                                                        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Gesamtpreis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 font-semibold tabular-nums">
+                                                                    {formatEurNullable(o.totalPrice)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    KV-Betrag
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.insuranceTotalPrice)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Fußanalyse
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 text-xs wrap-break-word">
+                                                                    {o.fußanalyse != null
+                                                                        ? String(o.fußanalyse)
+                                                                        : '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Einlagenversorgung
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 text-xs wrap-break-word">
+                                                                    {o.einlagenversorgung != null
+                                                                        ? String(o.einlagenversorgung)
+                                                                        : '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Fußanalyse-Preis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.fussanalysePreis)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Einlagenversorgung-Preis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.einlagenversorgungPreis)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Österreich-Preis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.austria_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Zahlungsart
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.paymnentType || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Bezahlt / Kostenträger
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 text-xs">
+                                                                    {o.bezahlt || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Versicherungsstatus
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.insurance_status || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    KV gezahlt
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.insurance_payed ? 'Ja' : 'Nein'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Privat gezahlt
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.private_payed ? 'Ja' : 'Nein'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Nettopreis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.net_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    MwSt.-Satz
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.vatRate != null ? `${o.vatRate} %` : '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Service
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.service_name ?? '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Sonstiges
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.sonstiges_category ?? '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div className="sm:col-span-2">
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    PeNr (Rezept)
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 font-mono text-xs">
+                                                                    {o.prescription?.proved_number ?? '–'}
+                                                                </dd>
+                                                            </div>
+                                                        </dl>
+                                                        {o.customerOrderInsurances?.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                                                    Leistungen / Positionen
+                                                                </p>
+                                                                <ul className="rounded-lg border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                                                                    {o.customerOrderInsurances.map((line) => (
+                                                                        <li
+                                                                            key={line.id}
+                                                                            className="flex items-start justify-between gap-3 px-3 py-2 bg-white text-sm"
+                                                                        >
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <span className="text-gray-800 block">
+                                                                                    {insuranceLineDescriptionLabel(
+                                                                                        line.description
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-gray-400">
+                                                                                    {line.vat_country}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="shrink-0 font-medium tabular-nums text-gray-900">
+                                                                                {formatBetrag(line.price)}
+                                                                            </span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )
+                                            })()}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {(() => {
+                                                const o = priceInfoData.order as InsurancePriceShoeOrder
+                                                return (
+                                                    <>
+                                                        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            <div className="sm:col-span-2">
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Zahlungsstatus
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.payment_status || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Zahlungsart
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.payment_type || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Versicherungsstatus
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.insurance_status || '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    KV gezahlt
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.insurance_payed ? 'Ja' : 'Nein'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Privat gezahlt
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.private_payed ? 'Ja' : 'Nein'}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    KV-Preis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.insurance_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Privatpreis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.private_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Aufpreis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.addon_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Rabatt
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 tabular-nums">
+                                                                    {formatEurNullable(o.discount)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    Gesamtpreis
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 font-semibold tabular-nums">
+                                                                    {formatEurNullable(o.total_price)}
+                                                                </dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    MwSt.-Satz
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5">
+                                                                    {o.vat_rate != null ? `${o.vat_rate} %` : '–'}
+                                                                </dd>
+                                                            </div>
+                                                            <div className="sm:col-span-2">
+                                                                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                                                    PeNr (Rezept)
+                                                                </dt>
+                                                                <dd className="text-gray-900 mt-0.5 font-mono text-xs">
+                                                                    {o.prescription?.proved_number ?? '–'}
+                                                                </dd>
+                                                            </div>
+                                                        </dl>
+                                                        {o.insurances?.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                                                    Leistungen / Positionen
+                                                                </p>
+                                                                <ul className="rounded-lg border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                                                                    {o.insurances.map((line) => (
+                                                                        <li
+                                                                            key={line.id}
+                                                                            className="flex items-start justify-between gap-3 px-3 py-2 bg-white text-sm"
+                                                                        >
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <span className="text-gray-800 block">
+                                                                                    {insuranceLineDescriptionLabel(
+                                                                                        line.description
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-gray-400">
+                                                                                    {line.vat_country}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="shrink-0 font-medium tabular-nums text-gray-900">
+                                                                                {formatBetrag(line.price)}
+                                                                            </span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )
+                                            })()}
+                                        </>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </DialogContent>

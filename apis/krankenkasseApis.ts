@@ -296,3 +296,93 @@ export function mapInsuranceTypeToDoctorInfoApiType(insuranceType: string): 'sho
     if (t === 'shoes' || t === 'shoe') return 'shoe';
     return 'insole';
 }
+
+
+
+
+
+
+/** GET /v2/insurance/insurance-price?type=shoe|insole&id={orderId} */
+
+/** Schuh — `type: "shoe"` */
+export interface InsurancePriceShoeInsuranceItem {
+    id: string;
+    orderId?: string;
+    price: number;
+    description: Record<string, unknown>;
+    vat_country: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface InsurancePriceShoeOrder {
+    payment_status: string;
+    payment_type: string;
+    insurance_status: string;
+    insurance_payed: boolean;
+    private_payed: boolean;
+    insurance_price: number;
+    private_price: number;
+    addon_price: number | null;
+    discount: number | null;
+    total_price: number;
+    vat_rate: number;
+    insurances: InsurancePriceShoeInsuranceItem[];
+    prescription: { proved_number?: string | null } | null;
+}
+
+/** Einlage — `type: "insole"` (other field names + customerOrderInsurances) */
+export interface InsurancePriceInsoleInsuranceLine {
+    id: string;
+    price: number;
+    description: Record<string, unknown>;
+    vat_country: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface InsurancePriceInsoleOrder {
+    totalPrice: number;
+    insuranceTotalPrice: number;
+    fußanalyse: unknown | null;
+    einlagenversorgung: unknown | null;
+    fussanalysePreis: number;
+    einlagenversorgungPreis: number;
+    austria_price: number;
+    /** API typo */
+    paymnentType: string;
+    bezahlt: string;
+    insurance_status: string;
+    insurance_payed: boolean;
+    private_payed: boolean;
+    net_price: number | null;
+    vatRate: number;
+    service_name: string | null;
+    sonstiges_category: string | null;
+    customerOrderInsurances: InsurancePriceInsoleInsuranceLine[];
+    prescription: { proved_number?: string | null } | null;
+}
+
+export interface InsurancePriceData {
+    type: string;
+    order: InsurancePriceShoeOrder | InsurancePriceInsoleOrder;
+}
+
+export interface InsurancePriceResponse {
+    success: boolean;
+    data: InsurancePriceData;
+}
+
+export const getInsurancePrice = async (
+    type: string,
+    id: string
+): Promise<InsurancePriceResponse> => {
+    const params = new URLSearchParams({
+        type: String(type),
+        id: String(id),
+    });
+    const response = await axiosClient.get<InsurancePriceResponse>(
+        `/v2/insurance/insurance-price?${params.toString()}`
+    );
+    return response.data;
+};
