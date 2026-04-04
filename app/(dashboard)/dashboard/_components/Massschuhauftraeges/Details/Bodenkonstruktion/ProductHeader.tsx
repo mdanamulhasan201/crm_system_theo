@@ -7,11 +7,14 @@ interface ProductHeaderProps {
     orderData: OrderDataForPDF
     /** When coming from custom-shafts (product card), show this product image instead of default */
     productImageUrl?: string | null
+    /** Schaft step / URL — show under Kunde for clarity */
+    customerIdHint?: string | null
 }
 
-export default function ProductHeader({ orderData }: ProductHeaderProps) {
+export default function ProductHeader({ orderData, customerIdHint }: ProductHeaderProps) {
     const hasDelivery = !!orderData.deliveryDate?.trim()
     const customerDisplay = orderData.customerName?.trim() || "—"
+    const idHint = customerIdHint?.trim()
     const deliveryDisplay = orderData.deliveryDate?.trim() || "—"
 
     return (
@@ -28,8 +31,13 @@ export default function ProductHeader({ orderData }: ProductHeaderProps) {
                                 <User className="size-3.5" />
                                 Kunde
                             </label>
-                            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm font-medium text-gray-800">
-                                {customerDisplay}
+                            <div className="flex flex-col gap-1 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm font-medium text-gray-800">
+                                <span>{customerDisplay}</span>
+                                {/* {idHint ? (
+                                    <span className="text-xs font-normal text-gray-500 font-mono select-all">
+                                        Kunden-ID: {idHint}
+                                    </span>
+                                ) : null} */}
                             </div>
                         </div>
                         <div className="space-y-1.5">

@@ -742,11 +742,17 @@ export default function CustomShoeOrderPage() {
 
               setIsLoadingBodenKonfigurieren(false);
               
-              // Redirect to Bodenkonstruktion page (Step 2)
-              const redirectUrl = existingOrderId 
-                ? `/dashboard/massschuhauftraege-deatils/2?orderId=${existingOrderId}`
+              const step2Params = new URLSearchParams();
+              if (existingOrderId) step2Params.set('orderId', existingOrderId);
+              const cid = selectedCustomer?.id?.trim();
+              const cname =
+                selectedCustomer?.name?.trim() || otherCustomerNumber.trim();
+              if (cid) step2Params.set('customerId', cid);
+              if (cname) step2Params.set('customerName', cname);
+              const qs = step2Params.toString();
+              const redirectUrl = qs
+                ? `/dashboard/massschuhauftraege-deatils/2?${qs}`
                 : `/dashboard/massschuhauftraege-deatils/2`;
-              
               router.push(redirectUrl);
             } else {
               // Otherwise show completion popup for "ohne-boden" flow

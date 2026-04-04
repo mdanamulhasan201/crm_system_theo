@@ -11,6 +11,8 @@ export default function MassschuhauftraegeDeatilsPage() {
     const id = params?.id as string;
     const orderId = searchParams?.get('orderId') || null;
     const productId = searchParams?.get('productId') || null;
+    const customerId = searchParams?.get('customerId') || null;
+    const customerName = searchParams?.get('customerName') || null;
     
     return (
         <div>
@@ -18,7 +20,12 @@ export default function MassschuhauftraegeDeatilsPage() {
                 id === "1" ? (
                     <ShoeDetails orderId={orderId} />
                 ) : id === "2" ? (
-                    <Bodenkonstruktion orderId={orderId} productId={productId} />
+                    <Bodenkonstruktion
+                        orderId={orderId}
+                        productId={productId}
+                        prefillCustomerId={customerId}
+                        prefillCustomerName={customerName}
+                    />
                 ) : (
                     <div>Invalid ID</div>
                 )

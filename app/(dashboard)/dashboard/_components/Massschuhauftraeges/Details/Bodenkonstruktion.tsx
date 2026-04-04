@@ -50,9 +50,29 @@ interface BodenkonstruktionProps {
     orderId?: string | null
     /** When coming from custom-shafts (product card), product ID for header image */
     productId?: string | null
+    /** From Step-1 redirect query (?customerId=) — augments context if refreshed */
+    prefillCustomerId?: string | null
+    /** From Step-1 redirect query (?customerName=) */
+    prefillCustomerName?: string | null
 }
 
-export default function Bodenkonstruktion({ orderId, productId }: BodenkonstruktionProps) {
+function normalizeCustomerNameFromUrl(raw: string | null | undefined): string {
+    if (raw == null) return ''
+    const t = raw.trim()
+    if (!t) return ''
+    try {
+        return decodeURIComponent(t.replace(/\+/g, ' '))
+    } catch {
+        return t.replace(/\+/g, ' ')
+    }
+}
+
+export default function Bodenkonstruktion({
+    orderId,
+    productId,
+    prefillCustomerId,
+    prefillCustomerName,
+}: BodenkonstruktionProps) {
     const router = useRouter()
     
     // Custom shaft data context
@@ -119,10 +139,14 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     // Product image: collection product image | custom uploaded image (product-order) | API by productId
     const productImageUrl = contextData?.productImage ?? contextData?.uploadedImage ?? (productId && productById?.data?.image) ?? null
 
-    // Prepare order data for PDF (this page always shows Komplettfertigung delivery date when from redirect)
+    const urlPrefillName = useMemo(
+        () => normalizeCustomerNameFromUrl(prefillCustomerName),
+        [prefillCustomerName]
+    )
+
+    // Prepare order data for PDF (Komplettfertigung). Schaft Step-1 context must win over API `kunde` when both exist.
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
         let base: OrderDataForPDF
-        // If no orderId, use context data (custom order from Step 1 / redirect)
         if (!orderId && contextData) {
             const { getOrderNumber, getDeliveryDate } = require('@/utils/customShoeOrderHelpers')
             base = {
@@ -133,13 +157,35 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 totalPrice: contextData.totalPrice || 0,
             }
         } else {
-            base = prepareOrderDataForPDF(order)
+            base = prepareOrderDataForPDF(order) || {}
         }
+
+        if (contextData) {
+            const ctxCustomer =
+                (contextData.customerName && String(contextData.customerName).trim()) ||
+                (contextData.other_customer_name && String(contextData.other_customer_name).trim()) ||
+                ''
+            const ctxProduct =
+                (contextData.productDescription && String(contextData.productDescription).trim()) || ''
+            base = {
+                ...base,
+                ...(ctxCustomer ? { customerName: ctxCustomer } : {}),
+                ...(ctxProduct ? { productName: ctxProduct } : {}),
+                ...(contextData.totalPrice != null && !Number.isNaN(Number(contextData.totalPrice))
+                    ? { totalPrice: contextData.totalPrice }
+                    : {}),
+            }
+        }
+
+        if (urlPrefillName) {
+            base = { ...base, customerName: urlPrefillName }
+        }
+
         return {
             ...base,
             deliveryDate: deliveryDateKomplettfertigung ?? base.deliveryDate,
         }
-    }, [order, orderId, contextData, deliveryDateKomplettfertigung])
+    }, [order, orderId, contextData, deliveryDateKomplettfertigung, urlPrefillName])
 
     // Determine base price: use custom shaft price if available, otherwise use order price
     // Always add default value of 189 to the base price
@@ -162,13 +208,31 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     // Calculations - use basePrice which includes shaft price (hinterkappeSide for Leder options price)
     const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide)
 
-    // Sync contextData to customShaftData when landing from redirect (so payload has full data)
+    // Sync contextData to customShaftData when landing from redirect; URL prefill augments id/name if needed (e.g. refresh)
     React.useEffect(() => {
+        const idTrim = prefillCustomerId?.trim()
+        const nameTrim = urlPrefillName
+
         if (contextData) {
-            setCustomShaftData(contextData)
+            const merged = {
+                ...contextData,
+                ...(idTrim && !contextData.customerId?.trim() ? { customerId: idTrim } : {}),
+                ...(!contextData.customerName?.trim() &&
+                !contextData.other_customer_name?.trim() &&
+                nameTrim
+                    ? { customerName: nameTrim }
+                    : {}),
+            }
+            setCustomShaftData(merged)
             setIsCustomOrder(!!contextData.uploadedImage)
+        } else if (idTrim || nameTrim) {
+            setCustomShaftData((prev: any) => ({
+                ...(prev || {}),
+                ...(idTrim ? { customerId: idTrim } : {}),
+                ...(nameTrim ? { customerName: nameTrim } : {}),
+            }))
         }
-    }, [contextData])
+    }, [contextData, prefillCustomerId, urlPrefillName])
 
     // Reset sole id "4", "5", and "6" options when sole changes
     React.useEffect(() => {
@@ -1243,7 +1307,16 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             />
 
             {/* Product Header */}
-            <ProductHeader orderData={orderDataForPDF} productImageUrl={productImageUrl} />
+            <ProductHeader
+                orderData={orderDataForPDF}
+                productImageUrl={productImageUrl}
+                customerIdHint={
+                    prefillCustomerId?.trim() ||
+                    contextData?.customerId?.trim() ||
+                    customShaftData?.customerId?.trim() ||
+                    null
+                }
+            />
 
             {/* Sole Selection Section */}
             <SoleSelectionSection

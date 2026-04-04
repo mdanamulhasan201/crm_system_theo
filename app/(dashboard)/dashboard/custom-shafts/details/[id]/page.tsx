@@ -929,10 +929,15 @@ export default function CollectionShaftDetailsPage() {
 
               setIsLoadingBodenKonfigurieren(false);
               
-              // Redirect to Bodenkonstruktion page (Step 2) with orderId and productId in URL
+              // Redirect to Bodenkonstruktion (Step 2): order, product, and customer for Bodenkonstruktion header + refresh safety
               const params = new URLSearchParams();
               if (orderId) params.set('orderId', orderId);
               params.set('productId', shaftId);
+              const cid = selectedCustomer?.id?.trim();
+              const cname =
+                selectedCustomer?.name?.trim() || otherCustomerNumber.trim();
+              if (cid) params.set('customerId', cid);
+              if (cname) params.set('customerName', cname);
               const redirectUrl = `/dashboard/massschuhauftraege-deatils/2?${params.toString()}`;
               
               router.push(redirectUrl);
