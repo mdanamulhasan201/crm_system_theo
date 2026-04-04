@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { BodenkonstruktionCustomerOrderView } from '@/components/Bodenkonstruktion/BodenkonstruktionCustomerOrderView';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
+import PDFPopup, { type OrderDataForPDF } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/PDFPopup';
+import { GROUPS2, shoe2 } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/ShoeData';
+import { useSoleData } from '@/hooks/massschuhe/useSoleData';
+import { hydrateBodenPdfStateFromJson } from '@/utils/hydrateBodenPdfStateFromJson';
 
 function isBodenExternActive(bk: any): boolean {
     if (!bk || typeof bk !== 'object') return false;
@@ -166,12 +170,11 @@ export default function BodenkonstruktionFiledText({
         pdfUrls: string[];
     } | null>(null);
     const [bodenInternPdfLoading, setBodenInternPdfLoading] = useState(false);
-    const [bodenInternPreviewOpen, setBodenInternPreviewOpen] = useState(false);
-    const [bodenInternPreviewMode, setBodenInternPreviewMode] = useState<'pdf' | 'content'>('content');
-    const [bodenInternPreviewPdfUrls, setBodenInternPreviewPdfUrls] = useState<string[]>([]);
-    const [bodenInternPreviewPdfUrl, setBodenInternPreviewPdfUrl] = useState<string | null>(null);
-    const [bodenInternPreviewImageUrl, setBodenInternPreviewImageUrl] = useState<string | null>(null);
-    const [bodenInternPreviewJsonText, setBodenInternPreviewJsonText] = useState('');
+    const [bodenInternInvoicePdfOpen, setBodenInternInvoicePdfOpen] = useState(false);
+    const [bodenInternInvoicePdfUrls, setBodenInternInvoicePdfUrls] = useState<string[]>([]);
+    const [bodenInternInvoicePdfUrl, setBodenInternInvoicePdfUrl] = useState<string | null>(null);
+    const [bodenInternPdfPopupOpen, setBodenInternPdfPopupOpen] = useState(false);
+    const { soleOptions } = useSoleData();
     const wasInternPopupOpenRef = useRef(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
@@ -400,18 +403,14 @@ export default function BodenkonstruktionFiledText({
 
     const openBodenInternPdfPreview = () => {
         if (!bodenInternTrack?.hasData) return;
-        const { pdfUrls, image, json } = bodenInternTrack;
+        const { pdfUrls } = bodenInternTrack;
         if (pdfUrls.length > 0) {
-            setBodenInternPreviewPdfUrls(pdfUrls);
-            setBodenInternPreviewPdfUrl(pdfUrls[0]);
-            setBodenInternPreviewMode('pdf');
-            setBodenInternPreviewOpen(true);
+            setBodenInternInvoicePdfUrls(pdfUrls);
+            setBodenInternInvoicePdfUrl(pdfUrls[0]);
+            setBodenInternInvoicePdfOpen(true);
             return;
         }
-        setBodenInternPreviewImageUrl(image);
-        setBodenInternPreviewJsonText(json ? JSON.stringify(json, null, 2) : '');
-        setBodenInternPreviewMode('content');
-        setBodenInternPreviewOpen(true);
+        setBodenInternPdfPopupOpen(true);
     };
 
     const showBodenInternPdfVorschau =
@@ -421,6 +420,27 @@ export default function BodenkonstruktionFiledText({
         (bodenInternTrack.pdfUrls.length > 0 ||
             Boolean(bodenInternTrack.image) ||
             Boolean(bodenInternTrack.json));
+
+    const hydratedBodenInternForPdf = useMemo(() => {
+        if (!bodenInternTrack?.hasData) return null;
+        return hydrateBodenPdfStateFromJson(bodenInternTrack.json ?? {}, soleOptions ?? []);
+    }, [bodenInternTrack, soleOptions]);
+
+    const bodenInternOrderDataForPdf: OrderDataForPDF = useMemo(() => {
+        const j = bodenInternTrack?.json as
+            | { customerName?: string; delivery_date_display?: string; pricing?: { grandTotal?: number } }
+            | undefined;
+        return {
+            customerName:
+                (typeof j?.customerName === 'string' && j.customerName.trim()
+                    ? j.customerName
+                    : redirectCustomerName) || '',
+            productName: shoe2.name,
+            orderNumber: orderId ? `#${orderId}` : '',
+            deliveryDate: typeof j?.delivery_date_display === 'string' ? j.delivery_date_display : '-',
+            totalPrice: typeof j?.pricing?.grandTotal === 'number' ? j.pricing.grandTotal : undefined,
+        };
+    }, [bodenInternTrack?.json, redirectCustomerName, orderId]);
 
     return (
         <div>
@@ -609,48 +629,35 @@ export default function BodenkonstruktionFiledText({
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={bodenInternPreviewOpen} onOpenChange={setBodenInternPreviewOpen}>
+            <Dialog open={bodenInternInvoicePdfOpen} onOpenChange={setBodenInternInvoicePdfOpen}>
                 <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                     <DialogHeader className="px-4 py-3 border-b shrink-0">
                         <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
-                            <DialogTitle className="m-0">
-                                {bodenInternPreviewMode === 'pdf'
-                                    ? 'PDF Vorschau — Bodenkonstruktion intern'
-                                    : 'Vorschau — Bodenkonstruktion intern'}
-                            </DialogTitle>
-                            {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrl ? (
+                            <DialogTitle className="m-0">PDF Vorschau — Bodenkonstruktion intern (Rechnung)</DialogTitle>
+                            {bodenInternInvoicePdfUrl ? (
                                 <a
-                                    href={bodenInternPreviewPdfUrl}
+                                    href={bodenInternInvoicePdfUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
                                 >
                                     In neuem Tab öffnen / Download
                                 </a>
-                            ) : bodenInternPreviewMode === 'content' && bodenInternPreviewImageUrl ? (
-                                <a
-                                    href={bodenInternPreviewImageUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
-                                >
-                                    Bild in neuem Tab
-                                </a>
                             ) : null}
                         </div>
                         <DialogDescription className="sr-only">
-                            Vorschau interner Bodenkonstruktion (PDF oder Konfiguration)
+                            Vorschau Rechnungs-PDFs zur internen Bodenkonstruktion
                         </DialogDescription>
-                        {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrls.length > 1 ? (
+                        {bodenInternInvoicePdfUrls.length > 1 ? (
                             <div className="flex flex-wrap gap-2 pt-2">
-                                {bodenInternPreviewPdfUrls.map((url, idx) => (
+                                {bodenInternInvoicePdfUrls.map((url, idx) => (
                                     <Button
                                         key={url + idx}
                                         type="button"
-                                        variant={bodenInternPreviewPdfUrl === url ? 'default' : 'outline'}
+                                        variant={bodenInternInvoicePdfUrl === url ? 'default' : 'outline'}
                                         size="sm"
                                         className="text-xs"
-                                        onClick={() => setBodenInternPreviewPdfUrl(url)}
+                                        onClick={() => setBodenInternInvoicePdfUrl(url)}
                                     >
                                         {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
                                     </Button>
@@ -658,33 +665,38 @@ export default function BodenkonstruktionFiledText({
                             </div>
                         ) : null}
                     </DialogHeader>
-                    {bodenInternPreviewMode === 'pdf' && bodenInternPreviewPdfUrl ? (
+                    {bodenInternInvoicePdfUrl ? (
                         <iframe
                             title="PDF Vorschau Boden intern"
-                            src={bodenInternPreviewPdfUrl}
+                            src={bodenInternInvoicePdfUrl}
                             className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
                         />
-                    ) : bodenInternPreviewMode === 'content' ? (
-                        <div className="flex flex-1 flex-col gap-3 overflow-auto p-4 min-h-[50vh]">
-                            {bodenInternPreviewImageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={bodenInternPreviewImageUrl}
-                                    alt=""
-                                    className="max-h-[45vh] w-full object-contain rounded-lg border border-gray-200 bg-gray-50"
-                                />
-                            ) : null}
-                            {bodenInternPreviewJsonText ? (
-                                <pre className="max-h-[40vh] overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 whitespace-pre-wrap wrap-break-word">
-                                    {bodenInternPreviewJsonText}
-                                </pre>
-                            ) : (
-                                <p className="text-sm text-gray-500">Keine Vorschaudaten.</p>
-                            )}
-                        </div>
                     ) : null}
                 </DialogContent>
             </Dialog>
+
+            {bodenInternPdfPopupOpen && hydratedBodenInternForPdf && (
+                <PDFPopup
+                    isOpen={bodenInternPdfPopupOpen}
+                    onClose={() => setBodenInternPdfPopupOpen(false)}
+                    onConfirm={() => setBodenInternPdfPopupOpen(false)}
+                    allGroups={GROUPS2}
+                    selected={hydratedBodenInternForPdf.selected}
+                    optionInputs={hydratedBodenInternForPdf.optionInputs}
+                    textAreas={hydratedBodenInternForPdf.textAreas}
+                    orderData={bodenInternOrderDataForPdf}
+                    selectedSole={hydratedBodenInternForPdf.selectedSole}
+                    heelWidthAdjustment={hydratedBodenInternForPdf.heelWidthAdjustment}
+                    vorderkappeSide={hydratedBodenInternForPdf.vorderkappeSide}
+                    rahmen={hydratedBodenInternForPdf.rahmen}
+                    hinterkappeMusterSide={hydratedBodenInternForPdf.hinterkappeMusterSide}
+                    hinterkappeSide={hydratedBodenInternForPdf.hinterkappeSide}
+                    brandsohleSide={hydratedBodenInternForPdf.brandsohleSide}
+                    sohlenversteifung={hydratedBodenInternForPdf.sohlenversteifung}
+                    sohlenaufbau={hydratedBodenInternForPdf.sohlenaufbau}
+                    hideAbschliessen
+                />
+            )}
 
             <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
                 <DialogContent className="sm:max-w-md">

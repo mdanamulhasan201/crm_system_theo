@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import ShaftPDFPopup, { type ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
+import { massschafterstellungJsonToShaftConfiguration } from '@/utils/massschafterstellungJsonToShaftConfiguration';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -149,12 +151,10 @@ export default function SchafttypFieldText({
         pdfUrls: string[];
     } | null>(null);
     const [internPdfLoading, setInternPdfLoading] = useState(false);
-    const [internPreviewOpen, setInternPreviewOpen] = useState(false);
-    const [internPreviewMode, setInternPreviewMode] = useState<'pdf' | 'content'>('content');
-    const [internPreviewPdfUrls, setInternPreviewPdfUrls] = useState<string[]>([]);
-    const [internPreviewPdfUrl, setInternPreviewPdfUrl] = useState<string | null>(null);
-    const [internPreviewImageUrl, setInternPreviewImageUrl] = useState<string | null>(null);
-    const [internPreviewJsonText, setInternPreviewJsonText] = useState('');
+    const [internInvoicePdfOpen, setInternInvoicePdfOpen] = useState(false);
+    const [internInvoicePdfUrls, setInternInvoicePdfUrls] = useState<string[]>([]);
+    const [internInvoicePdfUrl, setInternInvoicePdfUrl] = useState<string | null>(null);
+    const [internShaftPdfPopupOpen, setInternShaftPdfPopupOpen] = useState(false);
     const [massschafterstellungData, setMassschafterstellungData] = useState<{
         json?: MassschafterstellungJson;
         imageUrl?: string;
@@ -274,18 +274,21 @@ export default function SchafttypFieldText({
 
     const openSchafttypInternPdfPreview = () => {
         if (!schafttypInternTrack?.hasData) return;
-        const { pdfUrls, imageUrl, json } = schafttypInternTrack;
+        const { pdfUrls } = schafttypInternTrack;
         if (pdfUrls.length > 0) {
-            setInternPreviewPdfUrls(pdfUrls);
-            setInternPreviewPdfUrl(pdfUrls[0]);
-            setInternPreviewMode('pdf');
-            setInternPreviewOpen(true);
+            setInternInvoicePdfUrls(pdfUrls);
+            setInternInvoicePdfUrl(pdfUrls[0]);
+            setInternInvoicePdfOpen(true);
             return;
         }
-        setInternPreviewImageUrl(imageUrl ?? null);
-        setInternPreviewJsonText(json ? JSON.stringify(json, null, 2) : '');
-        setInternPreviewMode('content');
-        setInternPreviewOpen(true);
+        setInternShaftPdfPopupOpen(true);
+    };
+
+    const shaftInternPdfOrderData: ShaftOrderDataForPDF = {
+        orderNumber: orderId ? `#${orderId}` : undefined,
+        customerName: redirectCustomerName?.trim() || 'Kunde',
+        productName: 'Maßschaft',
+        deliveryDate: new Date().toLocaleDateString('de-DE'),
     };
 
     const handleMassschafterstellungSubmit = async (payload: {
@@ -452,7 +455,7 @@ export default function SchafttypFieldText({
                                     >
                                         <FileText className="w-4 h-4 mr-1.5" />
                                         PDF Vorschau
-                                        {schafttypInternTrack && schafttypInternTrack.pdfUrls.length > 1
+                                        {schafttypInternTrack.pdfUrls.length > 1
                                             ? ` (${schafttypInternTrack.pdfUrls.length})`
                                             : ''}
                                     </Button>
@@ -595,48 +598,35 @@ export default function SchafttypFieldText({
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={internPreviewOpen} onOpenChange={setInternPreviewOpen}>
+            <Dialog open={internInvoicePdfOpen} onOpenChange={setInternInvoicePdfOpen}>
                 <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                     <DialogHeader className="px-4 py-3 border-b shrink-0">
                         <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
-                            <DialogTitle className="m-0">
-                                {internPreviewMode === 'pdf'
-                                    ? 'PDF Vorschau — Schaft intern'
-                                    : 'Vorschau — Schaft intern'}
-                            </DialogTitle>
-                            {internPreviewMode === 'pdf' && internPreviewPdfUrl ? (
+                            <DialogTitle className="m-0">PDF Vorschau — Schaft intern (Rechnung)</DialogTitle>
+                            {internInvoicePdfUrl ? (
                                 <a
-                                    href={internPreviewPdfUrl}
+                                    href={internInvoicePdfUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
                                 >
                                     In neuem Tab öffnen / Download
                                 </a>
-                            ) : internPreviewMode === 'content' && internPreviewImageUrl ? (
-                                <a
-                                    href={internPreviewImageUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm font-medium text-emerald-700 hover:underline shrink-0"
-                                >
-                                    Bild in neuem Tab
-                                </a>
                             ) : null}
                         </div>
                         <DialogDescription className="sr-only">
-                            Vorschau interner Schaft-Daten (PDF oder Konfiguration)
+                            Vorschau Rechnungs-PDFs zur internen Schaftfertigung
                         </DialogDescription>
-                        {internPreviewMode === 'pdf' && internPreviewPdfUrls.length > 1 ? (
+                        {internInvoicePdfUrls.length > 1 ? (
                             <div className="flex flex-wrap gap-2 pt-2">
-                                {internPreviewPdfUrls.map((url, idx) => (
+                                {internInvoicePdfUrls.map((url, idx) => (
                                     <Button
                                         key={url + idx}
                                         type="button"
-                                        variant={internPreviewPdfUrl === url ? 'default' : 'outline'}
+                                        variant={internInvoicePdfUrl === url ? 'default' : 'outline'}
                                         size="sm"
                                         className="text-xs"
-                                        onClick={() => setInternPreviewPdfUrl(url)}
+                                        onClick={() => setInternInvoicePdfUrl(url)}
                                     >
                                         {idx === 0 ? 'Rechnung' : idx === 1 ? 'Rechnung 2' : `PDF ${idx + 1}`}
                                     </Button>
@@ -644,33 +634,29 @@ export default function SchafttypFieldText({
                             </div>
                         ) : null}
                     </DialogHeader>
-                    {internPreviewMode === 'pdf' && internPreviewPdfUrl ? (
+                    {internInvoicePdfUrl ? (
                         <iframe
                             title="PDF Vorschau Schaft intern"
-                            src={internPreviewPdfUrl}
+                            src={internInvoicePdfUrl}
                             className="w-full flex-1 min-h-[70vh] border-0 bg-gray-100"
                         />
-                    ) : internPreviewMode === 'content' ? (
-                        <div className="flex flex-1 flex-col gap-3 overflow-auto p-4 min-h-[50vh]">
-                            {internPreviewImageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={internPreviewImageUrl}
-                                    alt=""
-                                    className="max-h-[45vh] w-full object-contain rounded-lg border border-gray-200 bg-gray-50"
-                                />
-                            ) : null}
-                            {internPreviewJsonText ? (
-                                <pre className="max-h-[40vh] overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 whitespace-pre-wrap wrap-break-word">
-                                    {internPreviewJsonText}
-                                </pre>
-                            ) : (
-                                <p className="text-sm text-gray-500">Keine Vorschaudaten.</p>
-                            )}
-                        </div>
                     ) : null}
                 </DialogContent>
             </Dialog>
+
+            {internShaftPdfPopupOpen && schafttypInternTrack && (
+                <ShaftPDFPopup
+                    isOpen={internShaftPdfPopupOpen}
+                    onClose={() => setInternShaftPdfPopupOpen(false)}
+                    onConfirm={() => setInternShaftPdfPopupOpen(false)}
+                    orderData={shaftInternPdfOrderData}
+                    shaftImage={schafttypInternTrack.imageUrl ?? null}
+                    shaftConfiguration={massschafterstellungJsonToShaftConfiguration(
+                        (schafttypInternTrack.json ?? {}) as MassschafterstellungJson
+                    )}
+                    hideAbschliessen={true}
+                />
+            )}
 
             <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
                 <DialogContent className="sm:max-w-md">
