@@ -200,7 +200,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                     }}>
                         <div>SONDERANFERTIGUNG</div>
                         <div>MEDIZINPRODUKT</div>
-                        <div>MASSEINLAGE</div>
+                        <div className='uppercase'>Massschuhe</div>
                         <div>{data.type === 'right' ? 'RECHTS' : 'LINKS'}</div>
                     </div>
                 </div>

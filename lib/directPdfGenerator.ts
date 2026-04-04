@@ -286,7 +286,7 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     const typeLabel = data.type === 'right' ? 'RECHTS' : 'LINKS';
     ctx.fillText('SONDERANFERTIGUNG', 321, blackBoxY + 10);
     ctx.fillText('MEDIZINPRODUKT', 321, blackBoxY + 22);
-    ctx.fillText('MASSEINLAGE', 321, blackBoxY + 34);
+    ctx.fillText('Massschuhe', 321, blackBoxY + 34);
     ctx.fillText(typeLabel, 321, blackBoxY + 46);
     
     // BARCODE

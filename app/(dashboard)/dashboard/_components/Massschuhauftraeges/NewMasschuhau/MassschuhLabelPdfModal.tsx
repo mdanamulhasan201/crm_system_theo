@@ -23,7 +23,19 @@ export default function MassschuhLabelPdfModal({
 }: MassschuhLabelPdfModalProps) {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
-    const [data, setData] = useState<any>(null);
+    /** Normalized for preview + PDF (same as BarcodeStickerModal) */
+    const [barcodeData, setBarcodeData] = useState<any>(null);
+    /** Raw API payload for PDF (preserves partnerAddress object shape) */
+    const [originalBarcodeData, setOriginalBarcodeData] = useState<any>(null);
+    const [activeType, setActiveType] = useState<'left' | 'right'>('right');
+
+    const getBarcodeErrorMessage = (response: any, type: 'left' | 'right') => {
+        if (response?.error) return response.error;
+        if (response?.message) return response.message;
+        return type === 'left'
+            ? 'Keine Daten für Links verfügbar'
+            : 'Fehler beim Laden der Barcode-Daten';
+    };
 
     const normalizePartnerAddress = (partnerAddress: any): any => {
         if (typeof partnerAddress === 'string') return partnerAddress;
@@ -31,36 +43,50 @@ export default function MassschuhLabelPdfModal({
         return 'Address';
     };
 
-    const fetchLabelData = useCallback(async () => {
-        if (!orderId) return;
-        setLoading(true);
-        try {
-            const response = await makeLevelPdf(orderId);
-            if (response?.success && response?.data) {
-                setData({
-                    ...response.data,
-                    partnerAddress: normalizePartnerAddress(response.data.partnerAddress),
-                    // Keep sticker footer deterministic when backend returns null
-                    type: response.data.type ?? 'right',
-                });
-            } else {
-                setData(null);
-                toast.error(response?.message || 'Label-Daten konnten nicht geladen werden');
+    const fetchLabelData = useCallback(
+        async (type: 'left' | 'right') => {
+            if (!orderId) return;
+            setLoading(true);
+            try {
+                const response = await makeLevelPdf(orderId, type);
+                if (response?.success && response?.data) {
+                    setActiveType(type);
+                    const resolvedType = (response.data.type as 'left' | 'right' | undefined) ?? type;
+                    setOriginalBarcodeData({
+                        ...response.data,
+                        type: resolvedType,
+                    });
+                    const normalizedData = {
+                        ...response.data,
+                        partnerAddress: normalizePartnerAddress(response.data.partnerAddress),
+                        type: resolvedType,
+                    };
+                    setBarcodeData(normalizedData);
+                } else {
+                    setBarcodeData(null);
+                    setOriginalBarcodeData(null);
+                    toast.error(getBarcodeErrorMessage(response, type));
+                }
+            } catch (error: any) {
+                console.error('Label data fetch error:', error);
+                setBarcodeData(null);
+                setOriginalBarcodeData(null);
+                toast.error(getBarcodeErrorMessage(error?.response?.data ?? error, type));
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Label data fetch error:', error);
-            setData(null);
-            toast.error('Fehler beim Laden der Label-Daten');
-        } finally {
-            setLoading(false);
-        }
-    }, [orderId]);
+        },
+        [orderId],
+    );
 
     const handleDownloadPdf = useCallback(async () => {
-        if (!data) return;
+        if (!barcodeData || !originalBarcodeData) {
+            toast.error('Bitte warten Sie, bis die Daten geladen sind');
+            return;
+        }
         setGenerating(true);
         try {
-            const pdfBlob = await generateBarcodeStickerPdfCanvas(data);
+            const pdfBlob = await generateBarcodeStickerPdfCanvas(originalBarcodeData);
             if (!pdfBlob || pdfBlob.size === 0) {
                 toast.error('PDF konnte nicht generiert werden');
                 return;
@@ -69,7 +95,8 @@ export default function MassschuhLabelPdfModal({
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `label_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
+            const side = activeType === 'right' ? 'rechts' : 'links';
+            link.download = `label_${orderNumber || orderId}_${side}_${new Date().toISOString().split('T')[0]}.pdf`;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -81,15 +108,17 @@ export default function MassschuhLabelPdfModal({
         } finally {
             setGenerating(false);
         }
-    }, [data, orderId, orderNumber]);
+    }, [barcodeData, originalBarcodeData, activeType, orderId, orderNumber]);
 
     useEffect(() => {
-        if (isOpen) {
-            fetchLabelData();
+        if (isOpen && orderId) {
+            setActiveType('right');
+            fetchLabelData('right');
         } else {
-            setData(null);
+            setBarcodeData(null);
+            setOriginalBarcodeData(null);
         }
-    }, [isOpen, fetchLabelData]);
+    }, [isOpen, orderId, fetchLabelData]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -100,12 +129,41 @@ export default function MassschuhLabelPdfModal({
                 <div className="space-y-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
-                            <p className="text-gray-600">Lade Label-Daten...</p>
+                            <div className="flex flex-col items-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#62A17C] mb-4" />
+                                <p className="text-gray-600">Lade Label-Daten...</p>
+                            </div>
                         </div>
-                    ) : data ? (
+                    ) : barcodeData ? (
                         <>
+                            <div className="flex gap-2 mb-1">
+                                <button
+                                    type="button"
+                                    onClick={() => fetchLabelData('right')}
+                                    disabled={loading}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${
+                                        activeType === 'right'
+                                            ? 'bg-[#62A17C] text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    Rechts
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => fetchLabelData('left')}
+                                    disabled={loading}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${
+                                        activeType === 'left'
+                                            ? 'bg-[#62A17C] text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    Links
+                                </button>
+                            </div>
                             <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
-                                <BarcodeSticker data={data} />
+                                <BarcodeSticker data={barcodeData} />
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button variant="outline" onClick={onClose} disabled={generating} className="cursor-pointer">

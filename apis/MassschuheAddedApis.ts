@@ -306,10 +306,10 @@ export const deleteMassschuheOrderImage = async (id: string) => {
 
 
 
-// make level pdf v2/shoe-orders/track/barcode-label/{{order if}}
-export const makeLevelPdf = async (orderId: string) => {
+// make level pdf v2/shoe-orders/track/barcode-label/{{order if}}?type=left
+export const makeLevelPdf = async (orderId: string, type: 'left' | 'right') => {
     try {
-        const response = await axiosClient.get(`/v2/shoe-orders/track/barcode-label/${orderId}`);
+        const response = await axiosClient.get(`/v2/shoe-orders/track/barcode-label/${orderId}?type=${type}`);
         return response.data;
     } catch (error: any) {
         throw error;
