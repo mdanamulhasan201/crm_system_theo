@@ -55,11 +55,13 @@ export default function MassschuhLabelPdfModal({
                     setOriginalBarcodeData({
                         ...response.data,
                         type: resolvedType,
+                        productLineLabel: 'Massschuhe' as const,
                     });
                     const normalizedData = {
                         ...response.data,
                         partnerAddress: normalizePartnerAddress(response.data.partnerAddress),
                         type: resolvedType,
+                        productLineLabel: 'Massschuhe' as const,
                     };
                     setBarcodeData(normalizedData);
                 } else {

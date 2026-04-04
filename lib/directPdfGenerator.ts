@@ -22,6 +22,8 @@ interface BarcodeStickerData {
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
     type?: 'left' | 'right' | null;
+    /** Third line in black box: default MASSEINLAGE; Massschuhe for shoe-order PDF only. */
+    productLineLabel?: 'Massschuhe';
 }
 
 // Helper to format date in German format
@@ -284,9 +286,11 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     ctx.font = 'bold 8px Arial';
     ctx.textAlign = 'center';
     const typeLabel = data.type === 'right' ? 'RECHTS' : 'LINKS';
+    const productLineThird =
+        data.productLineLabel === 'Massschuhe' ? 'MASSCHUHE' : 'MASSEINLAGE';
     ctx.fillText('SONDERANFERTIGUNG', 321, blackBoxY + 10);
     ctx.fillText('MEDIZINPRODUKT', 321, blackBoxY + 22);
-    ctx.fillText('Massschuhe', 321, blackBoxY + 34);
+    ctx.fillText(productLineThird, 321, blackBoxY + 34);
     ctx.fillText(typeLabel, 321, blackBoxY + 46);
     
     // BARCODE

@@ -18,6 +18,8 @@ interface BarcodeStickerData {
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
     type?: 'left' | 'right' | null;
+    /** Default third line is MASSEINLAGE; set to Massschuhe for shoe-order label (e.g. MassschuhLabelPdfModal). */
+    productLineLabel?: 'Massschuhe';
 }
 
 interface BarcodeStickerProps {
@@ -200,7 +202,9 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                     }}>
                         <div>SONDERANFERTIGUNG</div>
                         <div>MEDIZINPRODUKT</div>
-                        <div className='uppercase'>Massschuhe</div>
+                        <div>
+                            {data.productLineLabel === 'Massschuhe' ? 'MASSCHUHE' : 'MASSEINLAGE'}
+                        </div>
                         <div>{data.type === 'right' ? 'RECHTS' : 'LINKS'}</div>
                     </div>
                 </div>
