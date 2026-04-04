@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
 const checkboxVariants = cva(
   'peer h-5 w-5 shrink-0 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
@@ -23,7 +24,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(({ className,
     <input
       type="checkbox"
       ref={ref}
-      className={checkboxVariants({ checkedVariant: !!checked, className })}
+      className={cn(checkboxVariants({ checkedVariant: !!checked }), className)}
       checked={checked}
       {...props}
     />

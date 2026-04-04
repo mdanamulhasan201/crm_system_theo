@@ -42,7 +42,8 @@ export interface KrankenkasseOrderItem {
     private_payed: boolean;
     insurance_status: string;
     createdAt: string;
-    prescription: KrankenkassePrescription;
+    /** Null when no prescription linked yet */
+    prescription: KrankenkassePrescription | null;
     customer: KrankenkasseCustomer;
     insuranceType: string;
 }
@@ -105,6 +106,8 @@ export interface KrankenkassePrescriptionListItem {
     prescription_date: string;
     proved_number: string | null;
     referencen_number: string | null;
+    /** Arzt / Verordner name (when returned by API) */
+    doctor_name?: string | null;
     validity_weeks: number;
     createdAt: string;
 }
@@ -236,4 +239,60 @@ export const getCalculationData = async () => {
     } catch (error) {
         throw error;
     }
+}
+
+
+// /v2/insurance/bulk-insurance-status
+
+// body: {
+//   "ids": ["cmnk6a3ql000080kurrp1xp48", "cmnk62kn60000qvkusxifd206"],
+//   "status": "pending" | "approved" | "rejected"
+// }
+
+export const bulkInsuranceStatus = async (ids: string[], status: string) => {
+    try {
+    const response = await axiosClient.patch(`/v2/insurance/bulk-insurance-status`, {
+            ids,
+            status,
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+/** GET /v2/insurance/doctor-info?type=shoe|insole&id={orderId} */
+export interface DoctorInfoData {
+    arzt: string;
+    ortArzt: string;
+    arztnummer: string;
+    betriebsstaettennummer: string | null;
+}
+
+export interface DoctorInfoResponse {
+    success: boolean;
+    data: DoctorInfoData;
+}
+
+export const getDoctorInfo = async (
+    type: string,
+    id: string
+): Promise<DoctorInfoResponse> => {
+    const params = new URLSearchParams({
+        type: String(type),
+        id: String(id),
+    });
+    const response = await axiosClient.get<DoctorInfoResponse>(
+        `/v2/insurance/doctor-info?${params.toString()}`
+    );
+    return response.data;
+};
+
+/** Maps list `insuranceType` (e.g. shoes / insole) to API `type` query value */
+export function mapInsuranceTypeToDoctorInfoApiType(insuranceType: string): 'shoe' | 'insole' {
+    const t = (insuranceType || '').toLowerCase();
+    if (t === 'shoes' || t === 'shoe') return 'shoe';
+    return 'insole';
 }
