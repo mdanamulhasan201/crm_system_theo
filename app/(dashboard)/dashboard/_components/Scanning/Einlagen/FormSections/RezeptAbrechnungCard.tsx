@@ -410,7 +410,10 @@ export default function RezeptAbrechnungCard({
                             <div className="flex gap-1.5">
                                 <button
                                     type="button"
-                                    onClick={() => onKostenvoranschlagChange(true)}
+                                    onClick={() => {
+                                        onKostenvoranschlagChange(true);
+                                        onLieferscheinChange(false);
+                                    }}
                                     className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${kostenvoranschlag === true
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -443,7 +446,10 @@ export default function RezeptAbrechnungCard({
                             <div className="flex gap-1.5">
                                 <button
                                     type="button"
-                                    onClick={() => onLieferscheinChange(true)}
+                                    onClick={() => {
+                                        onLieferscheinChange(true);
+                                        onKostenvoranschlagChange(false);
+                                    }}
                                     className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${lieferschein === true
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'

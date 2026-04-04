@@ -396,6 +396,14 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     useEffect(() => {
         setHalbprobeFieldError(undefined);
     }, [lieferschein]);
+
+    // KVA (Kostenvoranschlag) and Verordnungsvorschlag (lieferschein) cannot both be Ja
+    useEffect(() => {
+        if (kostenvoranschlag === true && lieferschein === true) {
+            setLieferschein(false);
+        }
+    }, [kostenvoranschlag, lieferschein]);
+
     const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
     // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields

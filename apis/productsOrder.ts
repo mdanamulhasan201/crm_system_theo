@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
-// create order 
+// create order  /customer-orders/create-order/please?another-store-same-supply=4709b1b4-b0d0-43f6-96e6-e71f7faa4326
 export const createOrder = async (customerId: string, versorgungId: string, werkstattzettelId?: string, formData?: Record<string, any>) => {
     try {
         const payload: any = { customerId, versorgungId };
