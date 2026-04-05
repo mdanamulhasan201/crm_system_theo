@@ -19,13 +19,14 @@ interface CustomerNote {
 }
 
 interface Note {
-    id: number;
+    /** Stable unique id from API (stringified); used for React keys and local identity */
+    id: string;
     text: string;
     category: string;
     timestamp: string;
     hasLink?: boolean;
     url?: string | null;
-    apiId?: string; // original backend note id for API actions
+    apiId?: string;
 }
 
 interface Notes {
@@ -57,7 +58,7 @@ interface UseCustomerNoteReturn {
     getFilteredDates: (activeTab: string) => string[];
     formatDisplayDate: (dateStr: string) => string;
     isToday: (dateStr: string) => boolean;
-    handleDeleteNote: (date: string, noteId: number) => void;
+    handleDeleteNote: (date: string, noteId: string) => void;
     transformApiNotesToLocal: (apiNotes: CustomerNote[]) => Notes;
 }
 
@@ -102,11 +103,6 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         // Per requirement: only show system_note, never links, ignore url/note/event
         const text = note.system_note ? note.system_note : '';
         return { text, hasLink: false };
-    }, []);
-
-    // Helper function to generate note ID
-    const generateNoteId = useCallback((apiNoteId: string): number => {
-        return parseInt(apiNoteId.replace(/-/g, '').substring(0, 8), 16);
     }, []);
 
     // Actions
@@ -188,14 +184,15 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
                 const frontendCategory = mapToFrontendCategory(apiNote.category);
                 const { text, hasLink, url: transformedUrl } = getNoteDisplayInfo(apiNote);
 
+                const idStr = String(apiNote.id);
                 const transformedNote: Note = {
-                    id: generateNoteId(apiNote.id),
+                    id: idStr,
                     text,
                     category: frontendCategory,
                     timestamp: apiNote.createdAt,
                     hasLink,
                     url: undefined,
-                    apiId: apiNote.id
+                    apiId: idStr
                 };
 
                 transformed[dateKey].push(transformedNote);
@@ -203,7 +200,7 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         });
 
         return transformed;
-    }, [getDateKey, mapToFrontendCategory, getNoteDisplayInfo, generateNoteId]);
+    }, [getDateKey, mapToFrontendCategory, getNoteDisplayInfo]);
 
     // Helper functions
     const getAllDates = useCallback((): string[] => {
@@ -242,7 +239,7 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         });
     }, [localNotes, getAllDates]);
 
-    const handleDeleteNote = useCallback((date: string, noteId: number) => {
+    const handleDeleteNote = useCallback((date: string, noteId: string) => {
         const notesForDate = localNotes[date] || [];
         const targetNote = notesForDate.find(n => n.id === noteId);
 

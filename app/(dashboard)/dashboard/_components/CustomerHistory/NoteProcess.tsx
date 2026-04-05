@@ -9,7 +9,7 @@ import AddNoteModal from '@/app/(dashboard)/dashboard/_components/Customers/AddN
 import { cn } from '@/lib/utils';
 
 interface Note {
-  id: number;
+  id: string;
   text: string;
   category: string;
   timestamp: string;
@@ -67,7 +67,7 @@ export default function NoteProcess() {
     dateISO: string | null;
     category: CategoryType;
   } | null>(null);
-  const [hoveredNote, setHoveredNote] = useState<number | null>(null);
+  const [hoveredNote, setHoveredNote] = useState<string | null>(null);
   const [firstLoaded, setFirstLoaded] = useState(false);
 
   useEffect(() => {

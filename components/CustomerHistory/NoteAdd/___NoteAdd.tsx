@@ -9,7 +9,7 @@ import { useCustomerNote } from '@/hooks/customer/useCustomerNote';
 
 // Extend the Note interface to match the hook
 interface Note {
-    id: number;
+    id: string;
     text: string;
     category: string;
     timestamp: string;
@@ -63,7 +63,7 @@ export default function NoteCalendar() {
     const [activeTab, setActiveTab] = useState<string>('Diagramm');
     const [showAddForm, setShowAddForm] = useState<boolean>(false);
     const [editNote, setEditNote] = useState<{ apiId: string; text: string; dateISO: string | null; category: CategoryType } | null>(null);
-    const [hoveredNote, setHoveredNote] = useState<number | null>(null);
+    const [hoveredNote, setHoveredNote] = useState<string | null>(null);
     const [isRefreshingTab, setIsRefreshingTab] = useState<boolean>(false);
     const [firstLoaded, setFirstLoaded] = useState<boolean>(false);
 

@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from "react-hot-toast";
-import { LanguageProvider } from "@/contexts/LanguageContext";
-import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
 import GoogleTranslateWrapper from "@/components/Shared/GoogleTranslateWrapper";
 import DomPatchLoader from "@/components/Shared/DomPatchLoader";
 import DynamicPageTitle from "@/components/Shared/DynamicPageTitle";
+import AppProviders from "@/providers/AppProviders";
 // import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
@@ -43,13 +41,7 @@ export default function RootLayout({
           <DynamicPageTitle />
           <DomPatchLoader />
           <GoogleTranslateWrapper />
-          <LanguageProvider>
-            <AuthProvider>
-              <CustomShaftDataProvider>
-                {children}
-              </CustomShaftDataProvider>
-            </AuthProvider>
-          </LanguageProvider>
+          <AppProviders>{children}</AppProviders>
           <Toaster />
      
       </body>
