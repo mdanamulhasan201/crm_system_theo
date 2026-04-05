@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import {
   createFile,
   createFolder,
-  deleteFile,
-  deleteFolder,
+  deleteFolderFile,
   getAllFolderAndFiles,
   getPath,
   moveFolderAndFiles,
   renameFileAndFolder,
   type CreateFilePayload,
   type CreateFolderPayload,
+  type DeleteFolderFileItemPayload,
   type DriveEntityType,
   type GetAllFolderAndFilesParams,
   type MoveFolderAndFilesPayload,
@@ -58,6 +58,10 @@ export type DriveCollectionResponse = {
   [key: string]: unknown;
 };
 
+export type FetchAllFolderAndFilesParams = GetAllFolderAndFilesParams & {
+  silent?: boolean;
+};
+
 type DrivePagination = {
   hasNextFilesPage: boolean;
   nextFileCursor: string | null;
@@ -82,17 +86,18 @@ interface GoogleCustomDriveStore {
   path: DrivePathItem[];
   pagination: DrivePagination;
   isLoading: boolean;
+  isRefreshing: boolean;
   isMutating: boolean;
   error: string | null;
   lastResponse: unknown | null;
   clearError: () => void;
   reset: () => void;
-  fetchAll: (params: GetAllFolderAndFilesParams) => Promise<DriveCollectionResponse>;
-  fetchPath: (folderId: string) => Promise<unknown>;
+  fetchAll: (params: FetchAllFolderAndFilesParams) => Promise<DriveCollectionResponse>;
+  fetchPath: (folderId: string, options?: { silent?: boolean }) => Promise<unknown>;
   createFolderAction: (payload: CreateFolderPayload) => Promise<unknown>;
   uploadFileAction: (payload: CreateFilePayload) => Promise<unknown>;
-  deleteFolderAction: (folderId: string) => Promise<unknown>;
   deleteItemAction: (type: DriveEntityType, id: string) => Promise<unknown>;
+  deleteItemsAction: (items: Array<{ type: DriveEntityType; id: string }>) => Promise<unknown>;
   moveItemsAction: (payload: MoveFolderAndFilesPayload) => Promise<unknown>;
   renameItemAction: (payload: RenameFileAndFolderPayload) => Promise<unknown>;
 }
@@ -107,6 +112,7 @@ const initialState = {
     nextFileCursor: null,
   } as DrivePagination,
   isLoading: false,
+  isRefreshing: false,
   isMutating: false,
   error: null as string | null,
   lastResponse: null as unknown | null,
@@ -159,9 +165,14 @@ export const useGoogleCustomDriveStore = create<GoogleCustomDriveStore>((set) =>
   reset: () => set({ ...initialState }),
 
   fetchAll: async (params) => {
+    const { silent, ...apiParams } = params;
     try {
-      set({ isLoading: true, error: null });
-      const response = (await getAllFolderAndFiles(params)) as DriveCollectionResponse;
+      if (silent) {
+        set({ isRefreshing: true, error: null });
+      } else {
+        set({ isLoading: true, error: null });
+      }
+      const response = (await getAllFolderAndFiles(apiParams)) as DriveCollectionResponse;
       const folders = normalizeFolders(response);
       const files = normalizeFiles(response);
 
@@ -181,17 +192,25 @@ export const useGoogleCustomDriveStore = create<GoogleCustomDriveStore>((set) =>
       set({ error: message });
       throw error;
     } finally {
-      set({ isLoading: false });
+      set((state) =>
+        silent
+          ? { isRefreshing: false }
+          : { isLoading: false, isRefreshing: state.isRefreshing }
+      );
     }
   },
 
-  fetchPath: async (folderId) => {
+  fetchPath: async (folderId, options) => {
+    const silent = options?.silent ?? false;
     try {
-      set({ isLoading: true, error: null });
+      if (silent) {
+        set({ isRefreshing: true, error: null });
+      } else {
+        set({ isLoading: true, error: null });
+      }
       const response = await getPath(folderId);
-      const path = Array.isArray((response as { data?: unknown }).data)
-        ? ((response as { data: DrivePathItem[] }).data ?? [])
-        : [];
+      const pathPayload = (response as { data?: { path?: unknown } })?.data?.path;
+      const path = Array.isArray(pathPayload) ? (pathPayload as DrivePathItem[]) : [];
 
       set({
         path,
@@ -203,7 +222,11 @@ export const useGoogleCustomDriveStore = create<GoogleCustomDriveStore>((set) =>
       set({ error: message });
       throw error;
     } finally {
-      set({ isLoading: false });
+      set((state) =>
+        silent
+          ? { isRefreshing: false }
+          : { isLoading: false, isRefreshing: state.isRefreshing }
+      );
     }
   },
 
@@ -237,14 +260,14 @@ export const useGoogleCustomDriveStore = create<GoogleCustomDriveStore>((set) =>
     }
   },
 
-  deleteFolderAction: async (folderId) => {
+  deleteItemAction: async (type, id) => {
     try {
       set({ isMutating: true, error: null });
-      const response = await deleteFolder(folderId);
+      const response = await deleteFolderFile([{ type, id: [id] }]);
       set({ lastResponse: response });
       return response;
     } catch (error) {
-      const message = getErrorMessage(error, 'Failed to delete folder');
+      const message = getErrorMessage(error, `Failed to delete ${type}`);
       set({ error: message });
       throw error;
     } finally {
@@ -252,14 +275,27 @@ export const useGoogleCustomDriveStore = create<GoogleCustomDriveStore>((set) =>
     }
   },
 
-  deleteItemAction: async (type, id) => {
+  deleteItemsAction: async (items) => {
     try {
       set({ isMutating: true, error: null });
-      const response = type === 'folder' ? await deleteFolder(id) : await deleteFile(id);
+
+      const grouped = items.reduce<Record<DriveEntityType, string[]>>(
+        (acc, current) => {
+          acc[current.type].push(current.id);
+          return acc;
+        },
+        { file: [], folder: [] }
+      );
+
+      const payload: DeleteFolderFileItemPayload[] = [];
+      if (grouped.file.length > 0) payload.push({ type: 'file', id: grouped.file });
+      if (grouped.folder.length > 0) payload.push({ type: 'folder', id: grouped.folder });
+
+      const response = await deleteFolderFile(payload);
       set({ lastResponse: response });
       return response;
     } catch (error) {
-      const message = getErrorMessage(error, `Failed to delete ${type}`);
+      const message = getErrorMessage(error, 'Failed to delete selected items');
       set({ error: message });
       throw error;
     } finally {
