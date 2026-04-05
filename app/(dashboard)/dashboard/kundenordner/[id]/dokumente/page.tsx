@@ -85,6 +85,7 @@ export default function KundenordnerDokumentePage() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -147,6 +148,14 @@ export default function KundenordnerDokumentePage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (renameTarget) {
+      setRenameValue(renameTarget.name);
+    } else {
+      setRenameValue('');
+    }
+  }, [renameTarget]);
 
   useEffect(() => {
     const next = folderFromQuery ?? null;
@@ -312,18 +321,25 @@ export default function KundenordnerDokumentePage() {
   };
 
   const handleDeleteSelected = async () => {
-    if (selectedKeys.size === 0) return;
+    if (selectedKeys.size === 0) {
+      setBulkDeleteOpen(false);
+      return;
+    }
 
     const items = Array.from(selectedKeys)
       .map((key) => parseSelectionKey(key))
       .filter((item): item is { type: DriveEntityType; id: string } => Boolean(item));
 
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      setBulkDeleteOpen(false);
+      return;
+    }
 
     try {
       const response = (await deleteItemsAction(items)) as { message?: string };
-      toast.success(response?.message || `${items.length} element(s) gelöscht`);
+      toast.success(response?.message || `${items.length} Element(e) gelöscht`);
       setSelectedKeys(new Set());
+      setBulkDeleteOpen(false);
       await loadData({ silent: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Bulk delete fehlgeschlagen';
@@ -371,7 +387,7 @@ export default function KundenordnerDokumentePage() {
         onRefresh={() => void loadData({ silent: true })}
         onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
         onUploadClick={handleUploadClick}
-        onDeleteSelected={() => void handleDeleteSelected()}
+        onDeleteSelected={() => setBulkDeleteOpen(true)}
         onSearchChange={setSearchQuery}
         onBreadcrumbClick={handleGoToBreadcrumb}
       />
@@ -453,14 +469,22 @@ export default function KundenordnerDokumentePage() {
         renameTarget={renameTarget}
         renameValue={renameValue}
         deleteTarget={deleteTarget}
+        bulkDeleteOpen={bulkDeleteOpen}
+        bulkDeleteCount={selectedKeys.size}
         onCreateOpenChange={setIsCreateFolderOpen}
         onNewFolderNameChange={setNewFolderName}
         onCreateSubmit={() => void handleCreateFolder()}
-        onRenameOpenChange={(open) => !open && setRenameTarget(null)}
+        onRenameOpenChange={(open) => {
+          if (!open) setRenameTarget(null);
+        }}
         onRenameValueChange={setRenameValue}
         onRenameSubmit={() => void handleRenameSubmit()}
-        onDeleteOpenChange={(open) => !open && setDeleteTarget(null)}
+        onDeleteOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
         onDeleteConfirm={() => void handleDeleteConfirm()}
+        onBulkDeleteOpenChange={setBulkDeleteOpen}
+        onBulkDeleteConfirm={() => void handleDeleteSelected()}
       />
     </div>
   );
