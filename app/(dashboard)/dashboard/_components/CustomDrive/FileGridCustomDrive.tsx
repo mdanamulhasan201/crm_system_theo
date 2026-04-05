@@ -1,7 +1,8 @@
 'use client';
 
 import type { MouseEvent, ReactNode } from 'react';
-import { Download, Eye, FileText, HardDrive, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Eye, FileText, HardDrive, Image as ImageIcon, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +10,46 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { DriveFile } from '@/stores/google-custom-drive/googleCustomDrive.store';
+import { isImageFileNameOrMime } from '@/lib/filePreviewKind';
 import type { ActionTarget } from './types';
 import { DragContainer, dragItemId } from './CustomDriveDnd';
+
+function driveFileMime(file: DriveFile): string | undefined {
+  return typeof file.type === 'string' ? file.type : undefined;
+}
+
+function FileCardThumbnail({ file }: { file: DriveFile }) {
+  const [failed, setFailed] = useState(false);
+  const mime = driveFileMime(file);
+  const isImage = isImageFileNameOrMime(file.name, mime);
+
+  if (!isImage || failed) {
+    return (
+      <div
+        className="pointer-events-none mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-slate-200/70"
+        aria-hidden
+      >
+        <FileText className="h-9 w-9 text-red-500 transition-opacity group-hover:opacity-90" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="pointer-events-none mb-3 h-32 w-full overflow-hidden rounded-lg bg-gray-100 ring-1 ring-inset ring-black/6 transition-colors group-hover:bg-slate-200/50"
+      aria-hidden
+    >
+      <img
+        src={file.url}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover object-center transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+}
 
 type FileGridCustomDriveProps = {
   files: DriveFile[];
@@ -51,7 +90,10 @@ export default function FileGridCustomDrive({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-          {files.map((file) => (
+          {files.map((file) => {
+            const mime = driveFileMime(file);
+            const isImage = isImageFileNameOrMime(file.name, mime);
+            return (
             <DragContainer key={file.id} id={dragItemId('file', file.id)}>
                 <div
                 onClick={(e) => {
@@ -74,7 +116,13 @@ export default function FileGridCustomDrive({
               >
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <FileText className="h-4 w-4 shrink-0 text-red-500" />
+                    {isImage ? (
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-red-500">
+                        <ImageIcon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
+                      </span>
+                    ) : (
+                      <FileText className="h-4 w-4 shrink-0 text-red-500" aria-hidden />
+                    )}
                     <p className="truncate text-sm font-medium text-gray-900">{file.name}</p>
                   </div>
                   <DropdownMenu>
@@ -126,12 +174,7 @@ export default function FileGridCustomDrive({
                   </DropdownMenu>
                 </div>
 
-                <div
-                  className="pointer-events-none mb-3 flex h-28 w-full items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-slate-200/70"
-                  aria-hidden
-                >
-                  <FileText className="h-9 w-9 text-red-500 transition-opacity group-hover:opacity-90" />
-                </div>
+                <FileCardThumbnail file={file} />
 
                 <div>
                   <p className="truncate text-sm font-medium text-gray-900">{file.name}</p>
@@ -141,7 +184,8 @@ export default function FileGridCustomDrive({
                 </div>
               </div>
             </DragContainer>
-          ))}
+          );
+          })}
         </div>
       )}
       {footer}

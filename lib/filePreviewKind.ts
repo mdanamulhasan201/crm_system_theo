@@ -2,7 +2,7 @@ import type { FilePreviewItem } from '@/stores/file-preview/filePreview.store';
 
 export type PreviewKind = 'image' | 'pdf' | 'video' | 'audio' | 'unknown';
 
-const IMAGE_EXT = /\.(jpe?g|png|gif|webp|bmp|svg)$/i;
+export const IMAGE_EXT = /\.(jpe?g|png|gif|webp|bmp|svg|heic|ico)$/i;
 const PDF_EXT = /\.pdf$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg)$/i;
 const AUDIO_EXT = /\.(mp3|wav|ogg|m4a|aac|flac)$/i;
@@ -28,6 +28,13 @@ export function getPreviewKind(file: FilePreviewItem): PreviewKind {
   if (AUDIO_EXT.test(name)) return 'audio';
 
   return 'unknown';
+}
+
+/** Grid thumbnails / icons: image by MIME or extension (matches `getPreviewKind` image branch). */
+export function isImageFileNameOrMime(name: string, mimeType?: string): boolean {
+  const mime = (mimeType || '').toLowerCase();
+  if (mime.startsWith('image/')) return true;
+  return IMAGE_EXT.test(name);
 }
 
 export function formatMimeLabel(mime?: string, name?: string): string {
