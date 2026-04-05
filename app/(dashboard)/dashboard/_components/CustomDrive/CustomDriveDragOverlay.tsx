@@ -5,17 +5,18 @@ import { DragOverlay, useDndContext } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { FileText, Folder, Image as ImageIcon } from 'lucide-react';
 import type { DriveFile, DriveFolder } from '@/stores/google-custom-drive/googleCustomDrive.store';
+import { getPreviewKind } from '@/lib/filePreviewKind';
 import { parseDragItemId } from './CustomDriveDnd';
 
-const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.heic', '.ico'];
-
 function fileKind(file: DriveFile): 'image' | 'pdf' | 'other' {
-  const t = (file.type || '').toLowerCase();
-  const n = file.name.toLowerCase();
-  if (t.includes('pdf') || n.endsWith('.pdf')) return 'pdf';
-  const extFromType = t.startsWith('.') ? t : '';
-  if (IMAGE_EXT.includes(extFromType)) return 'image';
-  if (IMAGE_EXT.some((e) => n.endsWith(e))) return 'image';
+  const k = getPreviewKind({
+    id: file.id,
+    name: file.name,
+    url: file.url,
+    mimeType: typeof file.type === 'string' ? file.type : undefined,
+  });
+  if (k === 'image') return 'image';
+  if (k === 'pdf') return 'pdf';
   return 'other';
 }
 

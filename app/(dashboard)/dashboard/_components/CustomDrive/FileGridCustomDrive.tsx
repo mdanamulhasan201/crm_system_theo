@@ -21,7 +21,7 @@ function driveFileMime(file: DriveFile): string | undefined {
 function FileCardThumbnail({ file }: { file: DriveFile }) {
   const [failed, setFailed] = useState(false);
   const mime = driveFileMime(file);
-  const isImage = isImageFileNameOrMime(file.name, mime);
+  const isImage = isImageFileNameOrMime(file.name, mime, file.url);
 
   if (!isImage || failed) {
     return (
@@ -92,7 +92,7 @@ export default function FileGridCustomDrive({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           {files.map((file) => {
             const mime = driveFileMime(file);
-            const isImage = isImageFileNameOrMime(file.name, mime);
+            const isImage = isImageFileNameOrMime(file.name, mime, file.url);
             return (
             <DragContainer key={file.id} id={dragItemId('file', file.id)}>
                 <div

@@ -213,7 +213,7 @@ export default function FilePreviewModal({
             <DetailRow label="Name" value={current.name} emphasize />
             <DetailRow
               label="Typ"
-              value={formatMimeLabel(current.mimeType, current.name)}
+              value={formatMimeLabel(current.mimeType, current.name, current.url)}
             />
             <DetailRow label="Größe" value={formatBytes(current.size)} />
             <DetailRow label="Erstellt" value={formatDate(current.createdAt)} />
