@@ -71,17 +71,18 @@ export default function PermissionsList({
       ) : (
         allFeatures.map((feature) => {
           const permissionKey = getPermissionKeyForTitle(feature.title)
-          // Use feature.action directly (from API response) or fallback to permissions
-          const isEnabled = permissions[permissionKey] ?? feature.action ?? false
+          // API false values are always locked and non-editable
+          const isLocked = feature.action === false
+          const isEnabled = isLocked ? false : (permissions[permissionKey] ?? feature.action ?? false)
           const icon = getIconForPath(feature.path)
 
           return (
             <div
               key={feature.path}
-              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className={`flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors ${isLocked ? 'bg-gray-50/60' : 'hover:bg-gray-50'}`}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-shrink-0 text-gray-600">
+                <div className="shrink-0 text-gray-600">
                   {renderIcon(icon)}
                 </div>
                 <span className="text-sm font-medium text-gray-900 truncate">
@@ -91,7 +92,8 @@ export default function PermissionsList({
               <Switch
                 checked={isEnabled}
                 onCheckedChange={(checked) => onPermissionToggle(permissionKey, checked)}
-                className="flex-shrink-0"
+                disabled={isLocked}
+                className="shrink-0"
               />
             </div>
           )

@@ -69,7 +69,8 @@ export default function UpdateEmployeePermissionsModal({
         response.data.forEach((feature: FeatureItem) => {
           // Add main route permission only (don't include nested items)
           const permissionKey = getPermissionKeyForTitle(feature.title)
-          permissionsObj[permissionKey] = feature.action
+          // If API sends false, keep it always false
+          permissionsObj[permissionKey] = feature.action === false ? false : feature.action
         })
         
         setPermissions(permissionsObj)
@@ -91,6 +92,15 @@ export default function UpdateEmployeePermissionsModal({
 
   // Handle permission toggle
   const handlePermissionToggle = (key: string, value: boolean) => {
+    const matchedFeature = features.find(
+      (feature) => getPermissionKeyForTitle(feature.title) === key
+    )
+
+    // API false values are locked and cannot be edited
+    if (matchedFeature?.action === false) {
+      return
+    }
+
     setPermissions(prev => ({
       ...prev,
       [key]: value
@@ -106,7 +116,17 @@ export default function UpdateEmployeePermissionsModal({
 
     setIsSaving(true)
     try {
-      await setFeatureAccess(employee.id, permissions)
+      const finalPermissions = { ...permissions }
+
+      // Enforce API false values before save
+      features.forEach((feature) => {
+        const permissionKey = getPermissionKeyForTitle(feature.title)
+        if (feature.action === false) {
+          finalPermissions[permissionKey] = false
+        }
+      })
+
+      await setFeatureAccess(employee.id, finalPermissions)
       toast.success('Berechtigungen erfolgreich aktualisiert')
       
       // Reset and close
