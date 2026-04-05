@@ -16,7 +16,7 @@ type FileGridCustomDriveProps = {
   files: DriveFile[];
   formatDate: (iso?: string) => string;
   formatBytes: (size?: number) => string;
-  onView: (url: string) => void;
+  onView: (file: DriveFile) => void;
   onDownload: (url: string, name: string) => void;
   isSelected: (fileId: string) => boolean;
   onSelect: (target: ActionTarget, event: MouseEvent) => void;
@@ -65,7 +65,7 @@ export default function FileGridCustomDrive({
                     e
                   );
                 }}
-                onDoubleClick={() => onView(file.url)}
+                onDoubleClick={() => onView(file)}
                 className={`group cursor-pointer rounded-xl border p-3 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm ${
                   isSelected(file.id)
                     ? 'border-[#5f8fdd] bg-[#eaf1ff] hover:border-[#5f8fdd] hover:bg-[#eaf1ff]'
@@ -89,7 +89,7 @@ export default function FileGridCustomDrive({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onView(file.url)}>
+                      <DropdownMenuItem onClick={() => onView(file)}>
                         <Eye className="h-4 w-4" />
                         Ansehen
                       </DropdownMenuItem>

@@ -8,3 +8,4 @@ export {
   type ThemeMode,
 } from '@/stores/app/app-store';
 export { useGoogleCustomDriveStore } from '@/stores/google-custom-drive';
+export { useFilePreviewStore, type FilePreviewItem } from '@/stores/file-preview';

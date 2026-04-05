@@ -26,9 +26,13 @@ import CustomDriveUploadModal from '../../../_components/CustomDrive/CustomDrive
 import CustomDriveDragOverlay from '../../../_components/CustomDrive/CustomDriveDragOverlay';
 import type { ActionTarget, BreadcrumbItem } from '../../../_components/CustomDrive/types';
 import { parseDragItemId, parseDropTargetId } from '../../../_components/CustomDrive/CustomDriveDnd';
-import { useGoogleCustomDriveStore } from '@/stores';
-import type { DriveCollectionResponse } from '@/stores/google-custom-drive/googleCustomDrive.store';
-import { downloadUrlAsFile, openFilePreview } from '@/lib/fileDownload';
+import FilePreviewModal from '@/components/file-preview/FilePreviewModal';
+import { useFilePreviewStore, useGoogleCustomDriveStore } from '@/stores';
+import type {
+  DriveCollectionResponse,
+  DriveFile,
+} from '@/stores/google-custom-drive/googleCustomDrive.store';
+import { downloadUrlAsFile } from '@/lib/fileDownload';
 import { DRIVE_FILES_QUERY_ROOT, useDriveInfiniteFiles } from '@/hooks/useDriveInfiniteFiles';
 import { useFilesPageLimit } from '@/hooks/useFilesPageLimit';
 
@@ -55,6 +59,15 @@ const formatDate = (iso?: string) => {
   return d.toLocaleDateString('de-DE');
 };
 
+const driveFileToPreviewItem = (f: DriveFile) => ({
+  id: f.id,
+  name: f.name,
+  url: f.url,
+  mimeType: typeof f.type === 'string' ? f.type : undefined,
+  size: f.size,
+  createdAt: f.createdAt,
+});
+
 export default function KundenordnerDokumentePage() {
   const params = useParams();
   const router = useRouter();
@@ -73,6 +86,8 @@ export default function KundenordnerDokumentePage() {
     moveItemsAction,
     renameItemAction,
   } = useGoogleCustomDriveStore();
+
+  const openFilePreviewModal = useFilePreviewStore((s) => s.open);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -271,8 +286,8 @@ export default function KundenordnerDokumentePage() {
     }
   };
 
-  const handleView = (url: string) => {
-    openFilePreview(url);
+  const handleView = (file: DriveFile) => {
+    openFilePreviewModal(driveFileToPreviewItem(file), files.map(driveFileToPreviewItem));
   };
 
   const handleDownload = async (url: string, name: string) => {
@@ -521,6 +536,16 @@ export default function KundenordnerDokumentePage() {
         <CustomDriveDragOverlay activeId={activeDragId} folders={folders} files={files} />
         </div>
       </DndContext>
+
+      <FilePreviewModal
+        formatBytes={formatBytes}
+        formatDate={formatDate}
+        onDelete={async (item) => {
+          const response = (await deleteItemAction('file', item.id)) as { message?: string };
+          toast.success(response?.message || 'Datei gelöscht');
+          await invalidateDriveList();
+        }}
+      />
 
       <CustomDriveUploadModal
         open={isUploadModalOpen}
