@@ -91,7 +91,7 @@ export function BreadcrumbDropZone({
     <div
       ref={setNodeRef}
       className={cn(
-        'inline-flex max-w-[min(180px,45vw)] shrink-0 rounded-md transition',
+        'inline-flex min-h-9 max-w-[min(220px,50vw)] shrink-0 items-center rounded-md px-0.5 py-0.5 transition',
         isOver && 'bg-[#61A175]/20 ring-2 ring-[#61A175] ring-offset-1',
         className
       )}

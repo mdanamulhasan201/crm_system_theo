@@ -5,8 +5,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   PointerSensor,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -144,6 +147,13 @@ export default function KundenordnerDokumentePage() {
       activationConstraint: { distance: 8 },
     })
   );
+
+  /** Pointer-based first: large drag preview used to use rectIntersection and often hit the wrong breadcrumb (e.g. My Drive). */
+  const driveCollisionDetection = useCallback<CollisionDetection>((args) => {
+    const byPointer = pointerWithin(args);
+    if (byPointer.length > 0) return byPointer;
+    return rectIntersection(args);
+  }, []);
 
   const updateFolderInUrl = useCallback(
     (folderId: string | null) => {
@@ -435,6 +445,7 @@ export default function KundenordnerDokumentePage() {
     <div className="mb-20 w-full max-w-full space-y-6 p-4" onClick={handleClearSelection}>
       <DndContext
         sensors={sensors}
+        collisionDetection={driveCollisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={(e) => void handleDragEnd(e)}
         onDragCancel={handleDragCancel}

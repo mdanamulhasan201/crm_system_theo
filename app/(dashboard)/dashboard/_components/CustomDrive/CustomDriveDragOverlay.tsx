@@ -96,6 +96,7 @@ export default function CustomDriveDragOverlay({ activeId, folders, files }: Cus
         duration: 180,
         easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
       }}
+      style={{ pointerEvents: 'none' }}
     >
       {folder ? (
         <GrabAnchoredPreview>
