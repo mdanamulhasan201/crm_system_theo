@@ -10,7 +10,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { Loader2 } from 'lucide-react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -436,7 +435,6 @@ export default function KundenordnerDokumentePage() {
     <div className="mb-20 w-full max-w-full space-y-6 p-4" onClick={handleClearSelection}>
       <DndContext
         sensors={sensors}
-        modifiers={[snapCenterToCursor]}
         onDragStart={handleDragStart}
         onDragEnd={(e) => void handleDragEnd(e)}
         onDragCancel={handleDragCancel}
