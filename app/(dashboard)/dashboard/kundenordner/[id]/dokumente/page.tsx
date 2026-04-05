@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { Loader2 } from 'lucide-react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -22,6 +23,7 @@ import FolderGridCustomDrive from '../../../_components/CustomDrive/FolderGridCu
 import FileGridCustomDrive from '../../../_components/CustomDrive/FileGridCustomDrive';
 import CustomDriveDialogs from '../../../_components/CustomDrive/CustomDriveDialogs';
 import CustomDriveUploadModal from '../../../_components/CustomDrive/CustomDriveUploadModal';
+import CustomDriveDragOverlay from '../../../_components/CustomDrive/CustomDriveDragOverlay';
 import type { ActionTarget, BreadcrumbItem } from '../../../_components/CustomDrive/types';
 import { parseDragItemId, parseDropTargetId } from '../../../_components/CustomDrive/CustomDriveDnd';
 import { useGoogleCustomDriveStore } from '@/stores';
@@ -386,6 +388,10 @@ export default function KundenordnerDokumentePage() {
     setActiveDragId(String(event.active.id));
   };
 
+  const handleDragCancel = () => {
+    setActiveDragId(null);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveDragId(null);
     const active = parseDragItemId(event.active.id);
@@ -413,7 +419,13 @@ export default function KundenordnerDokumentePage() {
 
   return (
     <div className="mb-20 w-full max-w-full space-y-6 p-4" onClick={handleClearSelection}>
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(e) => void handleDragEnd(e)}>
+      <DndContext
+        sensors={sensors}
+        modifiers={[snapCenterToCursor]}
+        onDragStart={handleDragStart}
+        onDragEnd={(e) => void handleDragEnd(e)}
+        onDragCancel={handleDragCancel}
+      >
         <div className="space-y-6">
         <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
           <TopNavigation />
@@ -505,6 +517,8 @@ export default function KundenordnerDokumentePage() {
             />
           </div>
         )}
+
+        <CustomDriveDragOverlay activeId={activeDragId} folders={folders} files={files} />
         </div>
       </DndContext>
 

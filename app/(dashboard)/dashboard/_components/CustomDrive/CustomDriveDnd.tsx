@@ -37,16 +37,15 @@ export function DragContainer({
   id: string;
   children: React.ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
 
   return (
     <div
       ref={setNodeRef}
       style={{
-        transform: transform
-          ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
-          : undefined,
-        opacity: isDragging ? 0.6 : 1,
+        // Kein translate: das eigentliche Karten-Layout bleibt am Platz; die Vorschau kommt nur aus <DragOverlay>.
+        opacity: isDragging ? 0 : 1,
+        pointerEvents: isDragging ? 'none' : undefined,
       }}
       {...listeners}
       {...attributes}
