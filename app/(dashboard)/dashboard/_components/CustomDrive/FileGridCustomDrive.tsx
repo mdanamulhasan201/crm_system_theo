@@ -1,6 +1,6 @@
 'use client';
 
-import type { MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Download, Eye, FileText, HardDrive, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -22,6 +22,8 @@ type FileGridCustomDriveProps = {
   onSelect: (target: ActionTarget, event: MouseEvent) => void;
   onRename: (target: ActionTarget) => void;
   onDelete: (target: ActionTarget) => void;
+  /** Infinite scroll sentinel / loaders below the grid */
+  footer?: ReactNode;
 };
 
 export default function FileGridCustomDrive({
@@ -34,6 +36,7 @@ export default function FileGridCustomDrive({
   onSelect,
   onRename,
   onDelete,
+  footer,
 }: FileGridCustomDriveProps) {
   return (
     <section>
@@ -141,6 +144,7 @@ export default function FileGridCustomDrive({
           ))}
         </div>
       )}
+      {footer}
     </section>
   );
 }

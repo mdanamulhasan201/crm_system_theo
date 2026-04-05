@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   PointerSensor,
@@ -24,7 +25,10 @@ import CustomDriveUploadModal from '../../../_components/CustomDrive/CustomDrive
 import type { ActionTarget, BreadcrumbItem } from '../../../_components/CustomDrive/types';
 import { parseDragItemId, parseDropTargetId } from '../../../_components/CustomDrive/CustomDriveDnd';
 import { useGoogleCustomDriveStore } from '@/stores';
+import type { DriveCollectionResponse } from '@/stores/google-custom-drive/googleCustomDrive.store';
 import { downloadUrlAsFile, openFilePreview } from '@/lib/fileDownload';
+import { DRIVE_FILES_QUERY_ROOT, useDriveInfiniteFiles } from '@/hooks/useDriveInfiniteFiles';
+import { useFilesPageLimit } from '@/hooks/useFilesPageLimit';
 
 const ROOT_BREADCRUMB: BreadcrumbItem = { id: null, name: 'My Drive' };
 
@@ -58,14 +62,7 @@ export default function KundenordnerDokumentePage() {
   const folderFromQuery = searchParams.get('folder');
 
   const {
-    folders,
-    files,
-    pagination,
-    isLoading,
-    isRefreshing,
     isMutating,
-    error,
-    fetchAll,
     fetchPath,
     createFolderAction,
     uploadFileAction,
@@ -73,7 +70,6 @@ export default function KundenordnerDokumentePage() {
     deleteItemsAction,
     moveItemsAction,
     renameItemAction,
-    clearError,
   } = useGoogleCustomDriveStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,6 +85,43 @@ export default function KundenordnerDokumentePage() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+  const filesLimit = useFilesPageLimit();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const {
+    data: driveData,
+    error: driveQueryError,
+    isPending: drivePending,
+    isFetching: driveFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch: refetchDrive,
+  } = useDriveInfiniteFiles({
+    customerId,
+    folderId: currentFolderId,
+    search: debouncedSearch,
+    limit: filesLimit,
+  });
+
+  const folders = useMemo(() => driveData?.pages[0]?.data?.folders ?? [], [driveData]);
+
+  const files = useMemo(
+    () =>
+      driveData?.pages.flatMap((page: DriveCollectionResponse) => page.data?.files ?? []) ?? [],
+    [driveData]
+  );
+
+  const isInitialLoading = drivePending;
+  const isListRefreshing = driveFetching && !drivePending && !isFetchingNextPage;
+
+  const invalidateDriveList = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: [DRIVE_FILES_QUERY_ROOT, customerId],
+    });
+  }, [queryClient, customerId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -136,20 +169,6 @@ export default function KundenordnerDokumentePage() {
     [fetchPath]
   );
 
-  const loadData = useCallback(
-    async (opts?: { silent?: boolean }) => {
-      const trimmed = debouncedSearch.trim();
-      await fetchAll({
-        customerId,
-        limit: 100,
-        folder: currentFolderId,
-        search: trimmed.length > 0 ? trimmed : null,
-        silent: opts?.silent,
-      });
-    },
-    [customerId, currentFolderId, debouncedSearch, fetchAll]
-  );
-
   useEffect(() => {
     const id = window.setTimeout(() => {
       setDebouncedSearch(searchQuery.trim());
@@ -158,9 +177,20 @@ export default function KundenordnerDokumentePage() {
   }, [searchQuery]);
 
   useEffect(() => {
-    const silent = debouncedSearch.length > 0;
-    void loadData({ silent });
-  }, [loadData, debouncedSearch]);
+    const node = loadMoreRef.current;
+    if (!node || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { root: null, rootMargin: '0px 0px 480px 0px', threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
     if (renameTarget) {
@@ -210,7 +240,7 @@ export default function KundenordnerDokumentePage() {
       toast.success('Ordner erfolgreich erstellt');
       setIsCreateFolderOpen(false);
       setNewFolderName('');
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ordner konnte nicht erstellt werden';
       toast.error(message);
@@ -232,7 +262,7 @@ export default function KundenordnerDokumentePage() {
       })) as { message?: string; success?: boolean };
       toast.success(response?.message || 'Dateien erfolgreich hochgeladen');
       setIsUploadModalOpen(false);
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload fehlgeschlagen';
       toast.error(message);
@@ -269,7 +299,7 @@ export default function KundenordnerDokumentePage() {
       toast.success(`${renameTarget.type === 'folder' ? 'Ordner' : 'Datei'} umbenannt`);
       setRenameTarget(null);
       setRenameValue('');
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Umbenennen fehlgeschlagen';
       toast.error(message);
@@ -284,7 +314,7 @@ export default function KundenordnerDokumentePage() {
       toast.success(response?.message || `${deleteTarget.type === 'folder' ? 'Ordner' : 'Datei'} gelöscht`);
       setDeleteTarget(null);
       setSelectedKeys(new Set());
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Löschen fehlgeschlagen';
       toast.error(message);
@@ -345,7 +375,7 @@ export default function KundenordnerDokumentePage() {
       toast.success(response?.message || `${items.length} Element(e) gelöscht`);
       setSelectedKeys(new Set());
       setBulkDeleteOpen(false);
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Bulk delete fehlgeschlagen';
       toast.error(message);
@@ -369,7 +399,7 @@ export default function KundenordnerDokumentePage() {
         targetParentId: targetFolderId,
       });
       toast.success(`${active.type === 'folder' ? 'Ordner' : 'Datei'} verschoben`);
-      await loadData({ silent: true });
+      await invalidateDriveList();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Verschieben fehlgeschlagen';
       toast.error(message);
@@ -386,11 +416,11 @@ export default function KundenordnerDokumentePage() {
           fileCount={files.length}
           breadcrumbs={breadcrumbs}
           searchQuery={searchQuery}
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
+          isLoading={isInitialLoading}
+          isRefreshing={isListRefreshing}
           isMutating={isMutating}
           selectedCount={selectedKeys.size}
-          onRefresh={() => void loadData({ silent: true })}
+          onRefresh={() => void invalidateDriveList()}
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
           onUploadClick={handleUploadClick}
           onDeleteSelected={() => setBulkDeleteOpen(true)}
@@ -400,19 +430,13 @@ export default function KundenordnerDokumentePage() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(e) => void handleDragEnd(e)}>
-        {error && (
+        {driveQueryError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <div className="flex items-center justify-between gap-3">
-              <span>{error}</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  clearError();
-                  void loadData({ silent: true });
-                }}
-              >
+              <span>
+                {driveQueryError instanceof Error ? driveQueryError.message : 'Laden fehlgeschlagen'}
+              </span>
+              <Button type="button" size="sm" variant="outline" onClick={() => void refetchDrive()}>
                 Erneut versuchen
               </Button>
             </div>
@@ -425,7 +449,7 @@ export default function KundenordnerDokumentePage() {
           </div>
         )}
 
-        {isLoading ? (
+        {isInitialLoading ? (
           <div
             role="presentation"
             className="flex h-40 cursor-default items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white"
@@ -459,13 +483,19 @@ export default function KundenordnerDokumentePage() {
               onSelect={handleSelectItem}
               onRename={setRenameTarget}
               onDelete={setDeleteTarget}
+              footer={
+                <>
+                  {hasNextPage ? (
+                    <div ref={loadMoreRef} className="h-8 w-full shrink-0" aria-hidden />
+                  ) : null}
+                  {isFetchingNextPage ? (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin text-slate-400" aria-label="Weitere Dateien" />
+                    </div>
+                  ) : null}
+                </>
+              }
             />
-
-            {pagination.hasNextFilesPage && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                Es gibt weitere Dateien im Backend (next cursor vorhanden). Aktuell wird die erste Liste angezeigt.
-              </div>
-            )}
           </div>
         )}
       </DndContext>
