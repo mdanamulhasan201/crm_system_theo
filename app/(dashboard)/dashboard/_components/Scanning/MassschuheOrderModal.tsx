@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { MapPin, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -109,6 +110,7 @@ export interface MassschuheOrderV2Payload {
     payment_status?: string;
     deposit_provision?: number;
     foot_analysis_price?: number | object;
+    addonPrices?: number;
     pick_up_location?: string;
     store_location?: string;
     order_note?: string;
@@ -285,6 +287,8 @@ export default function MassschuheOrderModal({
     onSubmit,
     isLoading = false
 }: MassschuheOrderModalProps) {
+    const AUSTRIA_PRIVATE_SHARE = 46.2;
+
     // Order modal form state
     const [orderDate, setOrderDate] = useState<string>(new Date().toISOString().slice(0, 10));
     const [fertigstellungDate, setFertigstellungDate] = useState<string>('');
@@ -303,11 +307,19 @@ export default function MassschuheOrderModal({
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true);
+    const [addonPrices, setAddonPrices] = useState<string>('');
 
     const { user } = useAuth();
+    const addonPricesTotal = React.useMemo(() => {
+        const raw = addonPrices;
+        if (!raw || typeof raw !== 'string') return 0;
+        const parts = raw.split(/[,\s]+/).filter(Boolean);
+        return parts.reduce((sum, part) => sum + (parseFloat(part.replace(',', '.')) || 0), 0);
+    }, [addonPrices]);
+
     const allowDualPaymentSelection =
         formData.billingType === 'Krankenkassa' &&
-        ((parseFloat(formData.nettoPreis || '0') || 0) > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)');
+        ((parseFloat(formData.nettoPreis || '0') || 0) > 0 || addonPricesTotal > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)');
     const disabledPaymentOptions: Array<'Privat' | 'Krankenkasse'> =
         formData.billingType === 'Privat'
             ? ['Krankenkasse']
@@ -446,6 +458,7 @@ export default function MassschuheOrderModal({
                 setSelectedEinlagenversorgung('');
             }
             setOrderNote('');
+            setAddonPrices('');
             setShouldPrintWerkstattzettel(formData.printWerkstattzettel ?? true);
             // Set default bezahlt based on billingType (same as WerkstattzettelModal)
             if (formData.billingType === 'Krankenkassa') {
@@ -457,7 +470,7 @@ export default function MassschuheOrderModal({
             }
             // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
-    }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices]);
+    }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices, formData.printWerkstattzettel]);
 
     useEffect(() => {
         if (allowDualPaymentSelection) return;
@@ -555,7 +568,9 @@ export default function MassschuheOrderModal({
         let insurancePrice: number | undefined;
         if (paymentType === 'privat') {
             const formBrutto = formData.brutto ? parseFloat(formData.brutto) : 0;
-            totalPrice = formBrutto > 0 ? formBrutto * qty : (getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty;
+            totalPrice = formBrutto > 0
+                ? (formBrutto * qty) + addonPricesTotal
+                : ((getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty) + addonPricesTotal;
         } else {
             const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
             const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
@@ -569,9 +584,11 @@ export default function MassschuheOrderModal({
             const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
             const positionsSubtotal = positionsSum * qty;
             const subtotalWithVat = positionsSubtotal * (1 + vatRate / 100);
-            // AT: insurance_price = with +20% VAT; total_price = that + 43; privatePrice = 43
+            // AT: insurance_price = with +20% VAT; total_price = that + fixed private share
             insurancePrice = subtotalWithVat;
-            totalPrice = vatCountryCode === 'AT' ? subtotalWithVat + 43 : subtotalWithVat;
+            totalPrice = vatCountryCode === 'AT'
+                ? subtotalWithVat + AUSTRIA_PRIVATE_SHARE + addonPricesTotal
+                : subtotalWithVat + addonPricesTotal;
         }
 
         const branchLocationJson = JSON.stringify({
@@ -653,9 +670,12 @@ export default function MassschuheOrderModal({
             supply_note: formData.versorgungNote || undefined,
             quantity: qty,
             total_price: totalPrice,
-            privatePrice: paymentType === 'privat' ? totalPrice : (paymentType === 'krankenkasse' && vatCountryCode === 'AT' ? 43 : undefined),
+            privatePrice: paymentType === 'privat'
+                ? totalPrice
+                : (paymentType === 'krankenkasse' && vatCountryCode === 'AT' ? AUSTRIA_PRIVATE_SHARE + addonPricesTotal : undefined),
             payment_status: bezahlt || undefined,
             foot_analysis_price: paymentType === 'privat' && selectedFußanalyse ? getFußanalysePrice(selectedFußanalyse) : undefined,
+            addonPrices: addonPricesTotal > 0 ? addonPricesTotal : undefined,
             pick_up_location: pickUpLocationJson,
             store_location: storeLocationJson,
             order_note: orderNote || undefined,
@@ -975,6 +995,17 @@ export default function MassschuheOrderModal({
 
                         </div>
 
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Wirtschaftlicher Aufpreis (Add-on)</label>
+                            <Input
+                                type="text"
+                                value={addonPrices}
+                                onChange={(e) => setAddonPrices(e.target.value)}
+                                placeholder="Preis eingeben, z.B. 25 oder 10,5"
+                                className="h-11"
+                            />
+                        </div>
+
                         {/* Preisübersicht */}
                         {(() => {
                             const vatCountry = user?.accountInfo?.vat_country;
@@ -1035,6 +1066,12 @@ export default function MassschuheOrderModal({
                                                     </div>
                                                     {vatRate > 0 && (
                                                         <>
+                                                            {addonPricesTotal > 0 && (
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-gray-600">Wirtschaftlicher Aufpreis</span>
+                                                                    <span className="text-sm font-semibold text-gray-700">{formatPrice(addonPricesTotal)}</span>
+                                                                </div>
+                                                            )}
                                                             <div className="flex justify-between items-center">
                                                                 <span className="text-sm text-gray-600">+{vatRate}% MwSt.</span>
                                                                 <span className="text-sm font-semibold text-gray-700">{formatPrice(vatAmount)}</span>
@@ -1042,28 +1079,42 @@ export default function MassschuheOrderModal({
                                                             {vatCountry === 'Österreich (AT)' && (
                                                                 <div className="flex justify-between items-center pt-1.5">
                                                                     <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
-                                                                    <span className="text-xs text-gray-600">43,00€</span>
+                                                                    <span className="text-xs text-gray-600">46,20€</span>
                                                                 </div>
                                                             )}
                                                             <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                                                                 <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                                <span className="text-xl font-bold text-green-600">{formatPrice(vatCountry === 'Österreich (AT)' ? total + 43 : total)}</span>
+                                                                <span className="text-xl font-bold text-green-600">{formatPrice(vatCountry === 'Österreich (AT)' ? total + AUSTRIA_PRIVATE_SHARE + addonPricesTotal : total + addonPricesTotal)}</span>
                                                             </div>
                                                         </>
                                                     )}
                                                     {vatRate === 0 && (
-                                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                            <span className="text-xl font-bold text-green-600">{formatPrice(positionsSubtotal)}</span>
-                                                        </div>
+                                                        <>
+                                                            {addonPricesTotal > 0 && (
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-gray-600">Wirtschaftlicher Aufpreis</span>
+                                                                    <span className="text-sm font-semibold text-gray-700">{formatPrice(addonPricesTotal)}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                                                <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                                                <span className="text-xl font-bold text-green-600">{formatPrice(positionsSubtotal + addonPricesTotal)}</span>
+                                                            </div>
+                                                        </>
                                                     )}
                                                 </>
                                             ) : (
                                                 <>
                                                     <div className="text-sm text-gray-500">Keine Positionen ausgewählt</div>
+                                                    {addonPricesTotal > 0 && (
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="text-gray-600">Wirtschaftlicher Aufpreis</span>
+                                                            <span className="font-semibold text-gray-900">{formatPrice(addonPricesTotal)}</span>
+                                                        </div>
+                                                    )}
                                                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                                                         <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                        <span className="text-xl font-bold text-green-600">0,00€</span>
+                                                        <span className="text-xl font-bold text-green-600">{formatPrice(addonPricesTotal)}</span>
                                                     </div>
                                                 </>
                                             )}
@@ -1108,9 +1159,15 @@ export default function MassschuheOrderModal({
                                             <span className="text-gray-600">Menge</span>
                                             <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}{qty > 1 ? ` × ${formatPrice(bruttoUnit)}` : ''}</span>
                                         </div>
+                                        {addonPricesTotal > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-600">Wirtschaftlicher Aufpreis</span>
+                                                <span className="font-semibold text-gray-900">{formatPrice(addonPricesTotal)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                                             <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                            <span className="text-xl font-bold text-green-600">{formatPrice(gesamtPrivat)}</span>
+                                            <span className="text-xl font-bold text-green-600">{formatPrice(gesamtPrivat + addonPricesTotal)}</span>
                                         </div>
                                         {bruttoUnit > 0 && vatPercent > 0 && (
                                             <div className="flex justify-between items-center pt-1">
