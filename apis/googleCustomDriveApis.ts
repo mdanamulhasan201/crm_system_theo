@@ -20,7 +20,7 @@ export type DriveEntityType = "file" | "folder";
 export interface CreateFolderPayload {
   customerId: string;
   name: string;
-  parentId: string;
+  parentId?: string | null;
 }
 
 export interface CreateFilePayload {
@@ -60,11 +60,15 @@ export const createFolder = async ({
   parentId,
 }: CreateFolderPayload) => {
   try {
-    const response = await axiosClient.post("/v3/folders/create", {
+    const payload: { customerId: string; name: string; parentId?: string | null } = {
       customerId,
       name,
-      parentId,
-    });
+    };
+    if (parentId !== undefined) {
+      payload.parentId = parentId;
+    }
+
+    const response = await axiosClient.post("/v3/folders/create", payload);
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, "Failed to create folder"));
@@ -141,6 +145,15 @@ export const deleteFolder = async (folderId: string) => {
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, "Failed to delete folder"));
+  }
+};
+
+export const deleteFile = async (fileId: string) => {
+  try {
+    const response = await axiosClient.delete(`/v3/files/delete?fileId=${fileId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, "Failed to delete file"));
   }
 };
 
