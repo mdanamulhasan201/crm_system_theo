@@ -255,6 +255,8 @@ interface ProductConfigurationProps {
   disableZiernahtVorhanden?: boolean;
   /** Maßschuh step-5 intern modal: hide € suffixes on Verschluss / Reißverschluss UI */
   hideShopPriceLabels?: boolean;
+  /** Replace leather type count select with plain text input (page-specific modal variant). */
+  useTextFieldForLeatherTypeCount?: boolean;
 }
 
 export type ProductConfigurationHandle = {
@@ -356,6 +358,7 @@ const ProductConfiguration = forwardRef<ProductConfigurationHandle, ProductConfi
   hideCadAndCategory = false,
   disableZiernahtVorhanden = false,
   hideShopPriceLabels = false,
+  useTextFieldForLeatherTypeCount = false,
 }: ProductConfigurationProps,
 ref: React.Ref<ProductConfigurationHandle>
 ) {
@@ -691,23 +694,38 @@ ref: React.Ref<ProductConfigurationHandle>
         <ConfigCard icon={Palette} title="Material & Ausführung" subtitle="Leder, Futter und Naht">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4 mt-5">
             <div className="flex min-w-0 flex-col">
-              <FieldLabel>Anzahl der Ledertypen</FieldLabel>
-              <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
-                <SelectTrigger className={SELECT_FIELD_CLASS}>
-                  <SelectValue placeholder="Auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem className="cursor-pointer" value="1">
-                    1
-                  </SelectItem>
-                  <SelectItem className="cursor-pointer" value="2">
-                    2
-                  </SelectItem>
-                  <SelectItem className="cursor-pointer" value="3">
-                    3
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {useTextFieldForLeatherTypeCount ? (
+                <>
+                  <FieldLabel>Ledertypen</FieldLabel>
+                  <Input
+                    type="text"
+                    placeholder="Ledertypen eingeben…"
+                    className="h-9 border-gray-300 text-sm"
+                    value={numberOfLeatherColors}
+                    onChange={(e) => setNumberOfLeatherColors(e.target.value)}
+                  />
+                </>
+              ) : (
+                <>
+                  <FieldLabel>Anzahl der Ledertypen</FieldLabel>
+                  <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
+                    <SelectTrigger className={SELECT_FIELD_CLASS}>
+                      <SelectValue placeholder="Auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem className="cursor-pointer" value="1">
+                        1
+                      </SelectItem>
+                      <SelectItem className="cursor-pointer" value="2">
+                        2
+                      </SelectItem>
+                      <SelectItem className="cursor-pointer" value="3">
+                        3
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
 
             <div className="flex min-w-0 flex-col">
@@ -787,7 +805,7 @@ ref: React.Ref<ProductConfigurationHandle>
             </div>
           </div>
 
-          {numberOfLeatherColors === '1' && (
+          {!useTextFieldForLeatherTypeCount && numberOfLeatherColors === '1' && (
             <div className="flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-start sm:gap-5">
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <FieldLabel>Ledertyp</FieldLabel>
@@ -848,7 +866,7 @@ ref: React.Ref<ProductConfigurationHandle>
             </div>
           )}
 
-          {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && leatherColorAssignments.length > 0 && (
+          {!useTextFieldForLeatherTypeCount && (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && leatherColorAssignments.length > 0 && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <FieldLabel>Ledertypen-Zuordnung</FieldLabel>
               <div className="mt-2 space-y-2">
@@ -978,7 +996,7 @@ ref: React.Ref<ProductConfigurationHandle>
         </ConfigCard>
 
         {/* Leather Color Section Modal */}
-        {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && (
+        {!useTextFieldForLeatherTypeCount && (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && (
           <LeatherColorSectionModal
             key={`leather-color-modal-${numberOfLeatherColors}`}
             isOpen={showLeatherColorModal}

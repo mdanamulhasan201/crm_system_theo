@@ -76,6 +76,8 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     onCompletelyNew?: () => void;
     /** Maßschuhauftrag [id] step 5 only: Schafttyp Intern → erweitert ohne Preise im Konfigurator-Modal */
     hideSchafttypModalPrices?: boolean;
+    /** Maßschuhauftrag [id] step 5 only: Schafttyp Intern → ersetzt "Anzahl der Ledertypen" mit Textfeld */
+    useTextFieldForLeatherTypeCount?: boolean;
 }
 
 function parseChecklisteHalbprobe(json: string | undefined): ChecklisteHalbprobeData | undefined {
@@ -117,6 +119,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     onApproveMinorRework,
     onCompletelyNew,
     hideSchafttypModalPrices = false,
+    useTextFieldForLeatherTypeCount = false,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const initialChecklistData = parseChecklisteHalbprobe(checklisteHalbprobe);
@@ -297,6 +300,7 @@ export default function HalbprobeDurchfuehrungStepFields({
                 onSchafttypInternNoteChange={onSchafttypInternNoteChange}
                 onSchafttypExternNoteChange={onSchafttypExternNoteChange}
                 hideInternModalPrices={hideSchafttypModalPrices}
+                useTextFieldForLeatherTypeCount={useTextFieldForLeatherTypeCount}
             />
 
             {/* Bodenkonstruktion */}

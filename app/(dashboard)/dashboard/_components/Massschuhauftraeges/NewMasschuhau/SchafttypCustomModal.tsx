@@ -93,6 +93,8 @@ export interface SchafttypCustomModalProps {
     enablePdfAfterSubmit?: boolean;
     /** Maßschuhauftrag step 5: hide CAD surcharge labels and keep hero without shop pricing */
     hideConfiguratorPrices?: boolean;
+    /** Page-specific modal variant: use text input instead of "Anzahl der Ledertypen" select */
+    useTextFieldForLeatherTypeCount?: boolean;
 }
 
 async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
@@ -109,6 +111,7 @@ export default function SchafttypCustomModal({
     onSubmit,
     enablePdfAfterSubmit = true,
     hideConfiguratorPrices = false,
+    useTextFieldForLeatherTypeCount = false,
 }: SchafttypCustomModalProps) {
     const productConfigRef = useRef<ProductConfigurationHandle>(null);
 
@@ -229,7 +232,8 @@ export default function SchafttypCustomModal({
             setProductDescription(initialData.productDescription ?? initialData.modelName ?? '');
             setLederType(initialData.lederType ?? '');
             setLederfarbe(initialData.lederfarbe ?? initialData.anzahlLedertypen ?? '');
-            setNumberOfLeatherColors(initialData.numberOfLeatherColors ?? '');
+            // Page-specific variant: start empty so only placeholder is shown by default.
+            setNumberOfLeatherColors(useTextFieldForLeatherTypeCount ? '' : (initialData.numberOfLeatherColors ?? ''));
             setLeatherColorAssignments(initialData.leatherColorAssignments ?? []);
             setLeatherColors(initialData.leatherColors ?? []);
             setInnenfutter(initialData.innenfutter ?? '');
@@ -267,7 +271,7 @@ export default function SchafttypCustomModal({
             resetState();
         }
         setUploadedImage(initialImageUrl || null);
-    }, [open, initialData, initialImageUrl, resetState]);
+    }, [open, initialData, initialImageUrl, resetState, useTextFieldForLeatherTypeCount]);
 
     const buildJson = (): MassschafterstellungJson => ({
         productDescription: productDescription.trim() || undefined,
@@ -468,6 +472,7 @@ export default function SchafttypCustomModal({
                             ref={productConfigRef}
                             hideCadAndCategory
                             hideShopPriceLabels={hideConfiguratorPrices}
+                            useTextFieldForLeatherTypeCount={useTextFieldForLeatherTypeCount}
                             cadModeling={cadModeling}
                             setCadModeling={setCadModeling}
                             customCategory={customCategory}

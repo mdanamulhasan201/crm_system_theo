@@ -1139,6 +1139,7 @@ export default function MassschuhauftraegePage() {
                                             redirectCustomerName={customerFullName || undefined}
                                             stepStatus="Halbprobe_durchführen"
                                             hideSchafttypModalPrices
+                                            useTextFieldForLeatherTypeCount
                                             probenergebnis={probenergebnis}
                                             schafttyp={schafttyp}
                                             fitting_date={fitting_date}

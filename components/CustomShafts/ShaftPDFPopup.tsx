@@ -94,6 +94,22 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     return mapping[nahtfarbe || ''] || nahtfarbe || '';
   }
 
+  // Supports both classic numeric selection (1/2/3) and custom text field values.
+  const getLeatherDetailsLabel = (): string => {
+    const value = shaftConfiguration.numberOfLeatherColors?.trim() || '';
+    if (!value) return '';
+
+    if (value === '1') {
+      return `Anzahl der Ledertypen: ${value} | Ledertyp: ${shaftConfiguration.lederType || '-'} | Lederfarbe: ${shaftConfiguration.lederfarbe || '-'}`;
+    }
+
+    if (value === '2' || value === '3') {
+      return `Anzahl der Ledertypen: ${value}`;
+    }
+
+    return `Ledertypen: ${value}`;
+  }
+
   // Default values if orderData is not provided
   const displayOrderNumber = orderData?.orderNumber || "#000000"
   const displayCustomerName = orderData?.customerName || "Kunde"
@@ -457,16 +473,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                         Lederdetails
                       </div>
                       <div className="flex-1 leading-loose">
-                        <ModalCheckbox
-                          isSelected={true}
-                          label={
-                            shaftConfiguration.numberOfLeatherColors === '1'
-                              ? `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${
-                                  shaftConfiguration.lederType || '-'
-                                } | Lederfarbe: ${shaftConfiguration.lederfarbe || '-'}`
-                              : `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'}`
-                          }
-                        />
+                        <ModalCheckbox isSelected={true} label={getLeatherDetailsLabel()} />
                         {/* Lederfarben list directly under option when 2 or 3 selected */}
                         {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
                           <div className="ml-0 mt-2 text-xs text-slate-600">
@@ -855,16 +862,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       Lederdetails
                     </div>
                     <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox
-                        isSelected={true}
-                        label={
-                          shaftConfiguration.numberOfLeatherColors === '1'
-                            ? `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'} | Ledertyp: ${
-                                shaftConfiguration.lederType || '-'
-                              } | Lederfarbe: ${shaftConfiguration.lederfarbe || '-'}`
-                            : `Anzahl der Ledertypen: ${shaftConfiguration.numberOfLeatherColors || '-'}`
-                        }
-                      />
+                      <PDFCheckbox isSelected={true} label={getLeatherDetailsLabel()} />
                       {/* Lederfarben list directly under option when 2 or 3 selected */}
                       {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#475569' }}>

@@ -113,6 +113,8 @@ export interface SchafttypFieldTextProps {
     onSchafttypExternNoteBlur?: () => void;
     /** Maßschuhauftrag detail step 5: Intern → erweitert modal ohne CAD-/Shop-Preisanzeige */
     hideInternModalPrices?: boolean;
+    /** Page-specific modal variant: use text input instead of leather count select */
+    useTextFieldForLeatherTypeCount?: boolean;
 }
 
 export default function SchafttypFieldText({
@@ -134,6 +136,7 @@ export default function SchafttypFieldText({
     onSchafttypInternNoteBlur,
     onSchafttypExternNoteBlur,
     hideInternModalPrices = false,
+    useTextFieldForLeatherTypeCount = false,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -706,6 +709,7 @@ export default function SchafttypFieldText({
                 onSubmit={isStep5 ? handleMassschafterstellungSubmit : onStandaloneSubmit}
                 enablePdfAfterSubmit={!isStep5}
                 hideConfiguratorPrices={hideInternModalPrices}
+                useTextFieldForLeatherTypeCount={useTextFieldForLeatherTypeCount}
             />
         </>
     );
