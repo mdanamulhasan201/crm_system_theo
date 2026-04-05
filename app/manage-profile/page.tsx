@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { User, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { User, Eye, EyeOff, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
 import useEmblaCarousel from 'embla-carousel-react'
 import logo from '@/public/images/logo.png'
 import { getProfileList, logicalLogin } from '@/apis/authApis'
@@ -153,7 +153,9 @@ export default function ManageProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#141414] flex items-center justify-center px-3 py-6 sm:px-4 sm:py-8 md:px-5 md:py-10 lg:px-6 lg:py-12 xl:px-8 xl:py-14 2xl:px-10 2xl:py-16 relative">
+    <div className="min-h-screen bg-[#0f1219] bg-linear-to-b from-[#111827] via-[#0f1219] to-[#0b0e14] flex items-center justify-center px-3 py-6 sm:px-4 sm:py-8 md:px-5 md:py-10 lg:px-6 lg:py-12 xl:px-8 xl:py-14 2xl:px-10 2xl:py-16 relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-32 -left-20 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -right-12 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
       <div className="absolute top-4 left-4 sm:top-5 sm:left-5 md:top-6 md:left-6 lg:top-8 lg:left-8 xl:top-10 xl:left-10 2xl:top-12 2xl:left-12">
         <Image
           src={logo}
@@ -165,18 +167,21 @@ export default function ManageProfilePage() {
         />
       </div>
 
-      <div className="flex flex-col items-center justify-center text-center w-full max-w-[92vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-medium text-white mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16">
+      <div className="flex flex-col items-center justify-center text-center w-full max-w-[92vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl relative z-10">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-semibold tracking-tight text-white mb-2 sm:mb-3">
           Benutzer auswählen!
         </h1>
+        <p className="text-xs sm:text-sm md:text-base text-slate-300/80 mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16">
+          Bitte wählen Sie ein Profil, um fortzufahren
+        </p>
 
-        <div className="w-full mx-auto mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16 px-1 sm:px-2 md:px-3 lg:px-4 xl:px-5 2xl:px-6">
+        <div className="w-full mx-auto mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16 px-1 sm:px-2 md:px-3 lg:px-4 xl:px-5 2xl:px-6 rounded-2xl border border-white/10 bg-white/3 backdrop-blur-sm shadow-[0_12px_45px_rgba(0,0,0,0.25)] py-5 sm:py-6 md:py-7 lg:py-8">
           <div className="relative flex items-center">
             <button
               type="button"
               onClick={scrollPrev}
               disabled={!canScrollPrev}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 -translate-x-0.5 sm:-translate-x-1 md:-translate-x-1.5 lg:-translate-x-2 xl:-translate-x-2 2xl:-translate-x-3"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-slate-900/80 border border-white/15 flex items-center justify-center text-white hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 -translate-x-0.5 sm:-translate-x-1 md:-translate-x-1.5 lg:-translate-x-2 xl:-translate-x-2 2xl:-translate-x-3"
               aria-label="Vorherige Profile"
             >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2} />
@@ -198,9 +203,9 @@ export default function ManageProfilePage() {
                         type="button"
                         onClick={() => handleProfileClick(profile)}
                         disabled={submitting}
-                        className="group cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 xl:gap-3 2xl:gap-4 w-full max-w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed text-center"
+                        className="group cursor-pointer flex flex-col items-center justify-center gap-2 sm:gap-2.5 md:gap-3 w-full max-w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl transition-all duration-200 hover:-translate-y-1 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed text-center"
                       >
-                        <div className={`bg-gray-700/90 rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl flex items-center justify-center text-white overflow-hidden border-2 border-transparent group-hover:border-white/80 group-hover:bg-gray-600/90 transition-all duration-200 shadow-lg md:shadow-xl w-full aspect-square ${partner ? 'ring-2 ring-white/50' : ''}`}>
+                        <div className={`relative bg-slate-700/70 rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl flex items-center justify-center text-white overflow-hidden border border-white/10 group-hover:border-white/50 group-hover:bg-slate-600/70 transition-all duration-200 shadow-lg md:shadow-xl w-full aspect-square ${partner ? 'ring-2 ring-white/40' : ''}`}>
                           {profile.image ? (
                             <Image
                               src={profile.image}
@@ -215,13 +220,15 @@ export default function ManageProfilePage() {
                               strokeWidth={1.5}
                             />
                           )}
+                          {profile.hasPassword && (
+                            <span className="absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/45 border border-white/15">
+                              <Lock className="h-3.5 w-3.5 text-white/90" strokeWidth={2} />
+                            </span>
+                          )}
                         </div>
-                        <span className={`text-gray-400 group-hover:text-white transition-colors duration-200 w-full max-w-full truncate block text-center ${partner ? 'text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold' : 'text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl'}`}>
+                        <span className={`text-slate-300 group-hover:text-white transition-colors duration-200 w-full max-w-full truncate block text-center ${partner ? 'text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold' : 'text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl'}`}>
                           {displayName(profile)}
                         </span>
-                        {profile.hasPassword && (
-                          <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-sm 2xl:text-base text-gray-500 block text-center w-full">Passwort erforderlich</span>
-                        )}
                       </button>
                     </div>
                   )
@@ -233,7 +240,7 @@ export default function ManageProfilePage() {
               type="button"
               onClick={scrollNext}
               disabled={!canScrollNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 translate-x-0.5 sm:translate-x-1 md:translate-x-1.5 lg:translate-x-2 xl:translate-x-2 2xl:translate-x-3"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-slate-900/80 border border-white/15 flex items-center justify-center text-white hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 translate-x-0.5 sm:translate-x-1 md:translate-x-1.5 lg:translate-x-2 xl:translate-x-2 2xl:translate-x-3"
               aria-label="Nächste Profile"
             >
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2} />
