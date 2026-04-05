@@ -628,7 +628,8 @@ export default function MasschuProgressTable({
 
             const sheetData: WerkstattzettelA4V2Data = res.data;
             setWerkPdfData(sheetData);
-            setWerkPdfLogoProxy(sheetData.prescriptionInfo?.image ? getProxyImageUrl(sheetData.prescriptionInfo.image) : null);
+            const logoSource = sheetData.partnerInfo?.image || sheetData.prescriptionInfo?.image || null;
+            setWerkPdfLogoProxy(logoSource ? getProxyImageUrl(logoSource) : null);
 
             await nextFrame();
             await nextFrame();

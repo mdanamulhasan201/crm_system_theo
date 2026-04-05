@@ -3,6 +3,12 @@
 import React from 'react';
 
 export interface WerkstattzettelA4V2Data {
+    partnerInfo?: {
+        image?: string | null;
+        name?: string | null;
+        busnessName?: string | null;
+        phone?: string | null;
+    } | null;
     customerInfo?: {
         firstName?: string | null;
         lastName?: string | null;
@@ -216,7 +222,7 @@ export default function WerkstattzettelA4V2Sheet({
             ? price.total_price - nettoFromTotal
             : null;
     const notesText = asText(order.supply_note);
-    const logoUrl = logoProxyUrl || prescription.image || null;
+    const logoUrl = logoProxyUrl || data.partnerInfo?.image || prescription.image || null;
     const step4Info = half.step4_halbprobenerstellung ?? {};
     const materialAufbauRows = [
         { key: '1', label: 'Vorbereitung', value: formatDate(step4Info.preparation_date) },
@@ -240,13 +246,14 @@ export default function WerkstattzettelA4V2Sheet({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div
                     style={{
-                        width: 52,
-                        height: 26,
-                        border: '1px solid #cfcfcf',
+                        width: 170,
+                        height: 64,
+                        marginLeft: -8,
+                        padding: '2px 0',
                         overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                     }}
                 >
                     {logoUrl ? (
@@ -254,10 +261,17 @@ export default function WerkstattzettelA4V2Sheet({
                         <img
                             src={logoUrl}
                             alt="logo"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                width: 'auto',
+                                height: 'auto',
+                                objectFit: 'contain',
+                                display: 'block',
+                            }}
                         />
                     ) : (
-                        <span style={{ fontSize: 8, color: '#555' }}>LOGO</span>
+                        <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, letterSpacing: 0.4 }}>LOGO</span>
                     )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
