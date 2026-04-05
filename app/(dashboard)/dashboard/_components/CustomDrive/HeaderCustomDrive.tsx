@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from './types';
+import { BreadcrumbDropZone } from './CustomDriveDnd';
 
 type HeaderCustomDriveProps = {
   folderCount: number;
@@ -145,17 +146,19 @@ export default function HeaderCustomDrive({
             const isLast = index === lastCrumbIndex;
             return (
               <React.Fragment key={`${crumb.id ?? 'root'}-${index}`}>
-                <button
-                  type="button"
-                  onClick={() => onBreadcrumbClick(index)}
-                  className={`max-w-[min(180px,45vw)] cursor-pointer shrink-0 truncate rounded-md px-2 py-1 text-xs transition ${
-                    isLast
-                      ? 'bg-[#61A175] font-semibold text-white shadow-sm ring-1 ring-[#61A175]/80 hover:bg-[#529668]'
-                      : 'font-medium text-slate-600 hover:bg-[#61A175]/10 hover:text-[#3d6b4a]'
-                  }`}
-                >
-                  {crumb.name}
-                </button>
+                <BreadcrumbDropZone folderId={crumb.id}>
+                  <button
+                    type="button"
+                    onClick={() => onBreadcrumbClick(index)}
+                    className={`max-w-full min-w-0 cursor-pointer truncate rounded-md px-2 py-1 text-xs transition ${
+                      isLast
+                        ? 'bg-[#61A175] font-semibold text-white shadow-sm ring-1 ring-[#61A175]/80 hover:bg-[#529668]'
+                        : 'font-medium text-slate-600 hover:bg-[#61A175]/10 hover:text-[#3d6b4a]'
+                    }`}
+                  >
+                    {crumb.name}
+                  </button>
+                </BreadcrumbDropZone>
                 {index < breadcrumbs.length - 1 && (
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
                 )}

@@ -45,7 +45,8 @@ export interface MoveItemPayload {
 
 export interface MoveFolderAndFilesPayload {
     items: MoveItemPayload[];
-    targetParentId: string;
+    /** `null` = Kunden-Stammverzeichnis (My Drive) */
+    targetParentId: string | null;
 }
 
 export interface RenameFileAndFolderPayload {

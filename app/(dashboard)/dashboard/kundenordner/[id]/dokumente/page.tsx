@@ -389,14 +389,19 @@ export default function KundenordnerDokumentePage() {
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveDragId(null);
     const active = parseDragItemId(event.active.id);
-    const targetFolderId = parseDropTargetId(event.over?.id);
-    if (!active || !targetFolderId) return;
-    if (active.type === 'folder' && active.id === targetFolderId) return;
+    const targetParentId = parseDropTargetId(event.over?.id);
+    if (!active || targetParentId === undefined) return;
+    if (active.type === 'folder' && active.id === targetParentId) return;
+
+    const alreadyInThisFolder =
+      (targetParentId === null && currentFolderId === null) ||
+      (targetParentId !== null && targetParentId === currentFolderId);
+    if (alreadyInThisFolder) return;
 
     try {
       await moveItemsAction({
         items: [{ type: active.type, id: [active.id] }],
-        targetParentId: targetFolderId,
+        targetParentId,
       });
       toast.success(`${active.type === 'folder' ? 'Ordner' : 'Datei'} verschoben`);
       await invalidateDriveList();
@@ -408,28 +413,29 @@ export default function KundenordnerDokumentePage() {
 
   return (
     <div className="mb-20 w-full max-w-full space-y-6 p-4" onClick={handleClearSelection}>
-      <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-        <TopNavigation />
-
-        <HeaderCustomDrive
-          folderCount={folders.length}
-          fileCount={files.length}
-          breadcrumbs={breadcrumbs}
-          searchQuery={searchQuery}
-          isLoading={isInitialLoading}
-          isRefreshing={isListRefreshing}
-          isMutating={isMutating}
-          selectedCount={selectedKeys.size}
-          onRefresh={() => void invalidateDriveList()}
-          onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
-          onUploadClick={handleUploadClick}
-          onDeleteSelected={() => setBulkDeleteOpen(true)}
-          onSearchChange={setSearchQuery}
-          onBreadcrumbClick={handleGoToBreadcrumb}
-        />
-      </div>
-
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(e) => void handleDragEnd(e)}>
+        <div className="space-y-6">
+        <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
+          <TopNavigation />
+
+          <HeaderCustomDrive
+            folderCount={folders.length}
+            fileCount={files.length}
+            breadcrumbs={breadcrumbs}
+            searchQuery={searchQuery}
+            isLoading={isInitialLoading}
+            isRefreshing={isListRefreshing}
+            isMutating={isMutating}
+            selectedCount={selectedKeys.size}
+            onRefresh={() => void invalidateDriveList()}
+            onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+            onUploadClick={handleUploadClick}
+            onDeleteSelected={() => setBulkDeleteOpen(true)}
+            onSearchChange={setSearchQuery}
+            onBreadcrumbClick={handleGoToBreadcrumb}
+          />
+        </div>
+
         {driveQueryError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <div className="flex items-center justify-between gap-3">
@@ -445,7 +451,8 @@ export default function KundenordnerDokumentePage() {
 
         {activeDragId && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-xs text-blue-700">
-            Drag & drop: Ziehen Sie die Datei/den Ordner auf einen Zielordner.
+            Ziehen Sie auf einen Ordner in der Liste oder auf einen Eintrag im Pfad oben (übergeordnete Ordner /
+            My Drive).
           </div>
         )}
 
@@ -498,6 +505,7 @@ export default function KundenordnerDokumentePage() {
             />
           </div>
         )}
+        </div>
       </DndContext>
 
       <CustomDriveUploadModal
