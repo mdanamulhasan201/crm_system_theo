@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from './types';
 
@@ -56,88 +56,91 @@ export default function HeaderCustomDrive({
   const lastCrumbIndex = breadcrumbs.length - 1;
 
   return (
-    <Card className="gap-0 overflow-hidden border-slate-200/90 py-0 shadow-md">
-      <div className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-[#61A175]/6 px-4 py-4 sm:px-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/80">
-                <Cloud className="h-5 w-5 text-[#5f8fdd]" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                  Kunden-Dokumente
-                </h1>
-                <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
-                  Dateien und Ordner verwalten · Drive-Ansicht
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 pl-0 sm:pl-13">
-              <Badge variant="secondary" className="gap-1 font-normal tabular-nums">
-                <FolderOpen className="h-3 w-3 opacity-70" aria-hidden />
-                {folderCount} Ordner
-              </Badge>
-              <Badge variant="secondary" className="gap-1 font-normal tabular-nums">
-                <HardDrive className="h-3 w-3 opacity-70" aria-hidden />
-                {fileCount} Dateien
-              </Badge>
-              {selectedCount > 0 && (
-                <Badge className="bg-[#5f8fdd] font-normal tabular-nums hover:bg-[#5f8fdd]/90">
-                  {selectedCount} ausgewählt
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-white/90 p-1.5 shadow-sm backdrop-blur-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-slate-700"
-              onClick={onRefresh}
-              disabled={busy}
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading || isRefreshing ? 'animate-spin' : ''}`} />
-              Aktualisieren
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-slate-700"
-              onClick={onOpenCreateFolder}
-              disabled={isMutating}
-            >
-              <FolderPlus className="h-4 w-4 text-[#61A175]" />
-              Neuer Ordner
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-[#61A175] shadow-sm hover:bg-[#4f8a61]"
-              onClick={onUploadClick}
-              disabled={isMutating}
-            >
-              {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Datei hochladen
-            </Button>
+    <Card className="gap-0 overflow-hidden border-slate-200/90 py-0 shadow-sm">
+      {/* Title + counts + actions — one compact row */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-200/70 bg-slate-50/60 px-3 py-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <Cloud className="h-4 w-4 shrink-0 text-[#5f8fdd]" aria-hidden />
+          <h1 className="truncate text-base font-semibold tracking-tight text-slate-900">
+            Kunden-Dokumente
+          </h1>
+          <div className="flex flex-wrap items-center gap-1">
+            <Badge variant="secondary" className="h-5 gap-0.5 px-1.5 py-0 text-[11px] font-normal tabular-nums">
+              <FolderOpen className="h-3 w-3 opacity-70" aria-hidden />
+              {folderCount}
+            </Badge>
+            <Badge variant="secondary" className="h-5 gap-0.5 px-1.5 py-0 text-[11px] font-normal tabular-nums">
+              <HardDrive className="h-3 w-3 opacity-70" aria-hidden />
+              {fileCount}
+            </Badge>
             {selectedCount > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-2 shadow-sm"
-                onClick={onDeleteSelected}
-                disabled={isMutating}
-              >
-                <Trash2 className="h-4 w-4" />
-                Auswahl löschen ({selectedCount})
-              </Button>
+              <Badge className="h-5 bg-[#5f8fdd] px-1.5 py-0 text-[11px] font-normal tabular-nums hover:bg-[#5f8fdd]/90">
+                {selectedCount} sel.
+              </Badge>
             )}
           </div>
         </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Aktualisieren"
+            className="h-8 gap-1.5 px-2 text-xs text-slate-700 cursor-pointer"
+            onClick={onRefresh}
+            disabled={busy}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading || isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Aktualisieren</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Neuer Ordner"
+            className="h-8 gap-1.5 px-2 text-xs text-slate-700 cursor-pointer"
+            onClick={onOpenCreateFolder}
+            disabled={isMutating}
+          >
+            <FolderPlus className="h-3.5 w-3.5 text-[#61A175]" />
+            <span className="hidden md:inline">Ordner</span>
+          </Button>
+          <Button
+            size="sm"
+            title="Datei hochladen"
+            className="h-8 gap-1.5 bg-[#61A175] px-2.5 text-xs hover:bg-[#4f8a61] cursor-pointer"
+            onClick={onUploadClick}
+            disabled={isMutating}
+          >
+            {isMutating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">Hochladen</span>
+          </Button>
+          {selectedCount > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              title="Auswahl löschen"
+              className="h-8 gap-1 px-2 text-xs cursor-pointer"
+              onClick={onDeleteSelected}
+              disabled={isMutating}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Löschen</span>
+              <span className="tabular-nums lg:hidden">({selectedCount})</span>
+            </Button>
+          )}
+        </div>
       </div>
 
-      <CardContent className="flex flex-col gap-4 px-4 py-4 sm:px-5">
-        <div className="flex min-w-0 flex-wrap items-center gap-1 rounded-xl border border-slate-200/70 bg-slate-50/80 px-2 py-2">
+      {/* Pfad + Suche — eine Zeile, Pfad scrollt bei langen Namen */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <nav
+          className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          aria-label="Ordnerpfad"
+        >
           {breadcrumbs.map((crumb, index) => {
             const isLast = index === lastCrumbIndex;
             return (
@@ -145,36 +148,36 @@ export default function HeaderCustomDrive({
                 <button
                   type="button"
                   onClick={() => onBreadcrumbClick(index)}
-                  className={`max-w-[200px] truncate rounded-lg px-2.5 py-1.5 text-sm transition ${
+                  className={`max-w-[min(180px,45vw)] cursor-pointer shrink-0 truncate rounded-md px-2 py-1 text-xs transition ${
                     isLast
-                      ? 'bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/80'
-                      : 'font-medium text-slate-600 hover:bg-white/80 hover:text-slate-900'
+                      ? 'bg-[#61A175] font-semibold text-white shadow-sm ring-1 ring-[#61A175]/80 hover:bg-[#529668]'
+                      : 'font-medium text-slate-600 hover:bg-[#61A175]/10 hover:text-[#3d6b4a]'
                   }`}
                 >
                   {crumb.name}
                 </button>
                 {index < breadcrumbs.length - 1 && (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
                 )}
               </React.Fragment>
             );
           })}
-        </div>
+        </nav>
 
-        <div className="relative w-full lg:max-w-md lg:ml-auto">
+        <div className="relative w-[min(100%,200px)] shrink-0 sm:w-52">
           <Search
-            className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+            className="text-muted-foreground pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
             aria-hidden
           />
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Ordner und Dateien durchsuchen…"
-            className="h-10 border-slate-200 bg-white pl-9 shadow-sm"
+            placeholder="Suchen…"
+            className="h-8 border-slate-200 bg-white py-1 pl-7 pr-2 text-xs shadow-none"
             aria-label="Suche"
           />
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }

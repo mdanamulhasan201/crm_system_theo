@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -27,6 +27,8 @@ import { useGoogleCustomDriveStore } from '@/stores';
 import { downloadUrlAsFile, openFilePreview } from '@/lib/fileDownload';
 
 const ROOT_BREADCRUMB: BreadcrumbItem = { id: null, name: 'My Drive' };
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 const formatBytes = (size?: number) => {
   if (!size || Number.isNaN(size)) return '-';
@@ -75,6 +77,7 @@ export default function KundenordnerDokumentePage() {
   } = useGoogleCustomDriveStore();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(folderFromQuery);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([ROOT_BREADCRUMB]);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
@@ -135,19 +138,29 @@ export default function KundenordnerDokumentePage() {
 
   const loadData = useCallback(
     async (opts?: { silent?: boolean }) => {
+      const trimmed = debouncedSearch.trim();
       await fetchAll({
         customerId,
         limit: 100,
         folder: currentFolderId,
+        search: trimmed.length > 0 ? trimmed : null,
         silent: opts?.silent,
       });
     },
-    [customerId, currentFolderId, fetchAll]
+    [customerId, currentFolderId, debouncedSearch, fetchAll]
   );
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    const id = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const silent = debouncedSearch.length > 0;
+    void loadData({ silent });
+  }, [loadData, debouncedSearch]);
 
   useEffect(() => {
     if (renameTarget) {
@@ -225,18 +238,6 @@ export default function KundenordnerDokumentePage() {
       toast.error(message);
     }
   };
-
-  const filteredFolders = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return folders;
-    return folders.filter((f) => f.name.toLowerCase().includes(q));
-  }, [folders, searchQuery]);
-
-  const filteredFiles = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return files;
-    return files.filter((f) => f.name.toLowerCase().includes(q));
-  }, [files, searchQuery]);
 
   const handleView = (url: string) => {
     openFilePreview(url);
@@ -320,6 +321,10 @@ export default function KundenordnerDokumentePage() {
     });
   };
 
+  const handleClearSelection = () => {
+    setSelectedKeys(new Set());
+  };
+
   const handleDeleteSelected = async () => {
     if (selectedKeys.size === 0) {
       setBulkDeleteOpen(false);
@@ -372,25 +377,27 @@ export default function KundenordnerDokumentePage() {
   };
 
   return (
-    <div className="mb-20 w-full max-w-full space-y-6 p-4">
-      <TopNavigation />
+    <div className="mb-20 w-full max-w-full space-y-6 p-4" onClick={handleClearSelection}>
+      <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
+        <TopNavigation />
 
-      <HeaderCustomDrive
-        folderCount={folders.length}
-        fileCount={files.length}
-        breadcrumbs={breadcrumbs}
-        searchQuery={searchQuery}
-        isLoading={isLoading}
-        isRefreshing={isRefreshing}
-        isMutating={isMutating}
-        selectedCount={selectedKeys.size}
-        onRefresh={() => void loadData({ silent: true })}
-        onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
-        onUploadClick={handleUploadClick}
-        onDeleteSelected={() => setBulkDeleteOpen(true)}
-        onSearchChange={setSearchQuery}
-        onBreadcrumbClick={handleGoToBreadcrumb}
-      />
+        <HeaderCustomDrive
+          folderCount={folders.length}
+          fileCount={files.length}
+          breadcrumbs={breadcrumbs}
+          searchQuery={searchQuery}
+          isLoading={isLoading}
+          isRefreshing={isRefreshing}
+          isMutating={isMutating}
+          selectedCount={selectedKeys.size}
+          onRefresh={() => void loadData({ silent: true })}
+          onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+          onUploadClick={handleUploadClick}
+          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          onSearchChange={setSearchQuery}
+          onBreadcrumbClick={handleGoToBreadcrumb}
+        />
+      </div>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(e) => void handleDragEnd(e)}>
         {error && (
@@ -419,13 +426,21 @@ export default function KundenordnerDokumentePage() {
         )}
 
         {isLoading ? (
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white">
+          <div
+            role="presentation"
+            className="flex h-40 cursor-default items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white"
+            onClick={handleClearSelection}
+          >
             <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div
+            role="presentation"
+            className="min-h-[120px] space-y-6"
+            onClick={handleClearSelection}
+          >
             <FolderGridCustomDrive
-              folders={filteredFolders}
+              folders={folders}
               formatDate={formatDate}
               isSelected={isFolderSelected}
               onSelect={handleSelectItem}
@@ -435,7 +450,7 @@ export default function KundenordnerDokumentePage() {
             />
 
             <FileGridCustomDrive
-              files={filteredFiles}
+              files={files}
               formatDate={formatDate}
               formatBytes={formatBytes}
               onView={handleView}

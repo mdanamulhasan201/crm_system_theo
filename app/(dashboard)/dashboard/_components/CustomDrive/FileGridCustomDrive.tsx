@@ -51,7 +51,8 @@ export default function FileGridCustomDrive({
           {files.map((file) => (
             <DragContainer key={file.id} id={dragItemId('file', file.id)}>
                 <div
-                onClick={(e) =>
+                onClick={(e) => {
+                  e.stopPropagation();
                   onSelect(
                     {
                       id: file.id,
@@ -59,11 +60,13 @@ export default function FileGridCustomDrive({
                       type: 'file',
                     },
                     e
-                  )
-                }
+                  );
+                }}
                 onDoubleClick={() => onView(file.url)}
-                className={`group cursor-pointer rounded-xl border p-3 transition hover:shadow-sm ${
-                  isSelected(file.id) ? 'border-[#5f8fdd] bg-[#eaf1ff]' : 'bg-white'
+                className={`group cursor-pointer rounded-xl border p-3 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm ${
+                  isSelected(file.id)
+                    ? 'border-[#5f8fdd] bg-[#eaf1ff] hover:border-[#5f8fdd] hover:bg-[#eaf1ff]'
+                    : 'border-gray-200 bg-white'
                 }`}
               >
                 <div className="mb-2 flex items-start justify-between gap-2">
@@ -76,7 +79,7 @@ export default function FileGridCustomDrive({
                       <button
                         type="button"
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded p-1 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                        className="rounded p-1 cursor-pointer text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
                         aria-label="Mehr Optionen"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -121,10 +124,10 @@ export default function FileGridCustomDrive({
                 </div>
 
                 <div
-                  className="pointer-events-none mb-3 flex h-28 w-full items-center justify-center rounded-lg bg-gray-100"
+                  className="pointer-events-none mb-3 flex h-28 w-full items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-slate-200/70"
                   aria-hidden
                 >
-                  <FileText className="h-9 w-9 text-red-500" />
+                  <FileText className="h-9 w-9 text-red-500 transition-opacity group-hover:opacity-90" />
                 </div>
 
                 <div>

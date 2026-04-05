@@ -48,7 +48,8 @@ export default function FolderGridCustomDrive({
             <FolderDropContainer key={folder.id} id={folder.id}>
               <DragContainer id={dragItemId('folder', folder.id)}>
                 <div
-                  onClick={(e) =>
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onSelect(
                       {
                         id: folder.id,
@@ -56,11 +57,13 @@ export default function FolderGridCustomDrive({
                         type: 'folder',
                       },
                       e
-                    )
-                  }
+                    );
+                  }}
                   onDoubleClick={() => onOpenFolder(folder.id)}
-                  className={`group cursor-pointer rounded-xl border p-3 text-left transition hover:border-[#61A175] hover:shadow-sm ${
-                    isSelected(folder.id) ? 'border-[#5f8fdd] bg-[#eaf1ff]' : 'bg-[#f8f9fb]'
+                  className={`group cursor-pointer rounded-xl border p-3 text-left transition hover:border-[#61A175] hover:bg-[#61A175]/6 hover:shadow-sm ${
+                    isSelected(folder.id)
+                      ? 'border-[#5f8fdd] bg-[#eaf1ff] hover:border-[#5f8fdd] hover:bg-[#eaf1ff]'
+                      : 'border-gray-200 bg-[#f8f9fb]'
                   }`}
                 >
                   <div className="mb-2 flex items-start justify-between gap-2">
@@ -74,7 +77,7 @@ export default function FolderGridCustomDrive({
                         <button
                           type="button"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded p-1 text-gray-500 transition hover:bg-gray-200 hover:text-gray-800"
+                          className="cursor-pointer rounded p-1 text-gray-500 transition hover:bg-gray-200 hover:text-gray-800"
                           aria-label="Mehr Optionen"
                         >
                           <MoreVertical className="h-4 w-4" />

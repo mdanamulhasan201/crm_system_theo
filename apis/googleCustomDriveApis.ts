@@ -34,6 +34,8 @@ export interface GetAllFolderAndFilesParams {
     limit?: number;
     cursor?: string | null;
     folder?: string | null;
+    /** Server-side filter on folder/file names */
+    search?: string | null;
 }
 
 export interface MoveItemPayload {
@@ -113,6 +115,7 @@ export const getAllFolderAndFiles = async ({
     limit = 10,
     cursor = null,
     folder = null,
+    search = null,
 }: GetAllFolderAndFilesParams) => {
     try {
         const query = new URLSearchParams();
@@ -124,6 +127,9 @@ export const getAllFolderAndFiles = async ({
         }
         if (folder) {
             query.set("folder", folder);
+        }
+        if (search) {
+            query.set("search", search);
         }
 
         const response = await axiosClient.get(`/v3/folders/get-all?${query.toString()}`);
