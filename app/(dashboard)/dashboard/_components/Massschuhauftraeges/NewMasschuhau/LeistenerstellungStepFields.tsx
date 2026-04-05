@@ -25,19 +25,23 @@ export const LEISTENFERTIGUNG_OPTIONS = ['Extern', 'Über F1rst'] as const;
 export type LeistenfertigungValue = (typeof LEISTENFERTIGUNG_OPTIONS)[number] | '';
 
 export interface LeistenerstellungStepFieldsProps {
-    material: string;
+    materialLeft: string;
+    materialRight: string;
     leistentyp: string;
     leistenfertigung: LeistenfertigungValue;
-    onMaterialChange: (value: string) => void;
+    onMaterialLeftChange: (value: string) => void;
+    onMaterialRightChange: (value: string) => void;
     onLeistentypChange: (value: string) => void;
     onLeistenfertigungChange: (value: LeistenfertigungValue) => void;
 }
 
 export default function LeistenerstellungStepFields({
-    material,
+    materialLeft,
+    materialRight,
     leistentyp,
     leistenfertigung,
-    onMaterialChange,
+    onMaterialLeftChange,
+    onMaterialRightChange,
     onLeistentypChange,
     onLeistenfertigungChange,
 }: LeistenerstellungStepFieldsProps) {
@@ -57,16 +61,27 @@ export default function LeistenerstellungStepFields({
                 <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-800">
-                            Material
+                            Material (Links)
                         </Label>
                         <Input
-                            value={material}
-                            onChange={(e) => onMaterialChange(e.target.value)}
-                            placeholder="z.B. Leder, Synthetik"
+                            value={materialLeft}
+                            onChange={(e) => onMaterialLeftChange(e.target.value)}
+                            placeholder="z.B. Leder links"
                             className="h-10 w-full rounded-lg border-gray-300 bg-gray-50/80 transition-colors placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                         />
                     </div>
                     <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-800">
+                            Material (Rechts)
+                        </Label>
+                        <Input
+                            value={materialRight}
+                            onChange={(e) => onMaterialRightChange(e.target.value)}
+                            placeholder="z.B. Leder rechts"
+                            className="h-10 w-full rounded-lg border-gray-300 bg-gray-50/80 transition-colors placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
                         <Label className="text-sm font-medium text-gray-800">
                             Leistentyp
                         </Label>

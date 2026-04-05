@@ -310,7 +310,8 @@ export default function MassschuhauftraegePage() {
     const [isDragging, setIsDragging] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [material, setMaterial] = useState('');
+    const [materialLeft, setMaterialLeft] = useState('');
+    const [materialRight, setMaterialRight] = useState('');
     const [leistentyp, setLeistentyp] = useState('');
     const [leistenfertigung, setLeistenfertigung] = useState<LeistenfertigungValue>('');
     const [thickness, setThickness] = useState('');
@@ -375,7 +376,16 @@ export default function MassschuhauftraegePage() {
                         data.order?.customer?.id;
                     setRedirectCustomerId(cid != null && String(cid).trim() ? String(cid).trim() : undefined);
                     setNotes(data.notes != null ? String(data.notes) : '');
-                    if (data.material != null && data.material !== '') setMaterial(String(data.material));
+                    if (data.material != null && data.material !== '') {
+                        if (typeof data.material === 'object') {
+                            setMaterialLeft(String(data.material.left ?? ''));
+                            setMaterialRight(String(data.material.right ?? ''));
+                        } else {
+                            const sharedMaterial = String(data.material);
+                            setMaterialLeft(sharedMaterial);
+                            setMaterialRight(sharedMaterial);
+                        }
+                    }
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
                     const lf = data.leistenfertigung;
                     if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
@@ -437,7 +447,8 @@ export default function MassschuhauftraegePage() {
                     setStepCompletedByEmployee(null);
                     setNotes('');
                     setStepFilesFromApi([]);
-                    setMaterial('');
+                    setMaterialLeft('');
+                    setMaterialRight('');
                     setLeistentyp('');
                     setLeistenfertigung('');
                     setThickness('');
@@ -541,7 +552,10 @@ export default function MassschuhauftraegePage() {
             uploadedFiles.forEach((file) => {
                 formData.append('files', file);
             });
-            formData.append('material', material);
+            formData.append('material', JSON.stringify({
+                left: materialLeft,
+                right: materialRight,
+            }));
             formData.append('leistentyp', leistentyp);
             formData.append('leistenfertigung', leistenfertigung);
             formData.append('thickness', thickness);
@@ -629,7 +643,16 @@ export default function MassschuhauftraegePage() {
                 const data = res?.data;
                 if (data) {
                     setNotes(data.notes != null ? String(data.notes) : '');
-                    if (data.material != null && data.material !== '') setMaterial(String(data.material));
+                    if (data.material != null && data.material !== '') {
+                        if (typeof data.material === 'object') {
+                            setMaterialLeft(String(data.material.left ?? ''));
+                            setMaterialRight(String(data.material.right ?? ''));
+                        } else {
+                            const sharedMaterial = String(data.material);
+                            setMaterialLeft(sharedMaterial);
+                            setMaterialRight(sharedMaterial);
+                        }
+                    }
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
                     const lf = data.leistenfertigung;
                     if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
@@ -1098,10 +1121,12 @@ export default function MassschuhauftraegePage() {
                                     {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
                                     {activeStepIndex === 1 && (
                                         <LeistenerstellungStepFields
-                                            material={material}
+                                            materialLeft={materialLeft}
+                                            materialRight={materialRight}
                                             leistentyp={leistentyp}
                                             leistenfertigung={leistenfertigung}
-                                            onMaterialChange={setMaterial}
+                                            onMaterialLeftChange={setMaterialLeft}
+                                            onMaterialRightChange={setMaterialRight}
                                             onLeistentypChange={setLeistentyp}
                                             onLeistenfertigungChange={setLeistenfertigung}
                                         />
