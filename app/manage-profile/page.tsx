@@ -194,7 +194,7 @@ export default function ManageProfilePage() {
                   return (
                     <div
                       key={profile.id}
-                      className={`min-w-0 flex flex-col items-center justify-center ${partner
+                      className={`min-w-0 flex flex-col items-center justify-center last:mr-2 sm:last:mr-3 md:last:mr-4 lg:last:mr-5 xl:last:mr-6 2xl:last:mr-6 ${partner
                         ? 'flex-[0_0_calc(1.4*(100%-0.5rem)/2)] sm:flex-[0_0_calc(1.4*(100%-0.75rem)/2)] md:flex-[0_0_calc(1.4*(100%-2rem)/3)] lg:flex-[0_0_calc(1.4*(100%-3.75rem)/4)] xl:flex-[0_0_calc(1.4*(100%-6rem)/5)] 2xl:flex-[0_0_calc(1.4*(100%-7.5rem)/6)]'
                         : 'flex-[0_0_calc((100%-0.5rem)/2)] sm:flex-[0_0_calc((100%-0.75rem)/2)] md:flex-[0_0_calc((100%-2rem)/3)] lg:flex-[0_0_calc((100%-3.75rem)/4)] xl:flex-[0_0_calc((100%-6rem)/5)] 2xl:flex-[0_0_calc((100%-7.5rem)/6)]'
                         }`}
